@@ -1,0 +1,4 @@
+# Linux下忽略
+build/
+sdcard/
+si_proj/
