@@ -8,6 +8,10 @@
 #include "comport.h"
 #include "arpa/inet.h"
 #include "global.h"
+#include "CabinetClient.h"
+#include "registers.h"
+
+
 
 using namespace std;
 
@@ -46,19 +50,24 @@ public:
 	}IPInfo;
 
 public:
-	tsPanel(void);
+	tsPanel(CabinetClient *pCab,VMCONTROL_CONFIG *pConfig);
 	~tsPanel(void);
 
 	typedef void (*Callback)(void *userdata,int len);
 	void setCallback(Callback cb,void *userdata);
 	void ScreenFlagSet(SREEN_SET_LIST sFlag);
 	void disconnctProcess(void);
+	void CabClientSet(CabinetClient *pCab);
+	void VM_ConfigSet(VMCONTROL_CONFIG *pConfig);
 	
 	CComPort *mComPort;	// 需要调用串口
 	CMyCritical ComCri;
 	bool isConnect;
 	in_addr IPaddr[2];
 	uint16_t time_interval;
+	// 初始化要传参
+	CabinetClient *tsCabClient;//华为机柜状态
+	VMCONTROL_CONFIG *tsVM_Config;	//控制器配置信息结构体
 	   
 private:
 	pthread_t gtid;

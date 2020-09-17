@@ -67,8 +67,8 @@ void VAgetFromDevice(uint8_t seq, string& volt, string& amp);
 uint16_t DoorStatusFromLocker(void);
 extern unsigned long GetTickCount(); //返回秒
 //uint32_t GetTickCount32(void);
-UINT64 timestamp_get(void);
-UINT64 timestamp_delta(UINT64 const timestamp);
+UINT32 timestamp_get(void);
+UINT32 timestamp_delta(UINT32 const timestamp);
 unsigned long GetMsTick(); //返回m秒
 
 void char_to_long(UINT8* buffer,UINT32* value);

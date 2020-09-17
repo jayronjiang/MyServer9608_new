@@ -845,7 +845,7 @@ void init_atlas_struct(CsshClient *pAtlas)
 /// 通用函数，对GetTickCount再次封装.
 /// \return 32-bits timestamp.
 //  ----------------------------------------------------------------------------
-UINT64 timestamp_get(void)
+UINT32 timestamp_get(void)
 {
     return GetTickCount();
 }
@@ -854,9 +854,9 @@ UINT64 timestamp_get(void)
 //  ----------------------------------------------------------------------------
 /// \brief  得到时间间隔.
 //  ----------------------------------------------------------------------------
-UINT64 timestamp_delta(UINT64 const timestamp)
+UINT32 timestamp_delta(UINT32 const timestamp)
 {
-    UINT64 now = timestamp_get();
+    UINT32 now = timestamp_get();
     // The unsigned substraction takes care of one possible wrap-around, but no
     // more.
     return now - timestamp;

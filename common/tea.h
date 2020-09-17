@@ -39,5 +39,8 @@ void CalulateCRCbySoft(unsigned char *pucData,unsigned char wLength,unsigned cha
 unsigned char CRC_sum(unsigned char *puchMsg , unsigned short usDataLen);
 int GbkToUtf8(char *str_str, size_t src_len, char *dst_str, size_t dst_len);
 int Utf8ToGbk(char *src_str, size_t src_len, char *dst_str, size_t dst_len);
+UINT32 timestamp_get(void);
+UINT32 timestamp_delta(UINT32 const timestamp);
+
 
 #endif

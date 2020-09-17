@@ -306,14 +306,6 @@ int main(void)
 		}
 	}
 	/////////////////  DO配置表结束/////////////////////////////////////////////
-
-	//初始化液晶屏
-//	pCPanel =new tsPanel();	
-	
-	//初始化Can
-    pCOsCan =  new CANNode((char *)"can0",CAN_500K,0,0x000,0xF00,0);
-	pCOsCan->setCallback(canNodeCallback,NULL);
-		
 	//初始化http服务端
 	Init_HttpServer();
 	
@@ -406,6 +398,13 @@ int main(void)
 		pCsshClient[i]->mStrAtlasPasswd = pConf->StrAtlasPasswd[i];
 		pCsshClient[i]->Start();
    	}
+
+	//初始化液晶屏
+	pCPanel =new tsPanel(pCabinetClient,&VMCtl_Config);	
+
+	//初始化Can
+    pCOsCan =  new CANNode((char *)"can0",CAN_500K,0,0x000,0xF00,0);
+	pCOsCan->setCallback(canNodeCallback,NULL);
 	
     //初始化利通控制器状态获取线程
     init_lt_status();

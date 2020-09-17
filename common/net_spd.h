@@ -494,7 +494,7 @@ typedef struct spd_struct
 	// 上面的防雷都要转换成与后台交互的协议数据
 	SPD_REAL_PARAMS rSPD_data[SPD_NUM];
 
-	UINT64 TimeStamp[SPD_NUM+RES_NUM]; 			//状态获取时间戳
+	UINT32 TimeStamp[SPD_NUM+RES_NUM]; 			//状态获取时间戳
 	bool Linked[SPD_NUM+RES_NUM];				//连接状态 0:断开 1：连接
 }SPD_PARAMS;
 

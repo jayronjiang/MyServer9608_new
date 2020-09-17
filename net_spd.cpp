@@ -74,8 +74,8 @@ UINT16 KY_test_disable_cnt = 0;
 int obtain_net();
 extern void char_to_int(UINT8* buffer,UINT16* value);
 //extern void WriteLog(char* str);
-extern UINT64 timestamp_get(void);
-extern UINT64 timestamp_delta(UINT32 const timestamp);
+extern UINT32 timestamp_get(void);
+extern UINT32 timestamp_delta(UINT32 const timestamp);
 extern int Setconfig(string StrKEY,string StrSetconfig);
 extern int Writeconfig(void);
 
