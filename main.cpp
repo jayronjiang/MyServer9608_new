@@ -22,7 +22,6 @@
 
 using namespace std; 
 
-extern DEVICE_PARAMS *stuDev_Param[POWER_BD_NUM];		//装置参数寄存器
 extern REMOTE_CONTROL *stuRemote_Ctrl;	//遥控寄存器结构体
 extern CabinetClient *pCabinetClient;//华为机柜状态
 extern VMCONTROL_STATE VMCtl_State;	//控制器运行状态结构体
@@ -242,40 +241,6 @@ int main(void)
 
 //	lockerDataInit(true);
 
-	/////////////////  电源控制板配置开始	/////////////////////////////////////////////
-	//装置参数寄存器,分为电源板和IO板
-	temp = 0;	//统计到底有几个电源板
-	for (i = 0; i < POWER_BD_NUM; i++)
-	{
-		stuDev_Param[i] = (DEVICE_PARAMS*)malloc(sizeof(DEVICE_PARAMS));
-		memset(stuDev_Param[i],0,sizeof(DEVICE_PARAMS));
-		/*配置文件中是否有配置*/
-		if (pConf->StrAdrrPower[i].length() != 0)
-		{
-			stuDev_Param[i]->Address = atoi(pConf->StrAdrrPower[i].c_str());
-//			Rs485_table_set(POWER_BD_1+i, ENABLE,pos_cnt+actual_locker_num, stuDev_Param[i]->Address);
-			pos_cnt++;
-			temp++;
-		}
-		else
-		{
-			stuDev_Param[i] = NULL;	// 防止为野指针
-//			Rs485_table_set(POWER_BD_1+i, DISABLE,NULL_VAR, NULL_VAR);
-		}
-	}
-	/*如果配置表中没有配置，则默认配置1块电源板，地址为71*/
-	if (temp == 0)
-	{
-		stuDev_Param[0] = (DEVICE_PARAMS*)malloc(sizeof(DEVICE_PARAMS));
-		memset(stuDev_Param[0],0,sizeof(DEVICE_PARAMS));
-		stuDev_Param[0]->Address = POWER_CTRL_ADDR_1;
-//		Rs485_table_set(POWER_BD_1, ENABLE,pos_cnt+actual_locker_num, stuDev_Param[0]->Address);
-		pos_cnt++;
-		temp++;
-	}
-	/////////////////  电源控制板配置结束	/////////////////////////////////////////////
-
-
 	//遥控设备结构体
 	stuRemote_Ctrl = (REMOTE_CONTROL*)malloc(sizeof(REMOTE_CONTROL));
 	
@@ -401,12 +366,12 @@ int main(void)
 		pCsshClient[i]->Start();
    	}
 
-	//初始化液晶屏
-	pCPanel =new tsPanel(pCabinetClient,&VMCtl_Config);	
-
 	//初始化Can
     pCOsCan =  new CANNode((char *)"can0",CAN_500K,0,0x000,0xF00,0);
 	pCOsCan->setCallback(canNodeCallback,NULL);
+
+	//初始化液晶屏
+	pCPanel =new tsPanel(pCabinetClient,&VMCtl_Config);	
 	
     //初始化利通控制器状态获取线程
     init_lt_status();

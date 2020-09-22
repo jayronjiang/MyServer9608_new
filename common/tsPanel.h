@@ -41,6 +41,7 @@ public:
 		SCREEN_SET_NUM
 	}SREEN_SET_LIST;
 
+#if 0
 	typedef struct
 	{
 	    char ip[20];
@@ -48,7 +49,7 @@ public:
 	    char gateway_addr[20];
 	    char dns[20];
 	}IPInfo;
-
+#endif
 public:
 	tsPanel(CabinetClient *pCab,VMCONTROL_CONFIG *pConfig);
 	~tsPanel(void);

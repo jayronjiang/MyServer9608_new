@@ -6,14 +6,14 @@ CXX = arm-none-linux-gnueabi-g++ -w
 CFLAGS        = -pipe -O2 -Wall -W -D_REENTRANT $(DEFINES)
 CXXFLAGS      = -pipe -O2 -Wall -W -D_REENTRANT $(DEFINES)
 
-INCPATH      =   -I ./common -I ./HttpServer/include
+INCPATH      =   -I ./common -I ./HttpServer/include  -I ./libiconv/include
 
 LINK          = arm-none-linux-gnueabi-g++
 
 LFLAGS        = -Wl,-O1 -Wl,-rpath,/home/ctools/arm-2011.03/arm-none-linux-gnueabi/lib
 
 LIBS          =  $(SUBLIBS)  ./alib/CsshClient.a \
-							 ./alib/tsPanel.a \
+								./alib/tsPanel.a \
 							 ./alib/comport.a \
 							 ./alib/CabinetClient.a \
 							 ./alib/CswitchClient.a \
@@ -32,6 +32,7 @@ LIBS          =  $(SUBLIBS)  ./alib/CsshClient.a \
 							 ./solib/libevent-2.1.so.6.0.4 \
 							 ./alib/canNode.a \
 							 ./alib/canport.a \
+							 ./libiconv/lib/*.a \
 							 -L./goahead/bin -lgo -ldl  -lrt -lpthread 
 
 TARGET        = tranter

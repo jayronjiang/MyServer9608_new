@@ -19,29 +19,37 @@
 #include <sstream>
 #include "global.h"
 #include "rs485server.h"
+#include "server.h"
+#include "canNode.h"
+
+
 
 extern CabinetClient *pCabinetClient;//华为机柜状态
 extern VMCONTROL_CONFIG VMCtl_Config;	//控制器配置信息结构体
 
+extern CANNode *pCOsCan;			//Can对象
+
+
 /************************ 涉及到全局变量的函数*****************************/
-// seq:DO序号, ipInfo:ip变量指针
-// 0x20
-void IPGetFromDevice(uint8_t seq,char *ip)
-{
-}
-
-
 // 取CAN控制板的电压值
 float voltTrueGetFromDev(uint8_t seq)
 {
-	return 220.11f;
+	CANNode *pCan=pCOsCan;
+	if (seq < PHASE_MAX_NUM)
+	{
+		return pCan->canNode[seq].phase.vln;
+	}
 }
 
 
 // 取CAN控制板的电压值
 float ampTrueGetFromDev(uint8_t seq)
 {
-	return 0.188f;
+	CANNode *pCan=pCOsCan;
+	if (seq < PHASE_MAX_NUM)
+	{
+		return pCan->canNode[seq].phase.amp;
+	}
 }
 
 
@@ -80,11 +88,23 @@ uint16_t linkStGetFromDevice(uint8_t seq)
 	return 1;
 }
 
+
 // 该设备离线还是在线?
 // 1：有电，2：没电
 uint16_t powerStGetFromDevice(uint8_t seq)
 {
-	return 1;
+	CANNode *pCan=pCOsCan;
+	if (seq < PHASE_MAX_NUM)
+	{
+		if(pCan->canNode[seq].phase.vln< POWER_DOWN_VALUE)
+		{
+			return 2;
+		}
+		else
+		{
+			return 1;
+		}
+	}
 }
 
 
@@ -104,7 +124,19 @@ uint8_t getBoxNum(void)
 // 从配置文件中读取CAN控制器版本号,只读地址为1的控制器
 string getCanVersion(uint8_t seq)
 {
-	return "V1.00.01";
+	string re_str = "NULL";
+	CANNode *pCan=pCOsCan;
+
+	// 任何一路有动力板，都取这路的版本号
+	for (int i=0;i < PHASE_MAX_NUM;i++)
+	{
+		if (pCan->canNode[i].phase.version != "")
+		{
+			re_str = pCan->canNode[i].phase.version;
+			break;
+		}
+	}
+	return re_str;
 }
 
 
@@ -116,6 +148,11 @@ string IPGetFromBox(uint8_t seq)
 	if (seq == 1)
 	{
 		serverip =  pConf->StrHWServer2;
+	}
+
+	if (serverip == "")
+	{
+		serverip = "未配置";
 	}
 
 	return serverip;
@@ -146,7 +183,7 @@ string linkStringGetFromBox(uint8_t seq)
 }
 
 
-void GetIPinfo(tsPanel::IPInfo *ipInfo)
+void GetIPinfo(IPInfo *ipInfo)
 {
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
 	sprintf(ipInfo->ip,pConf->StrIP.c_str());
@@ -156,7 +193,7 @@ void GetIPinfo(tsPanel::IPInfo *ipInfo)
 }
 
 
-void GetIPinfo2(tsPanel::IPInfo *ipInfo)
+void GetIPinfo2(IPInfo *ipInfo)
 {
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
     sprintf(ipInfo->ip,pConf->StrIP2.c_str());
@@ -274,7 +311,7 @@ void IPgetFromDevice(uint8_t seq,string& DeviceName, string& ip, string& port)
 		{
 			DeviceName = "监控防火墙";
 		}
-		ip = pConf->StrIPSwitchIP[num-1];	//防火墙IP地址
+		ip = pConf->StrFireWareIP[num-1];	//防火墙IP地址
 		port = "";						//port为空
 		DEBUG_PRINTF("fireware %s %s  %s\r\n",DeviceName.c_str(),ip.c_str(),port.c_str());
 	}
@@ -291,7 +328,7 @@ void IPgetFromDevice(uint8_t seq,string& DeviceName, string& ip, string& port)
 		{
 			DeviceName = "atlas(备)";
 		}
-		ip = pConf->StrIPSwitchIP[num-1];	//atlasIP地址
+		ip = pConf->StrAtlasIP[num-1];	//atlasIP地址
 		port = "";					//port为空
 		DEBUG_PRINTF("atlas %s %s  %s\r\n",DeviceName.c_str(),ip.c_str(),port.c_str());
 	}
@@ -303,13 +340,20 @@ void IPgetFromDevice(uint8_t seq,string& DeviceName, string& ip, string& port)
 		DEBUG_PRINTF("null %s %s  %s\r\n",DeviceName.c_str(),ip.c_str(),port.c_str());
 	}
 
-	// 后面加1个,与其它隔开
+	// 后面加1个",",与其它隔开
 	if (DeviceName != "无")
 	{
 		str_temp = ",";
 		DeviceName += str_temp;
-		ip += str_temp;
-		port += str_temp;
+		if (ip != "")
+		{
+			ip += str_temp;
+		}
+
+		if (port != "")
+		{
+			port += str_temp;
+		}
 	}
 	else
 	{
@@ -799,7 +843,7 @@ void initHUAWEIALARM(CabinetClient *pCab)
 //初始化防火墙结构体
 void initHUAWEIEntity(CfirewallClient *pfw)
 {
-	pfw->HUAWEIDevValue.hwEntityTimeStamp=GetTickCount();
+	pfw->HUAWEIDevValue.hwEntityTimeStamp=timestamp_get();
 	pfw->HUAWEIDevValue.hwEntityLinked=false;
 	//防火墙
 	pfw->HUAWEIDevValue.strhwEntityCpuUsage="2147483647";				//CPU 
@@ -812,7 +856,7 @@ void initHUAWEIEntity(CfirewallClient *pfw)
 //初始化交换机结构体
 void initHUAWEIswitchEntity(CswitchClient *psw)
 {
-	psw->HUAWEIDevValue.hwswitchEntityTimeStamp=GetTickCount();
+	psw->HUAWEIDevValue.hwswitchEntityTimeStamp=timestamp_get();
 	psw->HUAWEIDevValue.hwswitchEntityLinked=false;
 	//交换机
 	psw->HUAWEIDevValue.strhwswitchEntityCpuUsage="2147483647";			//CPU 
@@ -825,7 +869,7 @@ void initHUAWEIswitchEntity(CswitchClient *psw)
 void init_atlas_struct(CsshClient *pAtlas)
 {
 	//初始化
-	pAtlas->stuAtlasState.TimeStamp=GetTickCount();
+	pAtlas->stuAtlasState.TimeStamp=timestamp_get();
 	pAtlas->stuAtlasState.Linked=false;
 	
 	pAtlas->stuAtlasState.stratlasdata = "{\"isonline\":\"0\"}";//连接状态
@@ -881,15 +925,4 @@ void rs485init(void)
 			printf("Rs485_%d Init 初始化成功！%d\n",i+1,mComPort485[i]->fd);
 	}
 }*/
-
-void Init_CANNode(CANNode *pCan)
-{
-	//初始化Can
-	for(int i=0;i<PHASE_MAX_NUM;i++) //开关数量
-	{
-		pCan->canNode[i].phase.vln = 0;
-		pCan->canNode[i].phase.amp = 0;
-		pCan->canNode[i].isConnect = false;
-	}
-}
 

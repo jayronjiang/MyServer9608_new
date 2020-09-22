@@ -12,7 +12,8 @@
 
 
 // 字符串宏定义
-#define TO_STR(x) #x
-#define STR(x) TO_STR(x)
+
+#define STR(x) 		#x 
+#define TO_STR(x) STR(x)
 
 #endif

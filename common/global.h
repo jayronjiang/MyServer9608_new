@@ -6,16 +6,22 @@
 #include "CabinetClient.h"
 #include "CfirewallClient.h"
 #include "CswitchClient.h"
-#include "tsPanel.h"
 #include "ipcam.h"
 #include "CsshClient.h"
 #include "comport.h"
 #include "canNode.h"
+#include "server.h"
+
 
 using namespace std;//引入整个名空间
 
 #define LOCKER_CLOSED			0
 #define LOCKER_OPEN				1
+
+// 设备是否断电的阈值
+#define POWER_DOWN_VALUE		(24.0f)
+
+#define BOX_NULL_VALUE  2147483647
 
 void IPGetFromDevice(uint8_t seq,char *ip);
 
@@ -53,9 +59,9 @@ string IPGetFromBox(uint8_t seq);
 // 获取该机柜是离线还是在线?
 string linkStringGetFromBox(uint8_t seq);
 
-void GetIPinfo(tsPanel::IPInfo *ipInfo);
+void GetIPinfo(IPInfo *ipInfo);
 
-void GetIPinfo2(tsPanel::IPInfo *ipInfo);
+void GetIPinfo2(IPInfo *ipInfo);
 
 // 取8个字节的ID号
 unsigned long long IDgetFromConfig(void);
@@ -74,5 +80,4 @@ void initHUAWEIEntity(CfirewallClient *pfw);
 void initHUAWEIswitchEntity(CswitchClient *psw);
 void init_atlas_struct(CsshClient *pAtlas);
 
-void Init_CANNode(CANNode *pCan);
 #endif

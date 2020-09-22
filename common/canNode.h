@@ -130,6 +130,7 @@ private:
 	static void *NetCanNodeGetThread(void *arg);
 	static void *NetCanNodeSendThread(void *arg);
 
+	void CANDataInit(int seq);
 	void disconnctProcess(void);
 	void handle_err_frame(const struct can_frame *fr);
 	int DealCanData(can_frame *c_data);

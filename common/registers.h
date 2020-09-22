@@ -196,8 +196,6 @@ typedef unsigned long long  UINT64;
 #define	ACT_LOCK		1           //关锁
 #define	ACT_UNLOCK		2           //开锁
 
-#define BOX_NULL_VALUE  2147483647
-
 typedef enum BAUDRATE
 {
     BAUDRATE_1200      = 0,			//1200

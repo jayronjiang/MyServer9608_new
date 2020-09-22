@@ -31,7 +31,6 @@
 using namespace std;//寮??ユ?翠釜??绌洪??
 CMyCritical ConfigCri;
 
-DEVICE_PARAMS *stuDev_Param[POWER_BD_NUM];		//装置参数寄存器
 REMOTE_CONTROL *stuRemote_Ctrl;	//遥控寄存器结构体
 CabinetClient *pCabinetClient;//华为机柜状态
 VMCONTROL_STATE VMCtl_State;	//控制器运行状态结构体

@@ -4455,7 +4455,7 @@ bool jsonStrSwitchStatusWriter(int messagetype, string &mstrjson)
 	for(i=0;i<docount;i++) //开关数量
 	{
 		sprintf(str,"\"do%d_isconnect\":%d,\n",i+1,pCan->canNode[i].isConnect); strJson = strJson + str;//连接状态
-		if(pCan->canNode[i].phase.vln<24.0)
+		if(pCan->canNode[i].phase.vln<POWER_DOWN_VALUE)
 			sprintf(str,"\"do%d_status\":0,\n",i+1); //断电
 		else 
 			sprintf(str,"\"do%d_status\":1,\n",i+1); //通电
