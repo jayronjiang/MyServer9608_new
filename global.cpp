@@ -841,88 +841,6 @@ void init_atlas_struct(CsshClient *pAtlas)
     return ((ts.tv_sec * 1000 + ts.tv_nsec / 1000000) / 1000);
 }*/
 
-//  ----------------------------------------------------------------------------
-/// 通用函数，对GetTickCount再次封装.
-/// \return 32-bits timestamp.
-//  ----------------------------------------------------------------------------
-UINT32 timestamp_get(void)
-{
-    return GetTickCount();
-}
-
-
-//  ----------------------------------------------------------------------------
-/// \brief  得到时间间隔.
-//  ----------------------------------------------------------------------------
-UINT32 timestamp_delta(UINT32 const timestamp)
-{
-    UINT32 now = timestamp_get();
-    // The unsigned substraction takes care of one possible wrap-around, but no
-    // more.
-    return now - timestamp;
-}
-
-unsigned long GetMsTick() //返回m秒
-{ 
-	struct timespec ts; 
-
-	clock_gettime(CLOCK_MONOTONIC, &ts); 
-
-	return (ts.tv_sec * 1000 + ts.tv_nsec / 1000000); 
-}
-
-
-/**********依赖的通用运算函数************************************************/
-/******************************************************************************
-*  函数名: void char_to_long(INT8U* buffer,LONG32U* value)
-*
-*  描述: 字符转化为长整型
-*
-*
-*
-*  输入:
-*
-*  输出:
-*
-*  返回值:
-*
-*  其它:
-*******************************************************************************/
-void char_to_long(UINT8* buffer,UINT32* value)
-{
-	LONG_UNION long_value;
-	UINT8 i;
-
-	for(i=0;i<4;i++)
-	{
-		long_value.b[3 - i] = *(buffer + i);
-	}
-	*value = long_value.i;
-}
-
-/******************************************************************************
-*  函数名: void char_to_long(INT8U* buffer,LONG32U* value)
-*
-*  描述: 字符转化为整型
-*
-*
-*
-*  输入:
-*
-*  输出:
-*
-*  返回值:
-*
-*  其它:
-*******************************************************************************/
-void char_to_int(UINT8* buffer,UINT16* value)
-{
-	INTEGER_UNION int_value;
-
-	int_value.b[1] = *(buffer);
-	int_value.b[0] = *(buffer + 1);
-	*value = int_value.i;
-}
 
 /*void cominit(void)
 {
@@ -964,5 +882,14 @@ void rs485init(void)
 	}
 }*/
 
-
+void Init_CANNode(CANNode *pCan)
+{
+	//初始化Can
+	for(int i=0;i<PHASE_MAX_NUM;i++) //开关数量
+	{
+		pCan->canNode[i].phase.vln = 0;
+		pCan->canNode[i].phase.amp = 0;
+		pCan->canNode[i].isConnect = false;
+	}
+}
 

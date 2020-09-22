@@ -128,10 +128,9 @@ printf("jsonStrReader messagetype=%d\n",messagetype);
 			}
 			else if(opt==SFLAG_WRITE)
 			{
-				IPInfo ipinfo;
 				string iptmp,masktmp,gatewaytmp;
 				iptmp=pConf->StrIP;masktmp=pConf->StrMask;gatewaytmp=pConf->StrGateway;//保存原IP设置
-				jsonstrIpInfoReader(jsonstrin,lenin,(UINT8*)&ipinfo);//将json字符串转换成结构体
+				jsonstrIpInfoReader(jsonstrin,lenin);//将json字符串转换成结构体
 				SetjsonReceiveOKStr(messagetype,jsonstrout,lenout);
 				if(iptmp!=pConf->StrIP || masktmp!=pConf->StrMask || gatewaytmp!=pConf->StrGateway)	//IP设置更改
 					stuRemote_Ctrl->SysReset=SYSRESET; 	//等待重启
@@ -216,10 +215,9 @@ printf("jsonStrReader messagetype=%d\n",messagetype);
 			}
 			else if(opt==SFLAG_WRITE)
 			{
-				IPInfo ipinfo;
 				string iptmp,masktmp,gatewaytmp;
 				iptmp=pConf->StrIP2;masktmp=pConf->StrMask2;gatewaytmp=pConf->StrGateway2;//保存原IP设置
-				jsonstrIpInfoReader(jsonstrin,lenin,(UINT8*)&ipinfo);//将json字符串转换成结构体
+				jsonstrIpInfoReader(jsonstrin,lenin);//将json字符串转换成结构体
 				SetjsonReceiveOKStr(messagetype,jsonstrout,lenout);
 				if(iptmp!=pConf->StrIP2 || masktmp!=pConf->StrMask2 || gatewaytmp!=pConf->StrGateway2)	//IP设置更改
 					stuRemote_Ctrl->SysReset=SYSRESET; 	//等待重启
@@ -451,6 +449,8 @@ bool jsonstrRCtrlReader(char* jsonstr, int len, UINT8 *pstuRCtrl)
 
 bool jsonstrVmCtlParamReader(char* jsonstr, int len, UINT8 *pstPam)
 {
+	printf("%s \t\n",jsonstr);
+	
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
 	char key[50],value[128],devicename[50];
 	int valueint,arraysize;
@@ -460,8 +460,11 @@ bool jsonstrVmCtlParamReader(char* jsonstr, int len, UINT8 *pstPam)
 	char deal_do[SWITCH_COUNT];//处理do标记;
 	FDATA dummy;
 	//解析数据包
+printf("000000\t\n");
 	json = cJSON_Parse(jsonstr);
 	if(json==0) return false;
+printf("000111\t\n");
+	
 
 	//门架信息
 	jsonkey = cJSON_GetObjectItem(json, "cabinettype");
@@ -1191,7 +1194,7 @@ bool jsonstrVmCtlParamReader(char* jsonstr, int len, UINT8 *pstPam)
 	}	
 	//硬件ID
 	jsonkey = cJSON_GetObjectItem(json, "hardwareid");
-	if(jsonkey!=0)				
+	if(jsonkey!=0)						 
 	{
 		sprintf(value,"%s",jsonkey->valuestring);
 		if(value!=pConf->StrID)
@@ -3342,17 +3345,15 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
 	return true;
 }
 
-bool jsonstrIpInfoReader(char* jsonstr, int len, UINT8 *pstIPPam)
+bool jsonstrIpInfoReader(char* jsonstr, int len)
 {
-	//printf("%s \t\n",jsonstr);
+	printf("%s \t\n",jsonstr);
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
-	IPInfo *pIPInfo=(IPInfo *)pstIPPam;
 	char key[50],value[128];
 	cJSON *json=0, *jsonkey=0, *jsonvalue=0;
 	//解析数据包
 	json = cJSON_Parse(jsonstr);
 	if(json==0) return false;
-
 	jsonkey = cJSON_GetObjectItem(json,"ipaddr" );
 	if(jsonkey!=0)				
 	{
@@ -3360,7 +3361,6 @@ bool jsonstrIpInfoReader(char* jsonstr, int len, UINT8 *pstIPPam)
 		if(value!=pConf->StrIP && isIPAddressValid(value))
 		{
 			pConf->StrIP=value;
-			sprintf(pIPInfo->ip,"%s",value);//IP地址
 		}
 	}
 	jsonkey = cJSON_GetObjectItem(json,"mask" );
@@ -3370,7 +3370,6 @@ bool jsonstrIpInfoReader(char* jsonstr, int len, UINT8 *pstIPPam)
 		if(value!=pConf->StrMask && isIPAddressValid(value))
 		{
 			pConf->StrMask=value;
-			sprintf(pIPInfo->submask,"%s",value); //子网掩码
 		}
 	}
 	jsonkey = cJSON_GetObjectItem(json,"gateway" );
@@ -3380,7 +3379,6 @@ bool jsonstrIpInfoReader(char* jsonstr, int len, UINT8 *pstIPPam)
 		if(value!=pConf->StrGateway && isIPAddressValid(value))
 		{
 			pConf->StrGateway=value;
-			sprintf(pIPInfo->gateway_addr,"%s",value); //网关
 		}
 	}
 	jsonkey = cJSON_GetObjectItem(json,"dns" );
@@ -3390,7 +3388,6 @@ bool jsonstrIpInfoReader(char* jsonstr, int len, UINT8 *pstIPPam)
 		if(value!=pConf->StrDNS && isIPAddressValid(value))
 		{
 			pConf->StrDNS=value;
-			sprintf(pIPInfo->dns,"%s",value);//DNS地址
 		}
 	}
 	
@@ -3401,7 +3398,6 @@ bool jsonstrIpInfoReader(char* jsonstr, int len, UINT8 *pstIPPam)
 		if(value!=pConf->StrIP2 && isIPAddressValid(value))
 		{
 			pConf->StrIP2=value;
-			sprintf(pIPInfo->ip,value);//IP地址
 		}
 	}
 	jsonkey = cJSON_GetObjectItem(json,"mask2" );
@@ -3411,7 +3407,6 @@ bool jsonstrIpInfoReader(char* jsonstr, int len, UINT8 *pstIPPam)
 		if(value!=pConf->StrMask2 && isIPAddressValid(value))
 		{
 			pConf->StrMask2=value;
-			sprintf(pIPInfo->submask,"%s",value); //子网掩码
 		}
 	}
 	jsonkey = cJSON_GetObjectItem(json,"gateway2" );
@@ -3421,7 +3416,6 @@ bool jsonstrIpInfoReader(char* jsonstr, int len, UINT8 *pstIPPam)
 		if(value!=pConf->StrGateway2 && isIPAddressValid(value))
 		{
 			pConf->StrGateway2=value;
-			sprintf(pIPInfo->gateway_addr,"%s",value); //网关
 		}
 	}
 	jsonkey = cJSON_GetObjectItem(json,"dns2" );
@@ -3431,7 +3425,6 @@ bool jsonstrIpInfoReader(char* jsonstr, int len, UINT8 *pstIPPam)
 		if(value!=pConf->StrDNS2 && isIPAddressValid(value))
 		{
 			pConf->StrDNS2=value;
-			sprintf(pIPInfo->dns,"%s",value);//DNS地址
 		}
 	}
 	printf("\n");
@@ -3774,7 +3767,7 @@ bool jsonStrVMCtlParamWriterXY(int messagetype,char *pstrVMCtl, string &mstrjson
 	strJson = strJson + "\"vehplatecount\":\""+ pConf->StrVehPlateCount +"\",\n";	//识别仪数量
 	vehplatecnt=atoi(pConf->StrVehPlateCount.c_str());
 	strJson = strJson + "\"vehplatelist\": [\n";		//vehplate列表
-	for(i=0;i<vehplatecnt;i++)
+	for(i=0;i<VEHPLATE_NUM;i++)
 	{
 		strJson +=	"{\n";
 		sprintf(str,"\"name\":\"vehplate%d\",\n",i+1); strJson = strJson + str;//名称
@@ -3788,7 +3781,7 @@ bool jsonStrVMCtlParamWriterXY(int messagetype,char *pstrVMCtl, string &mstrjson
 		}
 		sprintf(str,"\"port\":\"%s\",\n",pConf->StrVehPlatePort[i].c_str()); strJson = strJson + str;//识别仪端口
 		sprintf(str,"\"key\":\"%s\"\n",pConf->StrVehPlateKey[i].c_str()); strJson = strJson + str;//识别仪用户名密码
-		if(i<vehplatecnt-1)
+		if(i<VEHPLATE_NUM-1)
 			strJson +=	"},\n";
 		else
 			strJson +=	"}\n";
@@ -3798,7 +3791,7 @@ bool jsonStrVMCtlParamWriterXY(int messagetype,char *pstrVMCtl, string &mstrjson
 	strJson = strJson + "\"vehplate900count\":\""+ pConf->StrVehPlate900Count +"\",\n";	//900识别仪数量
 	vehplate900cnt=atoi(pConf->StrVehPlate900Count.c_str());
 	strJson = strJson + "\"vehplate900list\": [\n";		//vehplate900列表
-	for(i=0;i<vehplate900cnt;i++)
+	for(i=0;i<VEHPLATE900_NUM;i++)
 	{
 		strJson +=	"{\n";
 		sprintf(str,"\"name\":\"vehplate900%d\",\n",i+1); strJson = strJson + str;//名称
@@ -3812,7 +3805,7 @@ bool jsonStrVMCtlParamWriterXY(int messagetype,char *pstrVMCtl, string &mstrjson
 		}
 		sprintf(str,"\"port\":\"%s\",\n",pConf->StrVehPlate900Port[i].c_str()); strJson = strJson + str;//900识别仪端口
 		sprintf(str,"\"key\":\"%s\"\n",pConf->StrVehPlate900Key[i].c_str()); strJson = strJson + str;//900识别仪用户名密码
-		if(i<vehplate900cnt-1)
+		if(i<VEHPLATE900_NUM-1)
 			strJson +=	"},\n";
 		else
 			strJson +=	"}\n";
@@ -3821,14 +3814,14 @@ bool jsonStrVMCtlParamWriterXY(int messagetype,char *pstrVMCtl, string &mstrjson
 	
 	strJson = strJson + "\"camcount\":\""+ pConf->StrCAMCount +"\",\n";	//监控摄像头数量
 	strJson = strJson + "\"camlist\": [\n";		//cam列表
-	for(i=0;i<atoi(pConf->StrCAMCount.c_str());i++)
+	for(i=0;i<CAM_NUM;i++)
 	{
 		strJson +=	"{\n";
 		sprintf(str,"\"name\":\"cam%d\",\n",i+1); strJson = strJson + str;//名称
 		sprintf(str,"\"ip\":\"%s\",\n",pConf->StrCAMIP[i].c_str());strJson = strJson + str;//监控摄像头IP地址
 		sprintf(str,"\"port\":\"%s\",\n",pConf->StrCAMPort[i].c_str()); strJson = strJson + str;//监控摄像头端口
 		sprintf(str,"\"key\":\"%s\"\n",pConf->StrCAMKey[i].c_str()); strJson = strJson + str;//监控摄像头用户名密码
-		if(i<atoi(pConf->StrCAMCount.c_str())-1)
+		if(i<CAM_NUM-1)
 			strJson +=	"},\n";
 		else
 			strJson +=	"}\n";
@@ -4461,19 +4454,20 @@ bool jsonStrSwitchStatusWriter(int messagetype, string &mstrjson)
 	docount=atoi(pConf->StrDoCount.c_str());
 	for(i=0;i<docount;i++) //开关数量
 	{
-		if(pCan->canNode[i].phase.vln/100.0<24.0)
+		sprintf(str,"\"do%d_isconnect\":%d,\n",i+1,pCan->canNode[i].isConnect); strJson = strJson + str;//连接状态
+		if(pCan->canNode[i].phase.vln<24.0)
 			sprintf(str,"\"do%d_status\":0,\n",i+1); //断电
 		else 
 			sprintf(str,"\"do%d_status\":1,\n",i+1); //通电
 		strJson = strJson + str;
-		sprintf(str,"\"do%d_vol\":%.3f,\n",i+1,pCan->canNode[i].phase.vln/100.0); strJson = strJson + str;//电压
+		sprintf(str,"\"do%d_vol\":%.3f,\n",i+1,pCan->canNode[i].phase.vln); strJson = strJson + str;//电压
 		if(i==docount-1)
 		{
-			sprintf(str,"\"do%d_amp\":%.3f\n",i+1,pCan->canNode[i].phase.amp/1000.0); strJson = strJson + str;//电流
+			sprintf(str,"\"do%d_amp\":%.3f\n",i+1,pCan->canNode[i].phase.amp); strJson = strJson + str;//电流
 		}
 		else
 		{
-			sprintf(str,"\"do%d_amp\":%.3f,\n",i+1,pCan->canNode[i].phase.amp/1000.0); strJson = strJson + str;//电流
+			sprintf(str,"\"do%d_amp\":%.3f,\n",i+1,pCan->canNode[i].phase.amp); strJson = strJson + str;//电流
 		}
 	}
 
@@ -4525,13 +4519,13 @@ bool jsonStrSwitchStatusWriterXY(int messagetype, string &mstrjson)
 				break;
 		}
 		strJson = strJson + "\"name\": \"" + pConf->StrDeviceNameSeq[j] + "\",\n";	//设备名称
-		if(pCan->canNode[i].phase.vln/100.0<24.0)
+		if(pCan->canNode[i].phase.vln<24.0)
 			sprintf(str,"\"status\":0,\n"); //断电
 		else 
 			sprintf(str,"\"status\":1,\n"); //通电
 		strJson = strJson + str;
-		sprintf(str,"\"volt\":%.3f,\n",pCan->canNode[i].phase.vln/100.0); strJson = strJson + str;//电压
-		sprintf(str,"\"amp\":%.3f\n",pCan->canNode[i].phase.amp/1000.0); strJson = strJson + str;//电流
+		sprintf(str,"\"volt\":%.3f,\n",pCan->canNode[i].phase.vln); strJson = strJson + str;//电压
+		sprintf(str,"\"amp\":%.3f\n",pCan->canNode[i].phase.amp); strJson = strJson + str;//电流
 		if(i==docount-1)
 			strJson = strJson + "}\n";
 		else

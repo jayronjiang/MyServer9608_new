@@ -15,6 +15,8 @@
 #include <pthread.h>
 #include <string>
 #include "main.h"
+#include "tsPanel.h"
+
 
 #define WDT "/dev/watchdog"
 

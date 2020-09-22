@@ -133,8 +133,8 @@ typedef unsigned long long  UINT64;
 #define POWER_BD_NUM			3
 //最大支持36路开关数量
 #define SWITCH_COUNT	36			
-//最大支持12路无接线设备数量
-#define UNWIRE_SWITCH_COUNT	12			
+//最大支持16路无接线设备数量
+#define UNWIRE_SWITCH_COUNT	16			
 //最大支持4路232串口
 #define RS232_NUM			4
 //最大支持4路485串口
@@ -197,9 +197,6 @@ typedef unsigned long long  UINT64;
 #define	ACT_UNLOCK		2           //开锁
 
 #define BOX_NULL_VALUE  2147483647
-
-//#pragma pack(push, 1)
-
 
 typedef enum BAUDRATE
 {
@@ -453,8 +450,6 @@ typedef struct Remote_Control_struct	//
 	UINT16 spdres_id;				// 更改id地址	// 0x12
 	UINT16 spdres_alarm_value;		// 报警值修改	// 0x13
 }REMOTE_CONTROL;
-
-//#pragma pack(pop)
 
 /*寄存器操作*/
 UINT8 Read_Register(UINT16 nStartRegNo, UINT16 nRegNum, UINT8 *pdatabuf, UINT8 *perr);

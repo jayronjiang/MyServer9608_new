@@ -71,6 +71,7 @@ extern int WriteZipdata(unsigned char *pDateBuf,int pDateLen);
 extern REMOTE_CONTROL *stuRemote_Ctrl;	//遥控寄存器结构体
 extern CabinetClient *pCabinetClient;//华为机柜状态
 extern VMCONTROL_CONFIG VMCtl_Config;	//控制器配置信息结构体
+extern CANNode *pCOsCan;		//Can对象
 
 extern string zteLockDevID[4];
 extern int openatslock(void);
@@ -90,6 +91,44 @@ extern pthread_mutex_t httprebootMutex ;
 extern int WDTfd ;
 extern int HttpReboot;
 
+
+void SetIPinfo()
+{
+	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
+	
+    string strwrconfig = "IP=" + pConf->StrIP + "\n" + "Mask=" + pConf->StrMask + "\n" + "Gateway=" + pConf->StrGateway + "\n" + "DNS=" + pConf->StrDNS + "\n" ;
+    WriteNetconfig((char *)(strwrconfig.c_str()),strwrconfig.length());
+
+
+}
+
+void SetIPinfo2()
+{
+	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
+	
+    string strwrconfig = "IP=" + pConf->StrIP2 + "\n" + "Mask=" + pConf->StrMask2 + "\n" + "Gateway=" + pConf->StrGateway2 + "\n" + "DNS=" + pConf->StrDNS2 + "\n" ;
+    WriteNetconfig2((char *)(strwrconfig.c_str()),strwrconfig.length());
+}
+
+void GetIPinfo(IPInfo *ipInfo)
+{
+	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
+	
+	sprintf(ipInfo->ip,pConf->StrIP.c_str());
+	sprintf(ipInfo->submask ,pConf->StrMask.c_str());
+	sprintf(ipInfo->gateway_addr,pConf->StrGateway.c_str());
+	sprintf(ipInfo->dns ,pConf->StrDNS.c_str());
+}
+
+void GetIPinfo2(IPInfo *ipInfo)
+{
+	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
+	
+    sprintf(ipInfo->ip,pConf->StrIP2.c_str());
+    sprintf(ipInfo->submask ,pConf->StrMask2.c_str());
+    sprintf(ipInfo->gateway_addr,pConf->StrGateway2.c_str());
+    sprintf(ipInfo->dns ,pConf->StrDNS2.c_str());
+}
 
 void init_TCPServer()
 {
@@ -351,7 +390,6 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 	NETCMD_HEADER *pCMD = (NETCMD_HEADER *) cmdbuffer;
 
 	SocketPara *socketpara = (SocketPara *) arg;
-	IPInfo ipinfo;
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
 	string mstrdata;
 	//SYSTEMTIME system_time;
@@ -413,7 +451,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 			system("echo b > /proc/sysrq-trigger") ;
 			break;
 
-		case NETCMD_CONFIG_NETWORK:		//5 读取/设置网口1
+		case NETCMD_CONFIG_NETWORK: 	//5 读取/设置网口1
 			if(pCMD->status==SFLAG_READ)
 			{
 				//printf("Get IP1 Addr\n");
@@ -427,14 +465,15 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 				string iptmp,masktmp,gatewaytmp;
 				iptmp=pConf->StrIP;masktmp=pConf->StrMask;gatewaytmp=pConf->StrGateway;//保存原IP设置
 				mstrdata=pCMD->data;
-				jsonstrIpInfoReader((char*)mstrdata.c_str(),mstrdata.size(),(UINT8*)&ipinfo);//将json字符串转换成结构体*/
+				jsonstrIpInfoReader((char*)mstrdata.c_str(),mstrdata.size());//将json字符串转换成结构体*/
+				SetIPinfo();
 				sprintf(pCMD->data,"执行命令->执行成功!\n");
 				pCMD->datalen = strlen(pCMD->data);
 				if(iptmp!=pConf->StrIP || masktmp!=pConf->StrMask || gatewaytmp!=pConf->StrGateway)	//IP设置更改
-					stuRemote_Ctrl->SysReset=SYSRESET; 	//等待重启
+					stuRemote_Ctrl->SysReset=SYSRESET;	//等待重启
 			}
 			break;
-		case NETCMD_CONFIG_NETWORK2: 	//25 读取/设置网口2
+		case NETCMD_CONFIG_NETWORK2:	//25 读取/设置网口2
 			if(pCMD->status==SFLAG_READ)
 			{
 				//printf("Get IP2 Addr\n");
@@ -448,7 +487,8 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 				string iptmp,masktmp,gatewaytmp;
 				iptmp=pConf->StrIP2;masktmp=pConf->StrMask2;gatewaytmp=pConf->StrGateway2;//保存原IP设置
 				mstrdata=pCMD->data;
-				jsonstrIpInfoReader((char*)mstrdata.c_str(),mstrdata.size(),(UINT8*)&ipinfo);//将json字符串转换成结构体
+				jsonstrIpInfoReader((char*)mstrdata.c_str(),mstrdata.size());//将json字符串转换成结构体
+				SetIPinfo2();
 				sprintf(pCMD->data,"执行命令->执行成功!\n");
 				pCMD->datalen = strlen(pCMD->data);
 				if(iptmp!=pConf->StrIP2 || masktmp!=pConf->StrMask2 || gatewaytmp!=pConf->StrGateway2)	//IP设置更改
@@ -656,7 +696,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		case NETCMD_TEST_232_1: 		//101 测试232-1
 			if(pCMD->status==SFLAG_WRITE)
 			{
-				testFlag |= LBIT(RS232_2T);
+				testFlag |= LBIT(RS232_1T);
 				printf("232-1_TEST_BEGIN\n");
 				//SendCom3Test(pCMD->data,pCMD->datalen);
 				//printf("NETCMD_TEST_485 %s\n",pCMD->data);
@@ -667,14 +707,57 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		case NETCMD_TEST_232_2: 		//101 测试232-1
 			if(pCMD->status==SFLAG_WRITE)
 			{
-				testFlag |= LBIT(RS232_1T);
+				testFlag |= LBIT(RS232_2T);
 				printf("232-2_TEST_BEGIN\n");
 				//SendCom3Test(pCMD->data,pCMD->datalen);
 				//printf("NETCMD_TEST_485 %s\n",pCMD->data);
 				sprintf(pCMD->data,"执行命令->执行成功!\n");
 				pCMD->datalen = strlen(pCMD->data);
 			}
-			break;*/
+			break;
+		case NETCMD_TEST_232_3: 		//101 测试232-1
+			if(pCMD->status==SFLAG_WRITE)
+			{
+				testFlag |= LBIT(RS232_3T);
+				printf("232-3_TEST_BEGIN\n");
+				//SendCom3Test(pCMD->data,pCMD->datalen);
+				//printf("NETCMD_TEST_485 %s\n",pCMD->data);
+				sprintf(pCMD->data,"执行命令->执行成功!\n");
+				pCMD->datalen = strlen(pCMD->data);
+			}
+			break;
+		case NETCMD_TEST_232_4: 		//101 测试232-1
+			if(pCMD->status==SFLAG_WRITE)
+			{
+				testFlag |= LBIT(RS232_4T);
+				printf("232-4_TEST_BEGIN\n");
+				//SendCom3Test(pCMD->data,pCMD->datalen);
+				//printf("NETCMD_TEST_485 %s\n",pCMD->data);
+				sprintf(pCMD->data,"执行命令->执行成功!\n");
+				pCMD->datalen = strlen(pCMD->data);
+			}
+			break;
+		case NETCMD_TEST_CAN:			//100 测试485
+			if(pCMD->status==SFLAG_WRITE)
+			{
+				testFlag |= LBIT(CAN_1_T);
+				//SendCom3Test(pCMD->data,pCMD->datalen);
+				printf("CAN_TEST_BEGIN\n");
+				sprintf(pCMD->data,"执行命令->执行成功!\n");
+				pCMD->datalen = strlen(pCMD->data);
+			}
+			break;
+		case NETCMD_TEST_GPIO:			//106 测试GPIO
+			if(pCMD->status==SFLAG_WRITE)
+			{
+				testFlag |= LBIT(GPIO_T);
+				//SendCom3Test(pCMD->data,pCMD->datalen);
+				printf("GPIO_TEST_BEGIN\n");
+				sprintf(pCMD->data,"执行命令->执行成功!\n");
+				pCMD->datalen = strlen(pCMD->data);
+			}
+			break;
+		*/
 		default:
 			break;
 
@@ -772,80 +855,64 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 
  int Net_close()
  {
-	 int i;
-	 fd_set fdsr;
+	int i;
+	fd_set fdsr;
 
-	 for (i = 0; i < BACKLOG; i++) {
-		 if (fd_A[i] != 0)
-		 {
-			 close(fd_A[i]);
-			 FD_CLR(fd_A[i], &fdsr);
-			 fd_A[i] = 0;
-		 }
-	 }
-	 return 0;
+	for (i = 0; i < BACKLOG; i++) 
+	{
+		if (fd_A[i] != 0)
+		{
+			close(fd_A[i]);
+			FD_CLR(fd_A[i], &fdsr);
+			fd_A[i] = 0;
+		}
+	}
+	return 0;
  }
 
  void RemoteControl(UINT8* pRCtrl)
  {
-	  int i,j;
-	  REMOTE_CONTROL *pstuRCtrl=(REMOTE_CONTROL *)pRCtrl;
-	  THUAWEIGantry *pHWDev=&pCabinetClient->HUAWEIDevValue;//华为机柜状态
-	  int seq = 0;
-	  UINT16 seq_temp = 0;
-	  char value[10];
-//	  FDATA dummy;
-	  UINT8 temp = 0;
-	  UINT8 byteSend[BASE64_HEX_LEN]={0x00,};
-	  string mStrUser = "admin";
-	  string mStrkey = "admin";
-printf("000\n");
-#if 0	  
-	   for (i = 0; i < SWITCH_COUNT; i++)
-	   {
-  //	   printf("do_seqx=0x%02x\r\n",pstuRCtrl->doseq[i]);
-		   if(pstuRCtrl->doseq[i]==ACT_CLOSE)		   //do分闸
-		   {
-			   seq_temp = DoSeq[i];
-			   printf("DoSeq=0x%02x\r\n",DoSeq[i]);
-			   //如果未被配置,则不控制
-			   if (seq_temp != NULL_VAR)
-			   {
-				   seq_temp = i%SINGLE_REMOTE_NUM;
-				   seq = i/SINGLE_REMOTE_NUM;
-				   printf("seq_temp0x%02x=0x%02x,seq=%d\r\n",i,seq_temp,seq);
-				   power_ctrl_flag[seq] |= LBIT(POWER_1_CTRL_CLOSE+2*seq_temp);
-				   // 不能同时置位2同样的位，同时要开或者关
-				   power_ctrl_flag[seq] &= ~(LBIT(POWER_1_CTRL_OPEN+2*seq_temp));
-				   printf("power_ctrl_flagseq=0x%04x\r\n",power_ctrl_flag[seq]);
-			   }
-		   }
-		   if(pstuRCtrl->doseq[i]==ACT_OPEN)		   //DO合闸
-		   {
-			   seq_temp = DoSeq[i];
-			   printf("DoSeq=0x%02x\r\n",DoSeq[i]);
-			   //如果未被配置,则不控制
-			   if (seq_temp != NULL_VAR)
-			   {
-				   seq_temp = i%SINGLE_REMOTE_NUM;
-				   seq = i/SINGLE_REMOTE_NUM;
-				   printf("seq_temp0x%02x=0x%02x,seq=%d\r\n",i,seq_temp,seq);
-				   power_ctrl_flag[seq] |= LBIT(POWER_1_CTRL_OPEN+2*seq_temp);
-				   power_ctrl_flag[seq] &= ~(LBIT(POWER_1_CTRL_CLOSE+2*seq_temp));
-				   printf("power_ctrl_flagseq=0x%04x\r\n",power_ctrl_flag[seq]);
-			   }
-		   }
-	   }
-#endif
-	  string strtmp=pstuRCtrl->systemtime;
-	  if(strtmp!="")					  //设置日期时间
-	  {
-	  	  string strcmd;
-		  strcmd="date -s \""+strtmp+"\"\n";
-		  printf("setSystemTimer %s",strcmd.c_str());		//IoT 9100
-		  system(strcmd.c_str());	  //设置日期时间
-		  system("hwclock -w"); 	  //写入硬时钟
-	  }
+	int i,j;
+	VMCONTROL_CONFIG *pConf=&VMCtl_Config;  //控制器配置信息结构体
+	REMOTE_CONTROL *pstuRCtrl=(REMOTE_CONTROL *)pRCtrl;
+	THUAWEIGantry *pHWDev=&pCabinetClient->HUAWEIDevValue;//华为机柜状态
+	CANNode *pCan=pCOsCan;								//Can对象
+
+	int seq = 0;
+	UINT16 seq_temp = 0;
+	char value[10];
+	//	  FDATA dummy;
+	UINT8 temp = 0;
+	UINT8 byteSend[BASE64_HEX_LEN]={0x00,};
+	string mStrUser = "admin";
+	string mStrkey = "admin";
+	  
+	for (i = 0; i < SWITCH_COUNT; i++)
+	{
+		printf("i=%d do_seqx=0x%02x\r\n",i,pstuRCtrl->doseq[i]);
+		if(pstuRCtrl->doseq[i]==ACT_CLOSE)		   //do分闸
+		{
+			pCan->can_control_flag |= LBIT(2*i);
+			pCan->can_control_flag &= ~(LBIT(2*i+1));
+			printf("第%d 路分闸\r\n",i+1);
+		}
+		if(pstuRCtrl->doseq[i]==ACT_OPEN)		   //DO合闸
+		{
+			pCan->can_control_flag &= ~(LBIT(2*i));
+			pCan->can_control_flag |= LBIT(2*i+1);
+			printf("第%d 路合闸\r\n",i+1);
+		}
+	}
+
+	string strtmp=pstuRCtrl->systemtime;
+	if(strtmp!="")					  //设置日期时间
+	{
+		string strcmd;
+		strcmd="date -s \""+strtmp+"\"\n";
+		printf("setSystemTimer %s",strcmd.c_str());		//IoT 9100
+		system(strcmd.c_str());	  //设置日期时间
+		system("hwclock -w"); 	  //写入硬时钟
+	}
 #if 0	  
 	 if(pstuRCtrl->FrontDoorCtrl==ACT_UNLOCK)					 //开锁
 	 {

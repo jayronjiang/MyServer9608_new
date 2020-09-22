@@ -6,7 +6,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include "MyCritical.h"
-#include "global.h"
+
 
 /*结构联合声明短整型*/
 typedef union int_union
@@ -39,8 +39,12 @@ void CalulateCRCbySoft(unsigned char *pucData,unsigned char wLength,unsigned cha
 unsigned char CRC_sum(unsigned char *puchMsg , unsigned short usDataLen);
 int GbkToUtf8(char *str_str, size_t src_len, char *dst_str, size_t dst_len);
 int Utf8ToGbk(char *src_str, size_t src_len, char *dst_str, size_t dst_len);
-UINT32 timestamp_get(void);
-UINT32 timestamp_delta(UINT32 const timestamp);
+uint32_t timestamp_get(void);
+uint32_t timestamp_delta(uint32_t const timestamp);
+uint32_t GetSecondCount(void);
+unsigned long GetMsTick(); //返回m秒
+void char_to_long(uint8_t* buffer,uint32_t* value);
+void char_to_int(uint8_t* buffer,uint16_t* value);
 
 
 #endif

@@ -79,7 +79,7 @@ public:
 	{
 		uint16_t address;
 		VA_PROTOCOL_PARAMS phase;
-		uint64_t TimeStamp;		//获取时间戳
+		uint32_t TimeStamp;		//获取时间戳
 		bool isConnect;
 	}VA_METER_PARAMS;
 
@@ -123,7 +123,7 @@ private:
 	void *userdata;
 
 	// 这些参数构造函数要初始化
-	uint64_t timestamp[PHASE_MAX_NUM];
+	//uint32_t timestamp[PHASE_MAX_NUM];
 	CMyCritical ComCri;
 
 private:

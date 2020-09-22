@@ -3,7 +3,7 @@
 
 #include "registers.h"
 
-#define BIT(i)	(1<<(i))	// 32位平台32位?
+//#define BIT(i)	(1<<(i))	// 32位平台32位?
 
 
 #define TYPE_LEIXUN		1

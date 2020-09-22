@@ -10,6 +10,7 @@
 #include "ipcam.h"
 #include "CsshClient.h"
 #include "comport.h"
+#include "canNode.h"
 
 using namespace std;//引入整个名空间
 
@@ -66,13 +67,6 @@ void VAgetFromDevice(uint8_t seq, string& volt, string& amp);
 
 uint16_t DoorStatusFromLocker(void);
 extern unsigned long GetTickCount(); //返回秒
-//uint32_t GetTickCount32(void);
-UINT32 timestamp_get(void);
-UINT32 timestamp_delta(UINT32 const timestamp);
-unsigned long GetMsTick(); //返回m秒
-
-void char_to_long(UINT8* buffer,UINT32* value);
-void char_to_int(UINT8* buffer,UINT16* value);
 
 void initHUAWEIGantry(CabinetClient *pCab);
 void initHUAWEIALARM(CabinetClient *pCab);
@@ -80,5 +74,5 @@ void initHUAWEIEntity(CfirewallClient *pfw);
 void initHUAWEIswitchEntity(CswitchClient *psw);
 void init_atlas_struct(CsshClient *pAtlas);
 
-
+void Init_CANNode(CANNode *pCan);
 #endif

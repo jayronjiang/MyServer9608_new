@@ -4,8 +4,8 @@
 #include "modbus.h"
 #include "registers.h"
 
-#define LBIT(i)	(1UL<<(i))	// 要注意32位平台LONG也是32位
-#define BITS_MSK_GET(bitsoff, bits) (((0x01UL<<(bits))-1) <<(bitsoff)) // 获取从bitsoff 开始共bits位全1掩码
+//#define LBIT(i)	(1UL<<(i))	// 要注意32位平台LONG也是32位
+//#define BITS_MSK_GET(bitsoff, bits) (((0x01UL<<(bits))-1) <<(bitsoff)) // 获取从bitsoff 开始共bits位全1掩码
 #define NULL_VAR	0xFF	// 定义0xFF为不相关的值, 不适用NULL是因为NULL默认是0，0是我们需要的
 
 /*最大支持数目,实际以配置文件为准*/

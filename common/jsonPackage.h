@@ -23,7 +23,7 @@
 
 bool SetjsonAuthorityStr(int messagetype,char *json, int *len);//0 登录控制器
 void SetjsonIPStr(int messagetype,string &mstrjson);//5 读取/设置网口1
-bool jsonstrIpInfoReader(char* jsonstr, int len, UINT8 *pstIPPam);//8 IP地址
+bool jsonstrIpInfoReader(char* jsonstr, int len);//8 IP地址
 //bool jsonStrSpdWriter(int messagetype,char *pstrUpsPam, char *json, int *len);//11 防雷器寄存器参数
 bool jsonStrVMCtlParamWriter(int messagetype,char *pstrDevInfo, string &mstrjson);//12 控制器参数->JSON字符串
 bool jsonStrVMCtlParamWriterXY(int messagetype,char *pstrVMCtl, string &mstrjson);//12 控制器参数->JSON字符串(新粤)
