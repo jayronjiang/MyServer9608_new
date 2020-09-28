@@ -6,12 +6,14 @@
 #include "CabinetClient.h"
 #include "CfirewallClient.h"
 #include "CswitchClient.h"
+#include "tsPanel.h"
 #include "ipcam.h"
 #include "CsshClient.h"
 #include "comport.h"
 #include "canNode.h"
 #include "server.h"
-
+#include "SpdClient.h"
+#include "rsu.h"
 
 using namespace std;//引入整个名空间
 
@@ -74,10 +76,17 @@ void VAgetFromDevice(uint8_t seq, string& volt, string& amp);
 uint16_t DoorStatusFromLocker(void);
 extern unsigned long GetTickCount(); //返回秒
 
+
+
 void initHUAWEIGantry(CabinetClient *pCab);
 void initHUAWEIALARM(CabinetClient *pCab);
 void initHUAWEIEntity(CfirewallClient *pfw);
 void initHUAWEIswitchEntity(CswitchClient *psw);
 void init_atlas_struct(CsshClient *pAtlas);
+void Init_CANNode(CANNode *pCan);
+void init_SPD(SpdClient *pSpd, VMCONTROL_CONFIG *pConf);//初始化SPD
+void Init_DO(VMCONTROL_CONFIG *pConf);
+int TrapCallBack(string Stroid,int AlarmID,int mgetIndex,unsigned int mRetID);
+
 
 #endif

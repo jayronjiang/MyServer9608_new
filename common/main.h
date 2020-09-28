@@ -17,15 +17,14 @@
 #include "webserver.h"
 #include "websocket.h"
 #include "lt_state_thread.h"
-#include "net_spd.h"
 #include "global.h"
 #include "tsPanel.h"
 #include "CsshClient.h"
 #include "HttpServer.h"
-#include "net_spd.h"
 #include "canNode.h"
 #include "canport.h"
 #include "debug.h"
+#include "SpdClient.h"
 
 using namespace std; 
 

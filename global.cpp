@@ -18,17 +18,16 @@
 #include <cstring>
 #include <sstream>
 #include "global.h"
-#include "rs485server.h"
-#include "server.h"
-#include "canNode.h"
 
-
-
-extern CabinetClient *pCabinetClient;//华为机柜状态
+extern CabinetClient *pCabinetClient[HWSERVER_NUM];//华为机柜状态
 extern VMCONTROL_CONFIG VMCtl_Config;	//控制器配置信息结构体
-
-extern CANNode *pCOsCan;			//Can对象
-
+extern CANNode *pCOsCan;		//Can对象
+extern CfirewallClient *pCfirewallClient[FIREWARE_NUM];
+extern CswitchClient *pCswitchClient[IPSWITCH_NUM];
+extern RSU *pCRSU[RSUCTL_NUM];;
+extern IPCam *pCVehplate[VEHPLATE_NUM];
+extern IPCam *pCVehplate900[VEHPLATE900_NUM];
+extern CsshClient *pCsshClient[ATLAS_NUM];			//ATLAS对象
 
 /************************ 涉及到全局变量的函数*****************************/
 // 取CAN控制板的电压值
@@ -55,19 +54,16 @@ float ampTrueGetFromDev(uint8_t seq)
 
 
 
-// 该机柜还是在线?
+// 该机柜还是在线? 返回：1：在线；2：离线
 // seq: 0:设备柜
 // 		1:电池柜
 uint16_t linkStGetFrombox(uint8_t seq)
 {
-	CabinetClient *pCab=pCabinetClient;//华为机柜状态
+	CabinetClient *pCab=pCabinetClient[seq];//华为机柜状态
+	if(pCab==NULL) return 2;
+	
 	uint16_t re_val = 0;
 	bool hwBox = pCab->HUAWEIDevValue.hwLinked;
-
-/*	if (seq == 1)
-	{
-		hwBox = pCab->HUAWEIDevValue.hwLinked2;
-	}*/
 
 	if (hwBox)
 	{
@@ -82,10 +78,102 @@ uint16_t linkStGetFrombox(uint8_t seq)
 
 
 // 该设备离线还是在线?
-// 1：在线，2：离线
+// 返回：1：在线，2：离线
 uint16_t linkStGetFromDevice(uint8_t seq)
 {
-	return 1;
+	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
+	int _pos=0,num=0;
+	uint16_t linkSt;
+	IPCam::State_S State;
+	
+	string strDeviceName = pConf->StrDeviceNameSeq[seq];
+	if(strDeviceName.find("rsu")==0)
+	{
+		_pos=strDeviceName.find("_");
+		
+		num=atoi(strDeviceName.substr(3,_pos-3).c_str());
+
+		linkSt=pCRSU[num-1]->controler.linked;
+		if(linkSt==0)		//离线代码转换
+		{
+			linkSt=2;
+		}
+		DEBUG_PRINTF("rsu %s %d\r\n",strDeviceName.c_str(),linkSt);
+	}
+	else if(strDeviceName.find("vehplate900")==0)
+	{
+		_pos=strDeviceName.find("_");
+		
+		num=atoi(strDeviceName.substr(11,_pos-11).c_str());
+		State = pCVehplate900[num-1]->getState();
+		if(State.linked==0)		//离线代码转换
+		{
+			linkSt=2;
+		}
+		DEBUG_PRINTF("vehplate900 %s %d\r\n",strDeviceName.c_str(),linkSt);
+	}
+	else if(strDeviceName.find("vehplate")==0)
+	{
+		_pos=strDeviceName.find("_");
+		
+		num=atoi(strDeviceName.substr(8,_pos-8).c_str());
+		State = pCVehplate[num-1]->getState();
+		if(State.linked==0)		//离线代码转换
+		{
+			linkSt=2;
+		}
+		DEBUG_PRINTF("vehplate %s %d\r\n",strDeviceName.c_str(),linkSt);
+	}
+	else if(strDeviceName.find("cam")==0)
+	{
+		_pos=strDeviceName.find("_");
+		
+		num=atoi(strDeviceName.substr(3,_pos-3).c_str());
+		linkSt=2;
+		DEBUG_PRINTF("cam %s %d\r\n",strDeviceName.c_str(),linkSt);
+	}
+	else if(strDeviceName.find("ipswitch")==0)
+	{
+		_pos=strDeviceName.find("_");
+		
+		num=atoi(strDeviceName.substr(8,_pos-8).c_str());
+		linkSt=pCswitchClient[num-1]->HUAWEIDevValue.hwswitchEntityLinked;
+		if(linkSt==0)		//离线代码转换
+		{
+			linkSt=2;
+		}
+		DEBUG_PRINTF("ipswitch %s %d\r\n",strDeviceName.c_str(),linkSt);
+	}
+	else if(strDeviceName.find("fireware")==0)
+	{
+		_pos=strDeviceName.find("_");
+		
+		num=atoi(strDeviceName.substr(8,_pos-8).c_str());
+		linkSt=pCfirewallClient[num-1]->HUAWEIDevValue.hwEntityLinked;
+		if(linkSt==0)		//离线代码转换
+		{
+			linkSt=2;
+		}
+		DEBUG_PRINTF("fireware %s %d\r\n",strDeviceName.c_str(),linkSt);
+	}
+	else if(strDeviceName.find("atlas")==0)
+	{
+		_pos=strDeviceName.find("_");
+		
+		num=atoi(strDeviceName.substr(5,_pos-5).c_str());
+		linkSt=pCsshClient[num-1]->stuAtlasState.Linked;
+		if(linkSt==0)		//离线代码转换
+		{
+			linkSt=2;
+		}
+		DEBUG_PRINTF("atlas %s %d\r\n",strDeviceName.c_str(),linkSt);
+	}
+	else
+	{
+		linkSt=2;
+		DEBUG_PRINTF("null %s %d\r\n",strDeviceName.c_str(),linkSt);
+	}
+	return linkSt;
 }
 
 
@@ -109,16 +197,92 @@ uint16_t powerStGetFromDevice(uint8_t seq)
 
 
 
-// 该通道是否配置?
+// 该通道是否配置? IP地址、端口、密码等只要存在空值或0.0.0.0，返回true
 bool isChannelNull(uint8_t seq)
 {
-	return true;
+	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
+	int _pos=0,num=0;
+	string strDeviceName = pConf->StrDeviceNameSeq[seq];
+	bool isnull=false;
+	
+	DEBUG_PRINTF("isChannelNull seq=%d %s \n",seq,strDeviceName.c_str());
+
+	if(strDeviceName.find("rsu")==0)
+	{
+		_pos=strDeviceName.find("_");
+		
+		num=atoi(strDeviceName.substr(3,_pos-3).c_str());
+		if(pConf->StrRSUIP[num-1]=="" || pConf->StrRSUIP[num-1]=="0.0.0.0" || pConf->StrRSUPort[num-1]=="")
+			isnull=true;
+		DEBUG_PRINTF("channel %d %s %d\r\n",seq,strDeviceName.c_str(),isnull);
+	}
+	else if(strDeviceName.find("vehplate900")==0)
+	{
+		_pos=strDeviceName.find("_");
+		
+		num=atoi(strDeviceName.substr(11,_pos-11).c_str());
+		if(pConf->StrVehPlate900IP[num-1]=="" || pConf->StrVehPlate900IP[num-1]=="0.0.0.0" || pConf->StrVehPlate900Port[num-1]=="" || pConf->StrVehPlate900Key[num-1]=="")
+			isnull=true;
+		DEBUG_PRINTF("channel %d %s %d\r\n",seq,strDeviceName.c_str(),isnull);
+	}
+	else if(strDeviceName.find("vehplate")==0)
+	{
+		_pos=strDeviceName.find("_");
+		
+		num=atoi(strDeviceName.substr(8,_pos-8).c_str());
+		if(pConf->StrVehPlateIP[num-1]=="" || pConf->StrVehPlateIP[num-1]=="0.0.0.0" || pConf->StrVehPlatePort[num-1]=="" || pConf->StrVehPlateKey[num-1]=="")
+			isnull=true;
+		DEBUG_PRINTF("channel %d %s %d\r\n",seq,strDeviceName.c_str(),isnull);
+	}
+	else if(strDeviceName.find("cam")==0)
+	{
+		_pos=strDeviceName.find("_");
+		
+		num=atoi(strDeviceName.substr(3,_pos-3).c_str());
+		if(pConf->StrCAMIP[num-1]=="" || pConf->StrCAMIP[num-1]=="0.0.0.0" || pConf->StrCAMPort[num-1]=="" || pConf->StrCAMKey[num-1]=="")
+			isnull=true;
+		DEBUG_PRINTF("channel %d %s %d\r\n",seq,strDeviceName.c_str(),isnull);
+	}
+	else if(strDeviceName.find("ipswitch")==0)
+	{
+		_pos=strDeviceName.find("_");
+		
+		num=atoi(strDeviceName.substr(8,_pos-8).c_str());
+		if(pConf->StrIPSwitchIP[num-1]=="" || pConf->StrIPSwitchIP[num-1]=="0.0.0.0" || pConf->StrIPSwitchGetPasswd[num-1]=="" || pConf->StrIPSwitchSetPasswd[num-1]=="")
+			isnull=true;
+		DEBUG_PRINTF("channel %d %s %d\r\n",seq,strDeviceName.c_str(),isnull);
+	}
+	else if(strDeviceName.find("fireware")==0)
+	{
+		_pos=strDeviceName.find("_");
+		
+		num=atoi(strDeviceName.substr(8,_pos-8).c_str());
+		if(pConf->StrFireWareIP[num-1]=="" || pConf->StrFireWareIP[num-1]=="0.0.0.0" || pConf->StrFireWareGetPasswd[num-1]=="" || pConf->StrFireWareSetPasswd[num-1]=="")
+			isnull=true;
+		DEBUG_PRINTF("channel %d %s %d\r\n",seq,strDeviceName.c_str(),isnull);
+	}
+	else if(strDeviceName.find("atlas")==0)
+	{
+		_pos=strDeviceName.find("_");
+		
+		num=atoi(strDeviceName.substr(5,_pos-5).c_str());
+		if(pConf->StrAtlasIP[num-1]=="" || pConf->StrAtlasIP[num-1]=="0.0.0.0" || pConf->StrAtlasPasswd[num-1]=="")
+			isnull=true;
+		DEBUG_PRINTF("channel %d %s %d\r\n",seq,strDeviceName.c_str(),isnull);
+	}
+	else
+	{
+		isnull=true;
+		DEBUG_PRINTF("channel %d %s %d\r\n",seq,strDeviceName.c_str(),isnull);
+	}
+	return isnull;
 }
 
 // 单柜还是双柜?返回柜子个数
 uint8_t getBoxNum(void)
 {
-	return 2;
+	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
+	return atoi(pConf->StrHWCabinetCount.c_str());
 }
 
 // 从配置文件中读取CAN控制器版本号,只读地址为1的控制器
@@ -160,9 +324,11 @@ string IPGetFromBox(uint8_t seq)
 
 
 // 获取该机柜是离线还是在线?
+//返回
 string linkStringGetFromBox(uint8_t seq)
 {
-	CabinetClient *pCab=pCabinetClient;//华为机柜状态
+	CabinetClient *pCab=pCabinetClient[seq];//华为机柜状态
+	
 	string str_re = "";
 	bool linked = pCab->HUAWEIDevValue.hwLinked;
 	
@@ -182,7 +348,7 @@ string linkStringGetFromBox(uint8_t seq)
 	return str_re;
 }
 
-
+#if 0
 void GetIPinfo(IPInfo *ipInfo)
 {
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
@@ -201,7 +367,7 @@ void GetIPinfo2(IPInfo *ipInfo)
     sprintf(ipInfo->gateway_addr,pConf->StrGateway2.c_str());
     sprintf(ipInfo->dns ,pConf->StrDNS2.c_str());
 }
-
+#endif
 
 // 取8个字节的ID号
 unsigned long long IDgetFromConfig(void)
@@ -924,5 +1090,102 @@ void rs485init(void)
 		else
 			printf("Rs485_%d Init 初始化成功！%d\n",i+1,mComPort485[i]->fd);
 	}
-}*/
+}
+
+void Init_CANNode(CANNode *pCan)
+{
+	//初始化Can
+	for(int i=0;i<PHASE_MAX_NUM;i++) //开关数量
+	{
+		pCan->canNode[i].phase.vln = 0;
+		pCan->canNode[i].phase.amp = 0;
+		pCan->canNode[i].isConnect = false;
+	}
+}
+*/
+
+
+//初始化SPD
+void init_SPD(SpdClient *pSpd, VMCONTROL_CONFIG *pConf)
+{
+	if(pSpd==NULL) return;
+
+	pSpd->SetSpdSetconfig(OnSpdSetconfigBack, 100);
+	pSpd->SetSpdWriteconfig(OnSpdSetWriteconfig, 100);
+
+    //防雷器配置
+    pSpd->StrSPDType = pConf->StrSPDType;	//SPD类型
+	pSpd->SPD_Type = pConf->SPD_Type;
+
+    pSpd->StrSPDCount = pConf->StrSPDCount;	//SPD数量
+	pSpd->SPD_num = pConf->SPD_num;
+
+	// 防雷检测
+	for(int i=0;i<SPD_NUM;i++)
+	{
+		pSpd->StrSPDAddr[i] = pConf->StrSPDAddr[i];
+		pSpd->SPD_Address[i] = pConf->SPD_Address[i];
+
+		pSpd->StrSPDIP[i] = pConf->StrSPDIP[i];	//SPD IP 地址
+		pSpd->StrSPDPort[i] = pConf->StrSPDPort[i];	//SPD端口
+		sprintf(pSpd->gsSPDIP[i],"%s",pConf->StrSPDIP[i].c_str());
+		sprintf(pSpd->gsSPDPort[i],"%s",pConf->StrSPDPort[i].c_str());
+	}
+	// 接地电阻只有1个
+	pSpd->StrSPDAddr[SPD_NUM] = pConf->StrSPDAddr[SPD_NUM];
+	pSpd->SPD_Address[SPD_NUM] = pConf->SPD_Address[SPD_NUM];
+	sprintf(pSpd->gsSPDIP[SPD_NUM],"%s",pConf->StrSPDIP[SPD_NUM].c_str());
+	sprintf(pSpd->gsSPDPort[SPD_NUM],"%s",pConf->StrSPDPort[SPD_NUM].c_str());
+
+	// 接地电阻如果是网络型的
+	pSpd->StrSPDIP[SPD_NUM] = pConf->StrSPDIP[SPD_NUM];			//接地电阻 IP 地址
+	pSpd->StrSPDPort[SPD_NUM] = pConf->StrSPDPort[SPD_NUM];			//接地电阻端口
+
+	//初始化防雷器结构体
+	memset(pSpd->stuSpd_Param,0,sizeof(SPD_PARAMS));
+
+	pSpd->StartNetSpd();
+}
+
+
+void Init_DO(VMCONTROL_CONFIG *pConf)
+{
+	/////////////////  DO配置表开始/////////////////////////////////////////////
+	int i,temp = 0;	//统计到底有几个DO
+	for (i = 0; i < SWITCH_COUNT; i++)
+	{
+		/*配置文件中是否有配置*/
+		if (pConf->StrDoSeq[i].length() != 0)
+		{
+			temp++; // 表明配置文件中有配置
+			pConf->DoSeq[i] = atoi(pConf->StrDoSeq[i].c_str());
+			if(pConf->DoSeq[i] > 0)
+			{
+				pConf->DoSeq[i]--; 		// 配置文件是从1~12, 标号是要减1
+			}
+		}
+		else
+		{
+			pConf->DoSeq[i] = NULL;	// 未配置,不使用
+		}
+	}
+	// 如果都没有配置，就按DO顺序进行默认配置
+	if (temp == 0)
+	{
+		//printf("temp=0\r\n");
+		for (i = 0; i < SWITCH_COUNT; i++)
+		{
+			pConf->DoSeq[i] = i;
+		}
+	}
+	/////////////////  DO配置表结束/////////////////////////////////////////////
+
+}
+
+int TrapCallBack(string Stroid,int AlarmID,int mgetIndex,unsigned int mRetID)
+{
+    int mnew = 0;
+	printf("TrapAlarmBack oid=%s, ID=%d, Index=%d\r\n",Stroid.c_str(),AlarmID,mgetIndex);
+}
+
 

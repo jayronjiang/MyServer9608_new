@@ -13,7 +13,7 @@ LINK          = arm-none-linux-gnueabi-g++
 LFLAGS        = -Wl,-O1 -Wl,-rpath,/home/ctools/arm-2011.03/arm-none-linux-gnueabi/lib
 
 LIBS          =  $(SUBLIBS)  ./alib/CsshClient.a \
-								./alib/tsPanel.a \
+							 ./alib/tsPanel.a \
 							 ./alib/comport.a \
 							 ./alib/CabinetClient.a \
 							 ./alib/CswitchClient.a \
@@ -30,6 +30,7 @@ LIBS          =  $(SUBLIBS)  ./alib/CsshClient.a \
 							 ./solib/libssh2.so.1.0.1 \
 							 ./solib/libcurl.so.4.5.0  \
 							 ./solib/libevent-2.1.so.6.0.4 \
+							 ./alib/SpdClient.a \
 							 ./alib/canNode.a \
 							 ./alib/canport.a \
 							 ./libiconv/lib/*.a \
@@ -49,7 +50,6 @@ OBJECTS       =  build/main.o     \
                  build/global.o \
                  build/tea.o   \
                  build/HttpServer.o \
-                 build/net_spd.o \
                  build/config.o   
 
 
@@ -109,9 +109,6 @@ build/HttpServer.o: HttpServer.cpp \
     common/HttpServer.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) $(LIBS) -o build/HttpServer.o HttpServer.cpp
 
-build/net_spd.o: net_spd.cpp \
-    common/net_spd.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) $(LIBS) -o build/net_spd.o net_spd.cpp
 
 	
 clean:

@@ -156,12 +156,13 @@ WriteLog(strmsg);
     printf("系统名称:%s\r\n",pSta->strhostname.c_str());
 
 	//查询主程序占用率
-    system("ps aux |grep tranter |awk '{ print $3 }' > ./ltinfo");
+//    system("ps aux |grep /opt/tranter |awk '{ print $3 }' > ./ltinfo");
+    system("top -bn1 | grep /opt/tranter |awk '{ print $7 }' > ./ltinfo");
     memset(infobuf,0x00,1024*5+1) ;
     ReadLTInfo(infobuf);
     strinfo = infobuf;
 WriteLog(infobuf);
-	int posr=strinfo.find("\n");
+	int posr=strinfo.find("%");
 	if(posr>0)
 	{
 		pSta->strSoftRate=strinfo.substr(0,posr);
@@ -181,12 +182,12 @@ WriteLog(strmsg);
     printf("主程序运行异常报警:%s\r\n",pSta->strSoftAlarm.c_str());
 
 	//ksoftirqd占用率
-    system("ps aux |grep ksoftirqd/0 |awk '{ print $3 }' > ./ltinfo");
+    system("top -bn1 |grep ksoftirqd/0 |awk '{ print $7 }' > ./ltinfo");
     memset(infobuf,0x00,1024*5+1) ;
     ReadLTInfo(infobuf);
 WriteLog(infobuf);
     strinfo = infobuf;
-	posr=strinfo.find("\n");
+	posr=strinfo.find("%");
 	if(posr>0)
 	{
 		pSta->strKsoftirqdRate=strinfo.substr(0,posr);
@@ -200,7 +201,7 @@ WriteLog(strmsg);
     printf("ksoftirqd占用率:%s%\r\n",pSta->strKsoftirqdRate.c_str());
 
 	//kworker占用率
-    system("ps aux |grep kworker/0 |awk '{ print $3 }' > ./ltinfo");
+    system("top -bn1 |grep kworker/0 |awk '{ print $7 }' > ./ltinfo");
     memset(infobuf,0x00,1024*5+1) ;
     ReadLTInfo(infobuf);
 WriteLog(infobuf);
@@ -346,7 +347,7 @@ WriteLog(strmsg);
 WriteLog(infobuf);
 	string verdate=infobuf;
 	int pos1=verdate.find("Aug 14 09:24:07 CST 2019");
-	int pos2=verdate.find("Jan 4 15:33:18 CST 2020");
+	int pos2=verdate.find("Aug 18 16:33:37 CST 2020");
 	int pos3=verdate.find("Feb 12 10:25:01 CST 2020");
 	int pos4=verdate.find("Mar 2 17:49:26 CST 2020");
 printf("内核1:pos1=%d,pos2=%d,%s\r\n",pos1,pos2,verdate.c_str());
@@ -360,7 +361,7 @@ printf("内核1:pos1=%d,pos2=%d,%s\r\n",pos1,pos2,verdate.c_str());
     else if(pos2>0)
     {
     	pSta->strzimageVer = "V1.1";
-    	pSta->strzimageDate = "2020-01-04 15:33:18";
+    	pSta->strzimageDate = "2020-08-14 16:33:37";
     }
     else if(pos3>0)
     {

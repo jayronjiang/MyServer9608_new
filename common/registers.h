@@ -37,6 +37,11 @@ typedef unsigned long long  UINT64;
 #define ZHONGXING_CAB				5		
 #define JINSHENGAN_CAB				6		
 #define AITESI_CAB					7		
+#define NUOLONG_CAB					8		
+#define RONGZHUN_CAB				9		
+#define YABANG_CAB					10		
+#define AITEWANG_CAB				11		
+#define HUARUAN_CAB					12		
 
 /*http 请求类型*/
 #define HTTPGET						1		
@@ -95,6 +100,8 @@ typedef unsigned long long  UINT64;
 #define DO_REG_MAX						49
 #define REMOTE_RESET_REG					1548		/*遥控复位*/
 
+//预留2路动环控制器
+#define HWSERVER_NUM 2
 //预留9路300万车牌识别
 #define VEHPLATE_NUM 12
 //预留3路900万车牌识别
@@ -294,6 +301,7 @@ typedef struct vmctl_config_struct
 
     //参数设置
     string StrHWServerCount;	//华为动环服务器数量
+    string StrHWCabinetCount;	//华为机柜数量
     string StrHWServer;         //华为服务器IP地址
     string StrHWGetPasswd;      //SNMP GET 密码
     string StrHWSetPasswd;      //SNMP SET 密码

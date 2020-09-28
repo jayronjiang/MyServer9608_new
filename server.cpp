@@ -30,14 +30,10 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <string.h>
-//#include "comport.h"
-//#include "comserver.h"
 #include "MyCritical.h"
 #include <string>
 #include <semaphore.h>
 #include "registers.h"
-#include "rs485server.h"
-//#include "net_spd.h"
 //#include "zte.h"
 #include "base_64.h"
 //#include "gsyjbox.h"
@@ -69,9 +65,10 @@ extern int WritezImagedata(unsigned char *pDateBuf,int pDateLen);
 extern int WriteZipdata(unsigned char *pDateBuf,int pDateLen);
 
 extern REMOTE_CONTROL *stuRemote_Ctrl;	//遥控寄存器结构体
-extern CabinetClient *pCabinetClient;//华为机柜状态
+extern CabinetClient *pCabinetClient[HWSERVER_NUM];//华为机柜状态
 extern VMCONTROL_CONFIG VMCtl_Config;	//控制器配置信息结构体
 extern CANNode *pCOsCan;		//Can对象
+extern SpdClient *pCSpdClent;		//SPD防雷器
 
 extern string zteLockDevID[4];
 extern int openatslock(void);
@@ -110,8 +107,6 @@ void SetIPinfo2()
     WriteNetconfig2((char *)(strwrconfig.c_str()),strwrconfig.length());
 }
 
-
-#if 0
 void GetIPinfo(IPInfo *ipInfo)
 {
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
@@ -131,7 +126,6 @@ void GetIPinfo2(IPInfo *ipInfo)
     sprintf(ipInfo->gateway_addr,pConf->StrGateway2.c_str());
     sprintf(ipInfo->dns ,pConf->StrDNS2.c_str());
 }
-#endif
 
 void init_TCPServer()
 {
@@ -577,7 +571,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		case NETCMD_HWCABINET_STATUS: 			//20  华为机柜状态
 			if(pCMD->status==SFLAG_READ)
 			{
-				jsonStrHWCabinetWriter(pCMD->cmd,(char*)pCabinetClient,mstrdata);
+				jsonStrHWCabinetWriter(pCMD->cmd,(char*)pCabinetClient[0],mstrdata);
 				memcpy((char *) pCMD->data,(char *)(mstrdata.c_str()),mstrdata.size());
 				pCMD->datalen = mstrdata.size();
 			}
@@ -685,32 +679,36 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 				memcpy((char *) pCMD->data,jsonPack,jsonPackLen);
 				pCMD->datalen = jsonPackLen;
 			}
-			break;
+			break;*/
 		case NETCMD_TEST_485:			//100 测试485
 			if(pCMD->status==SFLAG_WRITE)
 			{
-				testFlag |= LBIT(RS485_1_T);
+				//testFlag |= LBIT(RS485_1_T);
 				//SendCom3Test(pCMD->data,pCMD->datalen);
 				printf("485_TEST_BEGIN\n");
-				sprintf(pCMD->data,"执行命令->执行成功!\n");
+				sprintf(pCMD->data,"ok\n");
 				pCMD->datalen = strlen(pCMD->data);
 			}
 			break;
 		case NETCMD_TEST_232_1: 		//101 测试232-1
 			if(pCMD->status==SFLAG_WRITE)
 			{
-				testFlag |= LBIT(RS232_1T);
+				//testFlag |= LBIT(RS232_2T);
 				printf("232-1_TEST_BEGIN\n");
 				//SendCom3Test(pCMD->data,pCMD->datalen);
 				//printf("NETCMD_TEST_485 %s\n",pCMD->data);
-				sprintf(pCMD->data,"执行命令->执行成功!\n");
+				sprintf(pCMD->data,"fail\n");
 				pCMD->datalen = strlen(pCMD->data);
 			}
 			break;
-		case NETCMD_TEST_232_2: 		//101 测试232-1
+		case NETCMD_TEST_232_2: 		//102 测试232-2
+		case NETCMD_TEST_232_3: 		//103 测试232-3
+		case NETCMD_TEST_232_4: 		//104 测试232-4
+		case NETCMD_TEST_CAN: 			//105 测试CAN
+		case NETCMD_TEST_GPIO:		//106 测试GPIO_1
 			if(pCMD->status==SFLAG_WRITE)
 			{
-				testFlag |= LBIT(RS232_2T);
+				//testFlag |= LBIT(RS232_1T);
 				printf("232-2_TEST_BEGIN\n");
 				//SendCom3Test(pCMD->data,pCMD->datalen);
 				//printf("NETCMD_TEST_485 %s\n",pCMD->data);
@@ -718,49 +716,6 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 				pCMD->datalen = strlen(pCMD->data);
 			}
 			break;
-		case NETCMD_TEST_232_3: 		//101 测试232-1
-			if(pCMD->status==SFLAG_WRITE)
-			{
-				testFlag |= LBIT(RS232_3T);
-				printf("232-3_TEST_BEGIN\n");
-				//SendCom3Test(pCMD->data,pCMD->datalen);
-				//printf("NETCMD_TEST_485 %s\n",pCMD->data);
-				sprintf(pCMD->data,"执行命令->执行成功!\n");
-				pCMD->datalen = strlen(pCMD->data);
-			}
-			break;
-		case NETCMD_TEST_232_4: 		//101 测试232-1
-			if(pCMD->status==SFLAG_WRITE)
-			{
-				testFlag |= LBIT(RS232_4T);
-				printf("232-4_TEST_BEGIN\n");
-				//SendCom3Test(pCMD->data,pCMD->datalen);
-				//printf("NETCMD_TEST_485 %s\n",pCMD->data);
-				sprintf(pCMD->data,"执行命令->执行成功!\n");
-				pCMD->datalen = strlen(pCMD->data);
-			}
-			break;
-		case NETCMD_TEST_CAN:			//100 测试485
-			if(pCMD->status==SFLAG_WRITE)
-			{
-				testFlag |= LBIT(CAN_1_T);
-				//SendCom3Test(pCMD->data,pCMD->datalen);
-				printf("CAN_TEST_BEGIN\n");
-				sprintf(pCMD->data,"执行命令->执行成功!\n");
-				pCMD->datalen = strlen(pCMD->data);
-			}
-			break;
-		case NETCMD_TEST_GPIO:			//106 测试GPIO
-			if(pCMD->status==SFLAG_WRITE)
-			{
-				testFlag |= LBIT(GPIO_T);
-				//SendCom3Test(pCMD->data,pCMD->datalen);
-				printf("GPIO_TEST_BEGIN\n");
-				sprintf(pCMD->data,"执行命令->执行成功!\n");
-				pCMD->datalen = strlen(pCMD->data);
-			}
-			break;
-		*/
 		default:
 			break;
 
@@ -878,13 +833,15 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 	int i,j;
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;  //控制器配置信息结构体
 	REMOTE_CONTROL *pstuRCtrl=(REMOTE_CONTROL *)pRCtrl;
-	THUAWEIGantry *pHWDev=&pCabinetClient->HUAWEIDevValue;//华为机柜状态
+	CabinetClient *pCab=pCabinetClient[0];//华为机柜
+	THUAWEIGantry *pHWDev=&(pCab->HUAWEIDevValue);//华为机柜状态
 	CANNode *pCan=pCOsCan;								//Can对象
+	SpdClient *pSpd=pCSpdClent;		//SPD防雷器
 
 	int seq = 0;
 	UINT16 seq_temp = 0;
 	char value[10];
-	//	  FDATA dummy;
+	FDATA dummy;
 	UINT8 temp = 0;
 	UINT8 byteSend[BASE64_HEX_LEN]={0x00,};
 	string mStrUser = "admin";
@@ -1093,6 +1050,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		 #endif
 		 usleep(2000);
 	 }
+#endif
 	 if(pHWDev->hwLinked && GetTickCount()-pHWDev->hwTimeStamp>5*60) //超过5分钟没更新，认为没有连接)
 	 	pHWDev->hwLinked=false;
  	 //控制单板复位 0：保持；1：热复位；
@@ -1100,35 +1058,35 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 	 {
 		 sprintf(value,"%d",pstuRCtrl->hwctrlmonequipreset);
 		 printf("RemoteControl 控制单板复位=%s\n",value);
-		 SnmpSetOid(hwCtrlMonEquipReset,value,1);
+		 pCab->SnmpSetOid(hwCtrlMonEquipReset,value,1);
 	 }
  	 //AC过压点设置 0:保持；50-600（有效）；280（缺省值）
 	 if(pHWDev->hwLinked && pstuRCtrl->hwsetacsuppervoltlimit!=ACT_HOLD)
 	 {
 		 sprintf(value,"%d",pstuRCtrl->hwsetacsuppervoltlimit);
 		 printf("RemoteControl AC过压点设置=%s\n",value);
-		 SnmpSetOid(hwSetAcsUpperVoltLimit,value,1);
+		 pCab->SnmpSetOid(hwSetAcsUpperVoltLimit,value,1);
 	 }
 	 //AC欠压点设置 0:保持；50-600（有效）；180（缺省值）
 	 if(pHWDev->hwLinked && pstuRCtrl->hwsetacslowervoltlimit!=ACT_HOLD)
 	 {
 		 sprintf(value,"%d",pstuRCtrl->hwsetacslowervoltlimit);
 		 printf("RemoteControl AC欠压点设置=%s\n",value);
-		 SnmpSetOid(hwSetAcsLowerVoltLimit,value,1);
+		 pCab->SnmpSetOid(hwSetAcsLowerVoltLimit,value,1);
 	 }
 	 //设置DC过压点 0:保持；53-600（有效）；58（缺省值）
 	 if(pHWDev->hwLinked && pstuRCtrl->hwsetdcsuppervoltlimit!=ACT_HOLD)
 	 {
 		 sprintf(value,"%d",pstuRCtrl->hwsetdcsuppervoltlimit*10);
 		 printf("RemoteControl 设置DC过压点=%s\n",value);
-		 SnmpSetOid(hwSetDcsUpperVoltLimit,value,1);
+		 pCab->SnmpSetOid(hwSetDcsUpperVoltLimit,value,1);
 	 }
 	 //设置DC欠压点 0:保持；35 - 57（有效）；45（缺省值）
 	 if(pHWDev->hwLinked && pstuRCtrl->hwsetdcslowervoltlimit!=ACT_HOLD)
 	 {
 		 sprintf(value,"%d",pstuRCtrl->hwsetdcslowervoltlimit*10);
 		 printf("RemoteControl 设置DC欠压点=%s\n",value);
-		 SnmpSetOid(hwSetDcsLowerVoltLimit,value,1);
+		 pCab->SnmpSetOid(hwSetDcsLowerVoltLimit,value,1);
 	 }
 	 //环境温度告警上限 0:保持；25-80（有效）；55（缺省值）
 	 for(i=0;i<2;i++)
@@ -1137,7 +1095,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		 {
 			 sprintf(value,"%d",pstuRCtrl->hwsetenvtempupperlimit[i]);
 			 printf("RemoteControl 环境温度告警上限%d=%s\n",i,value);
-			 SnmpSetOid(hwSetEnvTempUpperLimit,value,i+1);
+			 pCab->SnmpSetOid(hwSetEnvTempUpperLimit,value,i+1);
 		 }
 	 }
 	 //环境温度告警下限255:保持；-20-20（有效）；-20（缺省值）
@@ -1147,7 +1105,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		 {
 			 sprintf(value,"%d",pstuRCtrl->hwsetenvtemplowerlimit[i]);
 			 printf("RemoteControl 环境温度告警下限%d=%s\n",i,value);
-			 SnmpSetOid(hwSetEnvTempLowerLimit,value,i+1);
+			 pCab->SnmpSetOid(hwSetEnvTempLowerLimit,value,i+1);
 		 }
 	 }
 	 //环境湿度告警上限 255:保持；0-100（有效）；95（缺省值）
@@ -1157,7 +1115,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		 {
 			 sprintf(value,"%d",pstuRCtrl->hwsetenvhumidityupperlimit[i]);
 			 printf("RemoteControl 环境湿度告警上限%d=%s\n",i,value);
-			 SnmpSetOid(hwSetEnvHumidityUpperLimit,value,i+1);
+			 pCab->SnmpSetOid(hwSetEnvHumidityUpperLimit,value,i+1);
 		 }
 	 }
 	 //环境湿度告警下限 255:保持；0-100（有效）；5（缺省值）
@@ -1167,7 +1125,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		 {
 			 sprintf(value,"%d",pstuRCtrl->hwsetenvhumiditylowerlimit[i]);
 			 printf("RemoteControl 环境湿度告警下限%d=%s\n",i,value);
-			 SnmpSetOid(hwSetEnvHumidityLowerLimit,value,i+1);
+			 pCab->SnmpSetOid(hwSetEnvHumidityLowerLimit,value,i+1);
 		 }
 	 }
 	 //温控模式 	 0：保持；1：纯风扇模式；2：纯空调模式；3：智能模式；
@@ -1175,7 +1133,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 	 {
          sprintf(value,"%d",pstuRCtrl->hwcoolingdevicesmode);
          printf("RemoteControl 温控模式=%s\n",value);
-         SnmpSetOid(hwCoolingDevicesMode,value,1);
+         pCab->SnmpSetOid(hwCoolingDevicesMode,value,1);
 	 }
 	 //空调开机温度点		 255:保持； -20-80（有效）；45(缺省值)
 	 for(i=0;i<2;i++)
@@ -1184,7 +1142,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		 {
 	         sprintf(value,"%d",pstuRCtrl->hwdcairpowerontemppoint[i]);
 	         printf("RemoteControl 空调开机温度点%d=%s\n",i,value);
-	         SnmpSetOid(hwDcAirPowerOnTempPoint,value,i+1);
+	         pCab->SnmpSetOid(hwDcAirPowerOnTempPoint,value,i+1);
 		 }
 	 }
 	 //空调关机温度点		   255:保持； -20-80（有效）；37(缺省值)
@@ -1194,7 +1152,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		 {
 	         sprintf(value,"%d",pstuRCtrl->hwdcairpowerofftemppoint[i]);
 	         printf("RemoteControl 空调关机温度点%d=%s\n",i,value);
-	         SnmpSetOid(hwDcAirPowerOffTempPoint,value,i+1);
+	         pCab->SnmpSetOid(hwDcAirPowerOffTempPoint,value,i+1);
 		 }
 	 }
 	 //空调控制模式 0：保持；1：自动；2：手动
@@ -1204,7 +1162,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		 {
 			 sprintf(value,"%d",pstuRCtrl->hwdcairctrlmode[i]);
 			 printf("RemoteControl 空调控制模式%d=%s\n",i,value);
-			 SnmpSetOid(hwDcAirCtrlMode,value,i+1);
+			 pCab->SnmpSetOid(hwDcAirCtrlMode,value,i+1);
 		 }
 	 }
 	 //控制烟感复位 0：保持；1：不需复位；2：复位
@@ -1214,7 +1172,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		 {
 			 sprintf(value,"%d",pstuRCtrl->hwctrlsmokereset[i]);
 			 printf("RemoteControl 控制烟感复位%d=%s\n",i,value);
-			 SnmpSetOid(hwCtrlSmokeReset,value,i+1);
+			 pCab->SnmpSetOid(hwCtrlSmokeReset,value,i+1);
 		 }
 	 }
 	 //SPD控制
@@ -1225,16 +1183,16 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 			 sprintf(value,"%d",pstuRCtrl->DO_spdcnt_clear[i]);
 			 printf("RemoteControl SPD%d雷击计数清零=%s\n",i+1,value);
 			 //雷击计数清零
-			 if (SPD_Type == TYPE_LEIXUN)
+			 if (pConf->SPD_Type == TYPE_LEIXUN)
 			 {
 				//if (i == 0)
 				{
-					Ex_SPD_Set_Process(i,SPD_DO_SET,DO_ADDR_CNT_CLR,dummy,DO_ON_CMD);
+					pSpd->Ex_SPD_Set_Process(i,SPD_DO_SET,DO_ADDR_CNT_CLR,dummy,DO_ON_CMD);
 				}
 			 }
-			 else if ((SPD_Type == TYPE_KY) ||(SPD_Type == TYPE_KY0M))
+			 else if ((pConf->SPD_Type == TYPE_KY) ||(pConf->SPD_Type == TYPE_KY0M))
 			 {
-				Ex_SPD_Set_Process(i,SPD_DO_SET,KY_CLEAR_ADDR,dummy,DO_ON_CMD_KY);	// 这里是1:清除记录
+				pSpd->Ex_SPD_Set_Process(i,SPD_DO_SET,KY_CLEAR_ADDR,dummy,DO_ON_CMD_KY);	// 这里是1:清除记录
 			 }
 		 }
 		 if(pstuRCtrl->DO_totalspdcnt_clear[i]!=ACT_HOLD)
@@ -1242,11 +1200,11 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 			 sprintf(value,"%d",pstuRCtrl->DO_totalspdcnt_clear[i]);
 			 printf("RemoteControl SPD%d总雷击计数清零=%s\n",i+1,value);
 			 //总雷击计数清零
-			 if (SPD_Type == TYPE_LEIXUN)
+			 if (pConf->SPD_Type == TYPE_LEIXUN)
 			 {
 				//if (i == 0)
 				{
-					Ex_SPD_Set_Process(i,SPD_DO_SET,DO_ADDR_TOTAL_CLR,dummy,DO_ON_CMD);
+					pSpd->Ex_SPD_Set_Process(i,SPD_DO_SET,DO_ADDR_TOTAL_CLR,dummy,DO_ON_CMD);
 				}
 			 }
 		 }
@@ -1255,11 +1213,11 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 			 sprintf(value,"%d",pstuRCtrl->DO_psdtime_clear[i]);
 			 printf("RemoteControl SPD%d雷击时间清零=%s\n",i+1,value);
 			 //雷击时间清零
-			 if (SPD_Type == TYPE_LEIXUN)
+			 if (pConf->SPD_Type == TYPE_LEIXUN)
 			 {
 				//if (i == 0)
 				{
-					Ex_SPD_Set_Process(i,SPD_DO_SET,DO_ADDR_STRUCK_TIME_CLR,dummy,DO_ON_CMD);
+					pSpd->Ex_SPD_Set_Process(i,SPD_DO_SET,DO_ADDR_STRUCK_TIME_CLR,dummy,DO_ON_CMD);
 				}
 			 }
 		 }
@@ -1268,11 +1226,11 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 			 sprintf(value,"%d",pstuRCtrl->DO_daytime_clear[i]);
 			 printf("RemoteControl SPD%d在线时间清零=%s\n",i+1,value);
 			 //在线时间清零
-			 if (SPD_Type == TYPE_LEIXUN)
+			 if (pConf->SPD_Type == TYPE_LEIXUN)
 			 {
 				//if (i == 0)
 				{
-					Ex_SPD_Set_Process(i,SPD_DO_SET,DO_ADDR_WORK_TIME_CLR,dummy,DO_ON_CMD);
+					pSpd->Ex_SPD_Set_Process(i,SPD_DO_SET,DO_ADDR_WORK_TIME_CLR,dummy,DO_ON_CMD);
 				}
 			 }
 		 }
@@ -1281,37 +1239,36 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 			 sprintf(value,"%d",pstuRCtrl->DO_leak_type[i]);
 			 printf("RemoteControl SPD%d外接漏电流控制=%s\n",i+1,value);//0:保持，1:内置漏电流，2：外接漏电流
 			 //外接漏电流控制	 注意:设置时 0:内置漏电流，1：外接漏电流
-			 if (SPD_Type == TYPE_LEIXUN)
+			 if (pConf->SPD_Type == TYPE_LEIXUN)
 			 {
 				//if (i == 0)
 				{
 					// 把1,2转换成0,1
 					temp = ((pstuRCtrl->DO_leak_type[i]-1) == 0)?0:1;
-					Ex_SPD_Set_Process(i,SPD_DO_SET,DO_ADDR_LEAK_SET,dummy,temp);
+					pSpd->Ex_SPD_Set_Process(i,SPD_DO_SET,DO_ADDR_LEAK_SET,dummy,temp);
 				}
 			 }
 		 }
-		 if(pstuRCtrl->spdleak_alarm_threshold[i]!=0.000 && pstuRCtrl->spdleak_alarm_threshold[i]!=stuSpd_Param->rSPD_data[i].leak_alarm_threshold) //漏电流报警阈值改变
+		 if(pstuRCtrl->spdleak_alarm_threshold[i]!=0.000 && pstuRCtrl->spdleak_alarm_threshold[i]!=pSpd->stuSpd_Param->rSPD_data[i].leak_alarm_threshold) //漏电流报警阈值改变
 		 {
 			 sprintf(value,"%0.3f",pstuRCtrl->spdleak_alarm_threshold[i]);
 			 printf("RemoteControl SPD%d漏电流报警阈值=%s\n",i+1,value);//漏电流报警阈值
 			 //漏电流报警阈值
-			 if (SPD_Type == TYPE_LEIXUN)
+			 if (pConf->SPD_Type == TYPE_LEIXUN)
 			 {
 				//if (i == 0)
 				{
 					dummy.f = pstuRCtrl->spdleak_alarm_threshold[i];
-					Ex_SPD_Set_Process(i,SPD_AI_SET,AI_LEAK_THRESHOLD_ADDR,dummy,0);
+					pSpd->Ex_SPD_Set_Process(i,SPD_AI_SET,AI_LEAK_THRESHOLD_ADDR,dummy,0);
 				}
 			 }
 		 }
 	 }
-#endif
  }
 
  bool SoftwareUpdate(unsigned char *pbuf, int size, string &strjsonback)
  {
- #if 0
+	 VMCONTROL_CONFIG *pConf=&VMCtl_Config;  //控制器配置信息结构体
  	 strjsonback="";
 	 if(size>4 && (pbuf[0] == 0x12) && (pbuf[1] == 0x34) && (pbuf[2] == 0x56) && (pbuf[3] == 0x78)) 
 	 {
@@ -1351,7 +1308,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 				strjsonback = strjsonback + "{\n";
 				strjsonback = strjsonback + "\"result\":\"升级成功！\",\n";
 				strjsonback = strjsonback + "\"new version\":\""+ StrNewVersionNo +"\",\n";
-				strjsonback = strjsonback + "\"old version\":\""+ StrVersionNo +"\",\n";
+				strjsonback = strjsonback + "\"old version\":\""+ pConf->StrVersionNo +"\",\n";
 				strjsonback = strjsonback + "\"dec\":\"升级利通控制器成功！请不要关闭电源，10秒后设备自动重启！\"\n";
 				strjsonback = strjsonback + "}\n";
 				printf("strjsonback=%s\r\n",strjsonback.c_str());
@@ -1485,7 +1442,6 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		 strjsonback = strjsonback + "}\n";
 		 printf("strjsonback=%s\r\n",strjsonback.c_str());
 	 }
-#endif	 
 	 return 0;
  }
 
@@ -1496,54 +1452,50 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 	 char dev[30];
 	 int seq = 0;
 	 UINT16 seq_temp = 0;
+	 VMCONTROL_CONFIG *pConf=&VMCtl_Config;  //控制器配置信息结构体
+	 CANNode *pCan=pCOsCan; 							 //Can对象
 
-#if 0
 	 for (i = 0; i < SWITCH_COUNT; i++)
 	 {
 		 if(pstuRCtrl->doseq[i]==ACT_HARDWARERST)	 //断电重启
 		 {
-			 seq_temp = DoSeq[i];
-			 printf("DoSeq=0x%02x\r\n",DoSeq[i]);
+			 seq_temp = pConf->DoSeq[i];
+			 printf("DoSeq=0x%02x\r\n",pConf->DoSeq[i]);
 			 //如果未被配置,则不控制
-			 if (seq_temp != NULL_VAR)
+			 if (seq_temp != NULL)
 			 {
-				 seq_temp = i%SINGLE_REMOTE_NUM;
-				 seq = i/SINGLE_REMOTE_NUM;
-				 printf("seq_temp0x%02x=0x%02x,seq=%d\r\n",i,seq_temp,seq);
-				 power_ctrl_flag[seq] |= LBIT(POWER_1_CTRL_CLOSE+2*seq_temp);
-				 power_ctrl_flag[seq] &= ~(LBIT(POWER_1_CTRL_OPEN+2*seq_temp));
-				 printf("power_ctrl_flagseq=0x%04x\r\n",power_ctrl_flag[seq]);
+				 pCan->can_control_flag |= LBIT(2*i);
+				 pCan->can_control_flag &= ~(LBIT(2*i+1));
 				 sleep(5);
-				 printf("seq_temp0x%02x=0x%02x,seq=%d\r\n",i,seq_temp,seq);
-				 power_ctrl_flag[seq] |= LBIT(POWER_1_CTRL_OPEN+2*seq_temp);
-				 power_ctrl_flag[seq] &= ~(LBIT(POWER_1_CTRL_CLOSE+2*seq_temp));
-				 printf("power_ctrl_flagseq=0x%04x\r\n",power_ctrl_flag[seq]);
+				 pCan->can_control_flag &= ~(LBIT(2*i));
+				 pCan->can_control_flag |= LBIT(2*i+1);
+				 printf("第%d 路硬重启\r\n",i+1);
 			 }
 			 pstuRCtrl->doseq[i]=ACT_HOLD;
 		 }
 		 if(pstuRCtrl->doseq[i]==ACT_SOFTWARERST)	 //软件重启
 		 {
 		 	 //摄像机重启
-			 for(j=0;j<atoi(StrVehPlateCount.c_str());j++)
+			 for(j=0;j<atoi(pConf->StrVehPlateCount.c_str());j++)
 			 {
 				 sprintf(dev,"vehplate%d_do",j+1);
 				 StrDev=dev;
-				 if(StrDeviceNameSeq[i]==StrDev)
+				 if(pConf->StrDeviceNameSeq[i]==StrDev)
 				 {
 					 printf("do%d  reboot %s\n",i,dev);
-					 RebootIpCam(j);
+//					 reboot(j);
 				 }
 			 }
 			 //RSU控制器重启
-			 for(j=0;j<atoi(StrRSUCount.c_str());j++)
+			 for(j=0;j<atoi(pConf->StrRSUCount.c_str());j++)
 			 {
 				 sprintf(dev,"rsu%d_do",j+1);
 				 StrDev=dev;
-				 if(StrDeviceNameSeq[i]==StrDev)
+				 if(pConf->StrDeviceNameSeq[i]==StrDev)
 				 {
 					 printf("do%d  reset %s\n",i,dev);
 					 //重启RSU 0x1D
-					 send_RSU(j,0x1D,false,0,0);
+//					 send_RSU(j,0x1D,false,0,0);
 				 }
 			 }
 			 pstuRCtrl->doseq[i]=ACT_HOLD;
@@ -1556,11 +1508,10 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		 {
 			 printf("antenna%d  reset\n",i+1);
 			 //重启天线0xC4
-			 send_RSU(0,0x1D,false,0,i+1);
+//			 send_RSU(0,0x1D,false,0,i+1);
 			 pstuRCtrl->antenna[i] = ACT_HOLD;
 		 }
 	 }
-#endif
  }
 
   void *LTKJ_DataPostthread(void *param)

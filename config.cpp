@@ -20,8 +20,6 @@
 #include <semaphore.h>  
 //#include "Protocol.h"
 #include "config.h"
-#include "rs485server.h"
-#include "net_spd.h"
 #include "registers.h"
 #include "snmp.h"
 #include "CabinetClient.h"
@@ -31,10 +29,11 @@
 using namespace std;//寮??ユ?翠釜??绌洪??
 CMyCritical ConfigCri;
 
+DEVICE_PARAMS *stuDev_Param[POWER_BD_NUM];		//装置参数寄存器
 REMOTE_CONTROL *stuRemote_Ctrl;	//遥控寄存器结构体
-CabinetClient *pCabinetClient;//华为机柜状态
+CabinetClient *pCabinetClient[HWSERVER_NUM];//华为机柜状态
+CTrapClient *pCTrapClient;//华为告警状态
 VMCONTROL_STATE VMCtl_State;	//控制器运行状态结构体
-SPD_PARAMS *stuSpd_Param;		//防雷器结构体
 VMCONTROL_CONFIG VMCtl_Config;	//控制器配置信息结构体
 
 int Writeconfig(void);
@@ -353,7 +352,10 @@ int GetConfig(void)
 		if(pConf->StrHWServerCount =="")
 			pConf->StrHWServerCount = "1";
 	}	
-
+	if(pConf->StrCabinetType=="3" || pConf->StrCabinetType=="4")
+		pConf->StrHWCabinetCount="2";
+	else
+		pConf->StrHWCabinetCount="1";
     Strkey = "HWServer=";
     pConf->StrHWServer = getstring(StrConfig,Strkey) ;
 
@@ -905,6 +907,17 @@ int Setconfig(string StrKEY,string StrSetconfig)
     ConfigCri.UnLock();
 
     return 0 ;
+}
+
+
+int OnSpdSetconfigBack(string StrKEY,string StrSetconfig,unsigned int mRetID)
+{
+   	Setconfig(StrKEY,StrSetconfig);
+}
+
+int OnSpdSetWriteconfig(unsigned int mRetID)
+{
+   	Writeconfig();
 }
 
 int Writeconfig(void)

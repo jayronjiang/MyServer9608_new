@@ -20,10 +20,13 @@ public:
        int Start(void);
 
 private: 
+
        pthread_t tid; 
+	   pthread_mutex_t SetsnmpoidMutex ;
        void Cabinetrun(void);
        static void *CabinetSendthread(void *args);
-       
+	   
+
      
 public:
        CWalkClient mCWalkClient;
@@ -64,6 +67,7 @@ public:
        void myprintf(char* str);
        void WriteLog(char* str);
        int SendWalkSnmpOid_IPSwitch(string mSnmpOid);
+	   int SnmpSetOid(EM_HUAWEIGantry mEM_HUAWEIGantry,string mIntValue,int mIndex);
 
        
 
@@ -71,19 +75,35 @@ public:
 
 
 
+typedef int (*TrapAlarmBack)(string Stroid,int AlarmID,int mgetIndex,unsigned int mRetID);
 
 
+class CTrapClient
+{
+public:
+       CTrapClient(CabinetClient *pmCabinetClient);
+       ~CTrapClient(void);
+	   
+	   unsigned int m_RetID;
+	   TrapAlarmBack m_TrapAlarmBack;
+	   int SetTrapAlarmBack(TrapAlarmBack mTrapAlarmBack,unsigned int mretID);
+       int Start(void);
+       int Trapsnmp_input(int op, void *vsession, int reqid, void *vpdu, void *magic);
+	   
+private: 
 
-
-
-
-
-
-
-
-
-
-
+       CabinetClient *pCabinetClient;
+	   int GetAlarmID(char* sp);
+	   int DealAlarm(string Stroid,int AlarmID,int mgetIndex);
+	   void initHUAWEIALARM(void);
+	   
+	   int netsnmp_running ;
+	   static void *snmptrapthread(void*arg);
+	   void *snmptrapthreadRun(void);
+	   void snmptrapd_main_loop(void); 
+	   void *snmptrapd_add_session(void *t);
+	   
+};
 
 
 

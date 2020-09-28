@@ -3,7 +3,6 @@
 #include <map>
 #include <stdio.h>
 #include "registers.h"
-//#include "rs485server.h"
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -12,7 +11,6 @@
 #include "rsu.h"
 #include "cJSON.h"
 #include "CabinetClient.h"
-#include "net_spd.h"
 #include "lt_state_thread.h"
 #include "CsshClient.h"
 #include "CfirewallClient.h"
@@ -20,6 +18,7 @@
 #include "ipcam.h"
 #include "global.h"
 #include "canNode.h"
+#include "SpdClient.h"
 
 bool SetjsonAuthorityStr(int messagetype,char *json, int *len);//0 登录控制器
 void SetjsonIPStr(int messagetype,string &mstrjson);//5 读取/设置网口1

@@ -15,17 +15,15 @@
 #include <pthread.h>
 #include <string>
 #include "main.h"
-#include "tsPanel.h"
-
 
 #define WDT "/dev/watchdog"
 
 using namespace std; 
 
 extern REMOTE_CONTROL *stuRemote_Ctrl;	//遥控寄存器结构体
-extern CabinetClient *pCabinetClient;//华为机柜状态
+extern CabinetClient *pCabinetClient[HWSERVER_NUM];//华为机柜状态
+extern CTrapClient *pCTrapClient;//华为告警状态
 extern VMCONTROL_STATE VMCtl_State;	//控制器运行状态结构体
-extern SPD_PARAMS *stuSpd_Param;		//防雷器结构体
 extern VMCONTROL_CONFIG VMCtl_Config;	//控制器配置信息结构体
 
 CfirewallClient *pCfirewallClient[FIREWARE_NUM];	//防火墙对象
@@ -36,6 +34,7 @@ IPCam *pCVehplate900[VEHPLATE900_NUM];		//900万全景摄像机对象
 tsPanel *pCPanel;	//液晶屏对象
 CsshClient *pCsshClient[ATLAS_NUM];			//ATLAS对象
 CANNode *pCOsCan = NULL;		//Can对象
+SpdClient *pCSpdClent;		//SPD防雷器
 
 
 void WriteLog(char* str);
@@ -184,8 +183,8 @@ void canNodeCallback(void *p,void *data,int len)
 	//预留36路
 	if (c_data->can_id > 0)
 	{
-		DEBUG_PRINTF("init: %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x\r\n",c_data->data[0],c_data->data[1],\
-			c_data->data[2],c_data->data[3],c_data->data[4],c_data->data[5],c_data->data[6],c_data->data[7]);
+//		DEBUG_PRINTF("init: %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x\r\n",c_data->data[0],c_data->data[1],\
+//			c_data->data[2],c_data->data[3],c_data->data[4],c_data->data[5],c_data->data[6],c_data->data[7]);
 		
 		seq = c_data->can_id-1;
 		flag = c_data->data[0];
@@ -211,8 +210,8 @@ void canNodeCallback(void *p,void *data,int len)
 		pcan->canNode[seq].phase.alarm_threshold = oa_alarm*50;
 		pcan->canNode[seq].phase.version = pcan->int8_to_string(version);
 
-		DEBUG_PRINTF("recv: addr=%d, flag=%02x, temp=%d, volt=%f, amp=%f, oa=%d, version=%s\r\n",pcan->canNode[seq].address,pcan->canNode[seq].phase.flag,\
-			pcan->canNode[seq].phase.temp,pcan->canNode[seq].phase.vln,pcan->canNode[seq].phase.amp,pcan->canNode[seq].phase.alarm_threshold,pcan->canNode[seq].phase.version.c_str());
+//		DEBUG_PRINTF("recv: addr=%d, flag=%02x, temp=%d, volt=%f, amp=%f, oa=%d, version=%s\r\n",pcan->canNode[seq].address,pcan->canNode[seq].phase.flag,\
+//			pcan->canNode[seq].phase.temp,pcan->canNode[seq].phase.vln,pcan->canNode[seq].phase.amp,pcan->canNode[seq].phase.alarm_threshold,pcan->canNode[seq].phase.version.c_str());
 	}
 	//return 0;
 }
@@ -234,45 +233,16 @@ int main(void)
 	WriteLog("now start program!\n");
 	//读设置文件
 	GetConfig();
-	
-	//防雷器结构体
-	stuSpd_Param = (SPD_PARAMS*)malloc(sizeof(SPD_PARAMS));
-	memset(stuSpd_Param,0,sizeof(SPD_PARAMS));
-
 //	lockerDataInit(true);
 
 	//遥控设备结构体
 	stuRemote_Ctrl = (REMOTE_CONTROL*)malloc(sizeof(REMOTE_CONTROL));
 	
-	/////////////////  DO配置表开始/////////////////////////////////////////////
-	temp = 0;	//统计到底有几个DO
-	for (i = 0; i < SWITCH_COUNT; i++)
-	{
-		/*配置文件中是否有配置*/
-		if (pConf->StrDoSeq[i].length() != 0)
-		{
-			temp++; // 表明配置文件中有配置
-			pConf->DoSeq[i] = atoi(pConf->StrDoSeq[i].c_str());
-			if(pConf->DoSeq[i] > 0)
-			{
-				pConf->DoSeq[i]--; 		// 配置文件是从1~12, 标号是要减1
-			}
-		}
-		else
-		{
-			pConf->DoSeq[i] = NULL;	// 未配置,不使用
-		}
-	}
-	// 如果都没有配置，就按DO顺序进行默认配置
-	if (temp == 0)
-	{
-		//printf("temp=0\r\n");
-		for (i = 0; i < SWITCH_COUNT; i++)
-		{
-			pConf->DoSeq[i] = i;
-		}
-	}
-	/////////////////  DO配置表结束/////////////////////////////////////////////
+	//初始化Can
+    pCOsCan =  new CANNode((char *)"can0",CAN_500K,0,0x000,0xF00,0);
+//	Init_CANNode(pCOsCan);
+	pCOsCan->setCallback(canNodeCallback,NULL);
+		
 	//初始化http服务端
 	Init_HttpServer();
 	
@@ -281,19 +251,28 @@ int main(void)
 	usleep(500000); //delay 500ms
 	write(WDTfd, "\0", 1);
 	
+	Init_DO(pConf);
 	WalksnmpInit();
 
 	//机柜
-	pCabinetClient = new CabinetClient();
-    initHUAWEIGantry(pCabinetClient);
-	initHUAWEIALARM(pCabinetClient);
-	pCabinetClient->StrHWServer = pConf->StrHWServer;
-	pCabinetClient->StrHWGetPasswd = pConf->StrHWGetPasswd;
-	pCabinetClient->StrHWSetPasswd = pConf->StrHWSetPasswd;
-	pCabinetClient->Start();
+	for(i=0;i<HWSERVER_NUM;i++)
+	{
+		pCabinetClient[i] = new CabinetClient();
+	    initHUAWEIGantry(pCabinetClient[i]);
+		initHUAWEIALARM(pCabinetClient[i]);
+		pCabinetClient[i]->StrHWServer = pConf->StrHWServer;
+		pCabinetClient[i]->StrHWGetPasswd = pConf->StrHWGetPasswd;
+		pCabinetClient[i]->StrHWSetPasswd = pConf->StrHWSetPasswd;
+		if(i<atoi(pConf->StrHWServerCount.c_str()))
+			pCabinetClient[i]->Start();
+	}
+	//华为告警状态
+	pCTrapClient = new CTrapClient(pCabinetClient[0]);
+	pCTrapClient->SetTrapAlarmBack(TrapCallBack,(unsigned int)pCTrapClient);
+	pCTrapClient->Start();
 
 	//防火墙 
-	for(i=0;i<atoi(pConf->StrFireWareCount.c_str());i++)
+	for(i=0;i<FIREWARE_NUM;i++)
    	{
 		pCfirewallClient[i] = new CfirewallClient();
 		initHUAWEIEntity(pCfirewallClient[i]);
@@ -302,12 +281,13 @@ int main(void)
 		pCfirewallClient[i]->StrFireWareIP[0] = pConf->StrFireWareIP[i];
 		pCfirewallClient[i]->StrFireWareGetPasswd[0] = pConf->StrFireWareGetPasswd[i];
 		pCfirewallClient[i]->StrFireWareSetPasswd[0] = pConf->StrFireWareSetPasswd[i];
-		pCfirewallClient[i]->Start();
+		if(i<atoi(pConf->StrFireWareCount.c_str()))
+			pCfirewallClient[i]->Start();
 	}
 
 
 	//交换机
-	for(i=0;i<atoi(pConf->StrIPSwitchCount.c_str());i++)
+	for(i=0;i<IPSWITCH_NUM;i++)
    	{
 		pCswitchClient[i] = new CswitchClient();
 		initHUAWEIswitchEntity(pCswitchClient[i]);
@@ -316,7 +296,8 @@ int main(void)
 		pCswitchClient[i]->StrIPSwitchIP[0] = pConf->StrIPSwitchIP[i];
 		pCswitchClient[i]->StrIPSwitchGetPasswd[0] = pConf->StrIPSwitchSetPasswd[i];
 		pCswitchClient[i]->StrIPSwitchSetPasswd[0] = pConf->StrIPSwitchGetPasswd[i];
-		pCswitchClient[i]->Start();
+		if(i<atoi(pConf->StrIPSwitchCount.c_str()))
+			pCswitchClient[i]->Start();
 	}
 
    	//RSU
@@ -330,16 +311,8 @@ int main(void)
 	//车牌识别仪
    	for(i=0;i<atoi(pConf->StrVehPlateCount.c_str());i++)
    	{
-   		pCVehplate[i] = NULL;
-		
 		ip=pConf->StrVehPlateIP[i].substr(7,pConf->StrVehPlateIP[i].size()-7);//去掉"http://"
 	    pCVehplate[i] = new IPCam(ip,pConf->StrVehPlatePort[i],pConf->StrVehPlateKey[i]);
-		if(pCVehplate[i] == NULL)
-		{
-			sprintf(str,"车牌识别仪 %d %s 初始化失败！\n",i,ip.c_str());
-			WriteLog(str);
-			continue;
-		}
 	    pCVehplate[i]->setCallback(IPCamCallback,pCVehplate[i]);
    	}
 
@@ -348,22 +321,17 @@ int main(void)
    	{
 		ip=pConf->StrVehPlate900IP[i].substr(7,pConf->StrVehPlate900IP[i].size()-7);//去掉"http://"
 	    pCVehplate900[i] = new IPCam(ip,pConf->StrVehPlate900Port[i],pConf->StrVehPlate900Key[i]);
-		if(pCVehplate900[i] == NULL)
-		{
-			sprintf(str,"900万全景车牌识别仪 %d %s 初始化失败！\n",i,ip.c_str());
-			WriteLog(str);
-			continue;
-		}
 	    pCVehplate900[i]->setCallback(IPCamCallback,pCVehplate900[i]);
    	}
 
 	//Atlas
-   	for(i=0;i<atoi(pConf->StrAtlasCount.c_str());i++)
+   	for(i=0;i<ATLAS_NUM;i++)
    	{
 		pCsshClient[i] = new CsshClient();
 		pCsshClient[i]->mStrAtlasIP = pConf->StrAtlasIP[i];
 		pCsshClient[i]->mStrAtlasPasswd = pConf->StrAtlasPasswd[i];
-		pCsshClient[i]->Start();
+		if(i<atoi(pConf->StrAtlasCount.c_str()))
+			pCsshClient[i]->Start();
    	}
 
 	//初始化Can
@@ -371,7 +339,12 @@ int main(void)
 	pCOsCan->setCallback(canNodeCallback,NULL);
 
 	//初始化液晶屏
-	pCPanel =new tsPanel(pCabinetClient,&VMCtl_Config);	
+	pCPanel =new tsPanel(pCabinetClient[0],&VMCtl_Config);	
+		
+	//初始化SPD
+	pCSpdClent = new SpdClient();
+    init_SPD(pCSpdClent, pConf);
+
 	
     //初始化利通控制器状态获取线程
     init_lt_status();

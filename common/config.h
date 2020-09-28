@@ -5,7 +5,6 @@
 #include "registers.h"
 
 using namespace std; 
-//#pragma pack(push, 1)
 
 //CABINETTYPE:作为区分机柜类型，用于编译不同的代码
 //CABINETTYPE  1：华为（包括华为单门 双门等） 5：中兴; 6：金晟安; 7：爱特斯; 8:诺龙; 9：容尊堡; 
@@ -15,7 +14,8 @@ using namespace std;
 int GetConfig(void);
 int WriteNetconfig(char *configbuf,int configlen);
 int WriteNetconfig2(char *configbuf,int configlen);
-//#pragma pack(pop)
+int OnSpdSetconfigBack(string StrKEY,string StrSetconfig,unsigned int mRetID);
+int OnSpdSetWriteconfig(unsigned int mRetID);
 
 
 #endif
