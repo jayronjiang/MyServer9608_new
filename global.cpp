@@ -168,11 +168,13 @@ uint16_t linkStGetFromDevice(uint8_t seq)
 		}
 		DEBUG_PRINTF("atlas %s %d\r\n",strDeviceName.c_str(),linkSt);
 	}
+	/* 未配置,不显示
 	else
 	{
 		linkSt=2;
 		DEBUG_PRINTF("null %s %d\r\n",strDeviceName.c_str(),linkSt);
 	}
+	*/
 	return linkSt;
 }
 
