@@ -15,6 +15,8 @@
 #include <pthread.h>
 #include <string>
 #include "main.h"
+#include "hw_locker.h"
+
 
 #define WDT "/dev/watchdog"
 
@@ -25,6 +27,8 @@ extern CabinetClient *pCabinetClient[HWSERVER_NUM];//华为机柜状态
 extern CTrapClient *pCTrapClient;//华为告警状态
 extern VMCONTROL_STATE VMCtl_State;	//控制器运行状态结构体
 extern VMCONTROL_CONFIG VMCtl_Config;	//控制器配置信息结构体
+extern void Init_HwLocker(uint16_t seq,uint16_t address);
+
 
 CfirewallClient *pCfirewallClient[FIREWARE_NUM];	//防火墙对象
 CswitchClient *pCswitchClient[IPSWITCH_NUM];		//交换机对象
@@ -226,6 +230,7 @@ int main(void)
 	char str[256];
 	string ip;
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
+	int locker_addr = 1;
 	
 	//初始化看门狗
 //	WatchDogInit();
@@ -253,6 +258,17 @@ int main(void)
 	
 	Init_DO(pConf);
 	WalksnmpInit();
+
+	//华为的电子锁参数配置
+	for (i = 0; i < LOCKER_MAX_NUM; i++)
+	{
+		/*配置文件中是否有配置*/
+		if (pConf->StrAdrrLock[i].length() != 0)
+		{
+			 locker_addr = atoi(pConf->StrAdrrLock[i].c_str());
+			 Init_HwLocker((uint16_t)i,(uint16_t)locker_addr);
+		}
+	}
 
 	//机柜
 	for(i=0;i<HWSERVER_NUM;i++)
@@ -361,6 +377,9 @@ int main(void)
 	while(1)
 	{
 		sleep(5);
+		Locks[0]->open();
+		sleep(1);
+		Locks[1]->open();
 
 		//printf("GetTickCount=0x%x\n",GetTickCount());
 	}

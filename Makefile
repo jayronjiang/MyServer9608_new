@@ -33,6 +33,8 @@ LIBS          =  $(SUBLIBS)  ./alib/CsshClient.a \
 							 ./alib/SpdClient.a \
 							 ./alib/canNode.a \
 							 ./alib/canport.a \
+							 ./alib/hw_locker.a \
+							 ./alib/HWuart.a \
 							 ./libiconv/lib/*.a \
 							 -L./goahead/bin -lgo -ldl  -lrt -lpthread 
 
@@ -40,6 +42,7 @@ TARGET        = tranter
 
 
 OBJECTS       =  build/main.o     \
+				 build/hwlockercfg.o     \
                  build/MyCritical.o		\
                  build/server.o     \
                  build/jsonPackage.o  \
@@ -64,6 +67,9 @@ $(TARGET):  $(OBJECTS)
 build/main.o: main.cpp 
 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) $(LIBS) -o build/main.o main.cpp
+
+build/hwlockercfg.o: hwlockercfg.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) $(LIBS) -o build/hwlockercfg.o hwlockercfg.cpp
 
 build/config.o: config.cpp \
     common/config.h

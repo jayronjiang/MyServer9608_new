@@ -135,7 +135,7 @@ typedef unsigned long long  UINT64;
 #define VA_METER_BD_NUM		6
 #define VA_PHASE_NUM 6
 //最大支持4路电子门锁
-#define LOCK_NUM			4
+#define LOCK_NUM			8
 //最大支持3层电源板
 #define POWER_BD_NUM			3
 //最大支持36路开关数量
