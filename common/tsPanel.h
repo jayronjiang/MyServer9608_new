@@ -41,15 +41,6 @@ public:
 		SCREEN_SET_NUM
 	}SREEN_SET_LIST;
 
-#if 0
-	typedef struct
-	{
-	    char ip[20];
-	    char submask[20];
-	    char gateway_addr[20];
-	    char dns[20];
-	}IPInfo;
-#endif
 public:
 	tsPanel(CabinetClient *pCab,VMCONTROL_CONFIG *pConfig);
 	~tsPanel(void);
@@ -60,6 +51,7 @@ public:
 	void disconnctProcess(void);
 	void CabClientSet(CabinetClient *pCab);
 	void VM_ConfigSet(VMCONTROL_CONFIG *pConfig);
+	void Box_Config(uint16_t dev_name, uint16_t bat_name);
 	
 	CComPort *mComPort;	// 需要调用串口
 	CMyCritical ComCri;
@@ -67,8 +59,11 @@ public:
 	in_addr IPaddr[2];
 	uint16_t time_interval;
 	// 初始化要传参
-	CabinetClient *tsCabClient;//华为机柜状态
+	CabinetClient *tsCabClient[HWSERVER_NUM];//华为机柜状态
 	VMCONTROL_CONFIG *tsVM_Config;	//控制器配置信息结构体
+
+	uint16_t dev_box;	// 设备柜是属于哪个动环?0:动环1,1:动环2
+	uint16_t bat_box;	// 电池柜是属于哪个动环?0:动环1,1:动环2
 	   
 private:
 	pthread_t gtid;

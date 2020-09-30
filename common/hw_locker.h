@@ -75,9 +75,6 @@ public:
 	Signal_EN signal;
 
 private:
-    uint8_t addr;
-    Info_S info;
-
     Callback callback;
     void *userdata;
 
@@ -87,7 +84,10 @@ public:
 
     void setCallback(Callback cb,void *userdata);
     void open(void);
-	void close(void);	
+	void close(void);
+
+	uint8_t addr;
+    Info_S info;
 
 private:
     static void UartCallback(uint8_t port, uint8_t *buf, uint16_t len, void *userdata);

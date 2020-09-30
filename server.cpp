@@ -107,25 +107,7 @@ void SetIPinfo2()
     WriteNetconfig2((char *)(strwrconfig.c_str()),strwrconfig.length());
 }
 
-void GetIPinfo(IPInfo *ipInfo)
-{
-	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
-	
-	sprintf(ipInfo->ip,pConf->StrIP.c_str());
-	sprintf(ipInfo->submask ,pConf->StrMask.c_str());
-	sprintf(ipInfo->gateway_addr,pConf->StrGateway.c_str());
-	sprintf(ipInfo->dns ,pConf->StrDNS.c_str());
-}
 
-void GetIPinfo2(IPInfo *ipInfo)
-{
-	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
-	
-    sprintf(ipInfo->ip,pConf->StrIP2.c_str());
-    sprintf(ipInfo->submask ,pConf->StrMask2.c_str());
-    sprintf(ipInfo->gateway_addr,pConf->StrGateway2.c_str());
-    sprintf(ipInfo->dns ,pConf->StrDNS2.c_str());
-}
 
 void init_TCPServer()
 {

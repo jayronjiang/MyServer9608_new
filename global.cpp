@@ -18,6 +18,7 @@
 #include <cstring>
 #include <sstream>
 #include "global.h"
+#include "hw_locker.h"
 
 extern CabinetClient *pCabinetClient[HWSERVER_NUM];//华为机柜状态
 extern VMCONTROL_CONFIG VMCtl_Config;	//控制器配置信息结构体
@@ -60,7 +61,7 @@ float ampTrueGetFromDev(uint8_t seq)
 uint16_t linkStGetFrombox(uint8_t seq)
 {
 	CabinetClient *pCab=pCabinetClient[seq];//华为机柜状态
-	if(pCab==NULL) return 2;
+	if(pCab==NULL) return 0;
 	
 	uint16_t re_val = 0;
 	bool hwBox = pCab->HUAWEIDevValue.hwLinked;
@@ -78,7 +79,7 @@ uint16_t linkStGetFrombox(uint8_t seq)
 
 
 // 该设备离线还是在线?
-// 返回：1：在线，2：离线
+// 返回：1：在线，2：离线 	0:未配置
 uint16_t linkStGetFromDevice(uint8_t seq)
 {
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
@@ -284,6 +285,7 @@ bool isChannelNull(uint8_t seq)
 uint8_t getBoxNum(void)
 {
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
+	DEBUG_PRINTF("BoxNum =  %d\r\n",atoi(pConf->StrHWCabinetCount.c_str()));
 	return atoi(pConf->StrHWCabinetCount.c_str());
 }
 
@@ -350,7 +352,7 @@ string linkStringGetFromBox(uint8_t seq)
 	return str_re;
 }
 
-#if 0
+
 void GetIPinfo(IPInfo *ipInfo)
 {
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
@@ -369,7 +371,7 @@ void GetIPinfo2(IPInfo *ipInfo)
     sprintf(ipInfo->gateway_addr,pConf->StrGateway2.c_str());
     sprintf(ipInfo->dns ,pConf->StrDNS2.c_str());
 }
-#endif
+
 
 // 取8个字节的ID号
 unsigned long long IDgetFromConfig(void)
@@ -561,6 +563,22 @@ void VAgetFromDevice(uint8_t seq, string& volt, string& amp)
 uint16_t DoorStatusFromLocker(void)
 {
 	uint16_t reval = LOCKER_CLOSED;
+	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
+
+	//华为的电子锁参数配置
+	for (int i = 0; i < LOCKER_MAX_NUM; i++)
+	{
+		/*如果此锁有配置地址,读它的锁的开关状态*/
+		if (pConf->StrAdrrLock[i].length() != 0)
+		{
+			// 任何一把锁为打开,就是打开状态，屏幕要亮
+			if (Locks[i]->info.status == LOCKER_OPEN)
+			{
+				reval = LOCKER_OPEN;
+				break;
+			}
+		}
+	}
 	return reval;
 }
 
