@@ -354,6 +354,7 @@ int main(void)
 	// 配置动环和机柜的数量逻辑，如果是1个动环，1/2个机柜，则配置为Box_Config(0,0)
 	// 如果是2个动环，则配置为Box_Config(0,1)
 	pCPanel->Box_Config(0,0);
+	pCPanel->time_interval = 2;		// 800ms刷新
 		
 	//初始化SPD
 	pCSpdClent = new SpdClient();

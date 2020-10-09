@@ -129,8 +129,7 @@ void tsPanel::VM_ConfigSet(VMCONTROL_CONFIG *pConfig)
 void tsPanel::Box_Config(uint16_t dev_name,uint16_t bat_name)
 {
 	dev_box = dev_name;
-	bat_box = 
-bat_name;
+	bat_box = bat_name;
 }
 
 
@@ -327,7 +326,31 @@ uint16_t tsPanel::GetSpaceString(char *pbuf,string str_init,uint16_t TEXT_LEN,UI
 		}
 		Utf8ToGbk(c_utf,len+1,c_gbk,LONG_TEXT_MAX_LEN);
 		len = strlen(c_gbk);
-		DEBUG_PRINTF("gbk_len = 0x%02x \r\n",len);
+		/*
+		for(int i =0; i<len;i++)
+		{
+			DEBUG_PRINTF("%02x  ",c_gbk[i]);
+		}
+		DEBUG_PRINTF("\r\n");*/
+		// 看第50个字节是否是汉字，如果是，移到下一个字符，防止出现乱码
+		// 汉字是大于80开头
+		if ((len >= BYTE_CNT_IF_X_FONT)&&(((uint8_t)c_gbk[BYTE_CNT_IF_X_FONT-1]) >= 0x80))
+		{
+			for (i=len;i >=(BYTE_CNT_IF_X_FONT-1);i--)
+			{
+				c_gbk[i+1]= c_gbk[i];
+			}
+			c_gbk[BYTE_CNT_IF_X_FONT-1] = 0x20;	// 空值
+			len = len+1;
+		}
+
+		/*
+		DEBUG_PRINTF("space_gbk_len = 0x%02x \r\n",len);
+		for(int i =0; i<len;i++)
+		{
+			DEBUG_PRINTF("%02x  ",c_gbk[i]);
+		}
+		DEBUG_PRINTF("\r\n");*/
 
 		if (len > TEXT_LEN)
 		{
@@ -704,19 +727,21 @@ uint8_t tsPanel::tsPanelVarMsgStringPack(uint8_t *pbuf,uint16_t addr)
 	// 是否在线
 	for (i=0; i<MAX_CHANNEL; i++)
 	{
-		if(isChannelNull(i) == false)
+		//if(isChannelNull(i) == false)
 		{
 			// 这里要改
-			t_value = linkStGetFromDevice(i);
+			//t_value = linkStGetFromDevice(i);
+			t_value = 1;
 			cbuf[len++] =t_value>>8;
 			cbuf[len++] =t_value;
 		}
+		/*
 		else
 		{
 			// 没有配置就不显示
 			cbuf[len++] = 0;
 			cbuf[len++] = 0;
-		}
+		}*/
 	}
 
 	// 电源是否断电,断不断电和有没有配置没有关系
@@ -725,7 +750,8 @@ uint8_t tsPanel::tsPanelVarMsgStringPack(uint8_t *pbuf,uint16_t addr)
 		//if(isChannelNull(i) == false)
 		{
 			// 这里要改
-			t_value = powerStGetFromDevice(i);
+			//t_value = powerStGetFromDevice(i);
+			t_value = 1;
 			cbuf[len++] =t_value>>8;
 			cbuf[len++] =t_value;
 		}

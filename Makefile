@@ -13,7 +13,6 @@ LINK          = arm-none-linux-gnueabi-g++
 LFLAGS        = -Wl,-O1 -Wl,-rpath,/home/ctools/arm-2011.03/arm-none-linux-gnueabi/lib
 
 LIBS          =  $(SUBLIBS)  ./alib/CsshClient.a \
-							 ./alib/tsPanel.a \
 							 ./alib/comport.a \
 							 ./alib/CabinetClient.a \
 							 ./alib/CswitchClient.a \
@@ -42,6 +41,7 @@ TARGET        = tranter
 
 
 OBJECTS       =  build/main.o     \
+				 build/tsPanel.o     \
 				 build/hwlockercfg.o     \
                  build/MyCritical.o		\
                  build/server.o     \
@@ -53,7 +53,7 @@ OBJECTS       =  build/main.o     \
                  build/global.o \
                  build/tea.o   \
                  build/HttpServer.o \
-                 build/config.o   
+                 build/config.o  
 
 
 
@@ -70,6 +70,9 @@ build/main.o: main.cpp
 
 build/hwlockercfg.o: hwlockercfg.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) $(LIBS) -o build/hwlockercfg.o hwlockercfg.cpp
+
+build/tsPanel.o: tsPanel.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) $(LIBS) -o build/tsPanel.o tsPanel.cpp
 
 build/config.o: config.cpp \
     common/config.h
