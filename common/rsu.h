@@ -2,7 +2,8 @@
  * File Name: rsu.h
  * Author:
  * Created Time: 2020-08-15
- * Version: V1.0
+ * Last modify:  2020-09018
+ * Version: V1.1
  *
  * Description:
  ************************************************************************/
@@ -12,35 +13,25 @@
 /*******************************************************************************
  * includes
  ******************************************************************************/
+#include <pthread.h>
 #include <stdint.h>
 #include <string>
-#include <pthread.h>
 
-using namespace std;
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
-#define RSU_CONTROLER_NUM                                       (2)
-#define RSU_CTRL_PSMA_NUM                                       (12)
-#define RSU_CTRL_ANT_NUM                                        (8)
-#define RSU_PSMA_TERMINAL_NUM                                   (8)
 /*******************************************************************************
  * Class
  ******************************************************************************/
-class RSU {
+class Artc {
 public:
-    /* 数据类型 */
-    typedef enum {
-        /* 状态信息 */
-        stateInfo = 0xB0,
-        /* 心跳信息(控制器状态信息) */
-        heartbeat = 0xB1,
-        /* 复位信息 */
-        rstInfo = 0xD1,
-    }DataType_EN;
+    static const uint8_t CONTROLER_NUM = 2;
+    static const uint8_t CTRL_PSMA_NUM = 12;
+    static const uint8_t CTRL_ANT_NUM = 8;
+    static const uint8_t PSMA_TERMINAL_NUM = 8;
 
     /* 回调函数 */
-    typedef void (*Callback)(DataType_EN type,void *data,void *userdata);
+    typedef void (*Callback)(void *data, void *userdata);
 
     /* PSMA状态 */
     typedef struct {
@@ -71,7 +62,7 @@ public:
         /* PSAM数量 */
         uint8_t psamNum;
         /* PSMA状态 */
-        PsamSta_S psamSta[RSU_CTRL_PSMA_NUM];
+        PsamSta_S psamSta[CTRL_PSMA_NUM];
     } CtrlerSta_S;
 
     /* 天线信息 */
@@ -94,8 +85,8 @@ public:
         /* 状态获取时间戳 */
         uint32_t timestamp;
 
-        /* 控制器状态,控制器数量  = RSU_CONTROLER_NUM */
-        CtrlerSta_S ctrlSta[RSU_CONTROLER_NUM];
+        /* 控制器状态,控制器数量  = CONTROLER_NUM */
+        CtrlerSta_S ctrlSta[CONTROLER_NUM];
 
         /* 控制器之间的网络连接状态 */
         uint8_t netLinkSta;
@@ -107,9 +98,9 @@ public:
         uint8_t workingAnt;
 
         /* 天线信息 */
-        AntInfo_S antInfo[RSU_CTRL_ANT_NUM];
+        AntInfo_S antInfo[CTRL_ANT_NUM];
 
-    } RsuControler_S;
+    } Controler_S;
 
     /* RSU状态 */
     typedef struct {
@@ -120,7 +111,7 @@ public:
         uint8_t PsamNum;
 
         /* PSAM信息 */
-        PsamInfo_S psamInfo[RSU_PSMA_TERMINAL_NUM];
+        PsamInfo_S psamInfo[PSMA_TERMINAL_NUM];
 
         /* 算法标识，默认填写00H */
         uint8_t algId;
@@ -143,7 +134,7 @@ public:
         /* 保留数据段 */
         uint8_t reserved[4];
 
-    } RsuInfo_S;
+    } State_S;
 
     /* RSU复位信息 */
     typedef struct {
@@ -152,14 +143,20 @@ public:
 
         /* 天线是否重启状态  0：没有重启  1：系统已经重启 */
         uint8_t antRstSta;
-    } RsuRst_S;
+    } Reset_S;
 
+    /*** RSU所有参数信息数据结构 ***/
+    typedef struct {
+        Controler_S controler;
+        State_S sta;
+        Reset_S reset;
+    } RsuInfo_S;
 
 private:
     pthread_t tid;
     bool isSocConnect;
-    string ip;
-    uint16_t port,localPort;
+    std::string ip;
+    uint16_t port, localPort;
     int soc;
 
     Callback callback;
@@ -169,77 +166,147 @@ private:
     bool netConnect(void);
     void netDisconnect(void);
     static void *NetCommunicatThread(void *arg);
-    static uint16_t CRC16_pc(uint8_t *pchMsg,uint16_t wDataLen);
+    static uint16_t CRC16_pc(uint8_t *pchMsg, uint16_t wDataLen);
     static uint32_t GetTickCount(void);
-public:
-    RsuControler_S controler;
+
     RsuInfo_S info;
-    RsuRst_S reset;
 
-
+public:
     /**
      * @name: RSU构造函数
-     * 
+     *
      * @description:传入RSU的IP地址及端口号构造RSU对象；
-     * 
-     * @para: ip : string型IP地址参数；
-     *        port ： 无符号短整形或string型端口号；  
+     *
+     * @para: ip : std::string型IP地址参数；
+     *        port ： 无符号短整形或std::string型端口号；
      * */
-    RSU(const string ip,uint16_t port);
-    RSU(const string ip,const string port);
+    Artc(const std::string ip, uint16_t port);
+    Artc(const std::string ip, const std::string port);
 
     /**
      * @name: RSU析构函数
-     * 
+     *
      * @description:关闭通讯句柄，释放占用资源；
-     * 
+     *
      * */
-    ~RSU(void);
+    ~Artc(void);
 
     /**
      * @name: 设置回调函数
-     * 
+     *
      * @description:设置RSU数据接受回调函数；
-     * 
+     *
      * @para: cb : 外部指定的回调函数指针
      *        *userdata ： 用户自定义数据指针（当回调发生时会作为回调函数userdata参数传参）；
-     * 
-     * */
-    void setCallback(Callback cb,void *userdata);
-    /*
      *
-     * 回调函数说明及例程
-     * 
-     * typedef void (*Callback)(DataType_EN type,void *data,void *userdata);
-     * 
-     * type         : 数据类型 （目前是0xB0 0xB1 0xD1三种）；
-     * *data        : 数据指针，根据数据类型转型为对应的数据结构，再进行后续处理；
-     * *userdata    : 用户数据，返回setCallback函数设置回调时传入的userdata，可用于识别回调的对象，用于多个RSU对象共用同一个回调函数；
-     * 
-        void RsuCallback(RSU::DataType_EN type, void *data, void *userdata) {
-            //心跳信息
-            switch (type) {
-            case RSU::tHeartbeat: {
-                RSU::RsuControler_S *ctrler = (RSU::RsuControler_S *)data;
+     * */
+    void setCallback(Callback cb, void *userdata);
 
-                ......
-            } break;
-            //状态信息
-            case RSU::tStateInfo: {
-                RSU::RsuInfo_S *info = (RSU::RsuInfo_S *)data;
+    /**
+     * @name: 获取RSU参数
+     *
+     * @description:获取RSU参数；
+     *
+     * @return:当前最新的RSU参数结构；
+     * */
+    RsuInfo_S getRsuInfo(void);
+    
+};
 
-                ......
-            } break;
-            //复位信息
-            case RSU::tReset: {
-                RSU::RsuRst_S *reset = (RSU::RsuRst_S *)data;
+class Huawei {
 
-                ......
-            } break;
-            }
-        }
-    **/
+public:
+    typedef struct{
+        /* 连接状态 */
+        bool linked;
 
+        /* 状态获取时间戳 */
+        uint32_t timestamp;
+
+        /* Cpu占用率 */
+        std::string cpuRate;
+
+        /* 内存占用率 */
+        std::string memRate;
+
+        /* 运行状态 0：正常  非0：异常 */
+        std::string status;
+
+        /* 温度 */
+        std::string temperture;
+
+        /* 软件版本 */
+        std::string softVer;
+
+        /* 硬件版本 */
+        std::string hardVer;
+
+        /* 序列号 */
+        std::string seriNum;
+
+        /* 设备位置经度 */
+        std::string longitude;
+
+        /* 设备位置纬度 */
+        std::string latitude;
+    }RsuInfo_S;
+
+
+    /* 回调函数 */
+    typedef void (*Callback)(void *data, void *userdata);
+private:
+    std::string ip,port, uri;
+    pthread_t tid;
+    char *xmlRes, *xmlInq;
+    std::string cwmpID,seriNum;
+
+    Callback callback;
+    void *userdata;
+
+    RsuInfo_S info;
+
+public:
+    /**
+     * @name: Huwawei构造函数
+     *
+     * @description:传入RSU的IP地址及Rui号构造RSU对象；
+     *
+     * @para: ip : std::string型IP地址参数；
+     *        uri ： 华为RSU配置里的HTTP请求Uri；
+     * */
+    Huawei(std::string ip,std::string port, std::string uri);
+
+    /**
+     * @name: Huwawei析构函数
+     *
+     * @description:关闭通讯句柄，释放占用资源；
+     *
+     * */
+    ~Huawei();
+
+    /**
+     * @name: 设置回调函数
+     *
+     * @description:设置RSU数据接受回调函数；
+     *
+     * @para: cb : 外部指定的回调函数指针
+     *        *userdata ： 用户自定义数据指针（当回调发生时会作为回调函数userdata参数传参）；
+     *
+     * */
+    void setCallback(Callback cb, void *userdata);
+
+
+    /**
+     * @name: 获取RSU参数
+     *
+     * @description:获取RSU参数；
+     *
+     * @return:当前最新的RSU参数结构；
+     * */
+    RsuInfo_S getRsuInfo(void);
+
+private:
+    static void *NetCommunicatThread(void *arg);
 };
 
 #endif

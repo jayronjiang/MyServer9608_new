@@ -29,10 +29,9 @@
 using namespace std;//寮??ユ?翠釜??绌洪??
 CMyCritical ConfigCri;
 
-DEVICE_PARAMS *stuDev_Param[POWER_BD_NUM];		//装置参数寄存器
-REMOTE_CONTROL *stuRemote_Ctrl;	//遥控寄存器结构体
-CabinetClient *pCabinetClient[HWSERVER_NUM];//华为机柜状态
-CTrapClient *pCTrapClient;//华为告警状态
+REMOTE_CONTROL *stuRemote_Ctrl = NULL;	//遥控寄存器结构体
+CabinetClient *pCabinetClient[HWSERVER_NUM] = {NULL,NULL};//华为机柜状态
+CTrapClient *pCTrapClient = NULL;//华为告警状态
 VMCONTROL_STATE VMCtl_State;	//控制器运行状态结构体
 VMCONTROL_CONFIG VMCtl_Config;	//控制器配置信息结构体
 
@@ -137,6 +136,7 @@ int GetConfig(void)
 	pConf->StrServerURL4 = "";		//服务端URL4
 	pConf->StrStationURL = "";		//虚拟站端URL
 	pConf->StrRSUCount = ""; 		//RSU数量
+	pConf->StrRSUType = ""; 		//RSU类型
 	for(i=0;i<RSUCTL_NUM;i++)
 	{
 		pConf->StrRSUIP[i] = "" ;			//RSU IP 地址
@@ -405,6 +405,10 @@ int GetConfig(void)
 		pConf->StrRSUCount="0";
 		rsucnt=0;
 	}
+    Strkey = "RSUType=";
+    pConf->StrRSUType = getstring(StrConfig,Strkey) ;//RSU类型
+    if(pConf->StrRSUType=="")
+		pConf->StrRSUType="1";
 
 	for(i=0;i<rsucnt;i++)
 	{
@@ -413,8 +417,10 @@ int GetConfig(void)
 	    
 //		sprintf(key,"RSU%dPort=",i+1);
 //	    pConf->StrRSUPort[i] = getstring(StrConfig,key) ;//RSU端口
-		pConf->StrRSUPort[i] = "9528";//RSU端口固定9528
-
+		if(pConf->StrRSUType=="1")
+			pConf->StrRSUPort[i] = "9528";//门架通用型RSU端口固定9528
+		else if(pConf->StrRSUType=="2")
+			pConf->StrRSUPort[i] = "7548";//示范工程华为RSU端口固定7548
 	}
     Strkey = "VehPlateCount=";
     pConf->StrVehPlateCount = getstring(StrConfig,Strkey) ;//识别仪数量

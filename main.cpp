@@ -15,8 +15,6 @@
 #include <pthread.h>
 #include <string>
 #include "main.h"
-#include "hw_locker.h"
-
 
 #define WDT "/dev/watchdog"
 
@@ -27,18 +25,21 @@ extern CabinetClient *pCabinetClient[HWSERVER_NUM];//华为机柜状态
 extern CTrapClient *pCTrapClient;//华为告警状态
 extern VMCONTROL_STATE VMCtl_State;	//控制器运行状态结构体
 extern VMCONTROL_CONFIG VMCtl_Config;	//控制器配置信息结构体
-extern void Init_HwLocker(uint16_t seq,uint16_t address);
 
-
-CfirewallClient *pCfirewallClient[FIREWARE_NUM];	//防火墙对象
-CswitchClient *pCswitchClient[IPSWITCH_NUM];		//交换机对象
-RSU *pCRSU[RSUCTL_NUM];;					//RSU对象
+CfirewallClient *pCfirewallClient[FIREWARE_NUM] = {NULL,NULL};	//防火墙对象
+CswitchClient *pCswitchClient[IPSWITCH_NUM] = {NULL,NULL};		//交换机对象
+Artc *pCArtRSU[RSUCTL_NUM] = {NULL,NULL};;					//RSU对象
+Huawei *pCHWRSU[RSUCTL_NUM] = {NULL,NULL};;					//RSU对象
 IPCam *pCVehplate[VEHPLATE_NUM];			//300万车牌识别仪对象
-IPCam *pCVehplate900[VEHPLATE900_NUM];		//900万全景摄像机对象
-tsPanel *pCPanel;	//液晶屏对象
-CsshClient *pCsshClient[ATLAS_NUM];			//ATLAS对象
+IPCam *pCVehplate900[VEHPLATE900_NUM] = {NULL,NULL,NULL};		//900万全景摄像机对象
+tsPanel *pCPanel = NULL;	//液晶屏对象
+CsshClient *pCsshClient[ATLAS_NUM] = {NULL,NULL};			//ATLAS对象
 CANNode *pCOsCan = NULL;		//Can对象
-SpdClient *pCSpdClent;		//SPD防雷器
+SpdClient *pCSpdClent = NULL;		//SPD防雷器
+Lock *pCLock[LOCK_NUM] = {NULL,NULL,NULL,NULL};					//门锁对象
+TemHumi *pCTemHumi;//[TEMHUMI_NUM];// = {NULL,NULL};;					//温湿度对象
+AirCondition *pCAirCondition;//[AIRCON_NUM]= {NULL};;			//空调
+IODev *pCIOdev = NULL;				//IO
 
 
 void WriteLog(char* str);
@@ -69,23 +70,25 @@ void WatchDogInit(void)
 }
 
 
-void RsuCallback(RSU::DataType_EN type, void *data, void *userdata) 
+void RsuCallback(void *data, void *userdata) 
 {
-
-    RSU *pRSU = (RSU *)userdata ;
-
-    uint16_t i,j;
+	printf("RsuCallback\r\n");
 
     if(data == NULL)
         return;
 
     printf("callback\n");
 
+#if 0
+    Artc *pRSU = (RSU *)userdata ;
+
+    uint16_t i,j;
+
     /* 心跳信息 */
     switch (type) {
-    case RSU::heartbeat: {
-        RSU::RsuControler_S *ctrler = (RSU::RsuControler_S *)data;
-        RSU::CtrlerSta_S *sta = ctrler->ctrlSta;
+    case Artc::heartbeat: {
+        Artc::RsuControler_S *ctrler = (Artc::RsuControler_S *)data;
+        Artc::CtrlerSta_S *sta = ctrler->ctrlSta;
 
         printf("HeartBeat: timestamp = %ld\n",ctrler->timestamp);
         for (i = 0; i < RSU_CONTROLER_NUM; i++) {
@@ -104,8 +107,8 @@ void RsuCallback(RSU::DataType_EN type, void *data, void *userdata)
 
     } break;
     /* 状态信息 */
-    case RSU::stateInfo: {
-        RSU::RsuInfo_S *info = (RSU::RsuInfo_S *)data;
+    case Artc::stateInfo: {
+        Artc::RsuInfo_S *info = (Artc::RsuInfo_S *)data;
         uint8_t *id;
 
         printf("StateInfo : state = %X  psma num = %d ",info->state,info->PsamNum);
@@ -122,12 +125,13 @@ void RsuCallback(RSU::DataType_EN type, void *data, void *userdata)
 
     } break;
     /* 复位信息 */
-    case RSU::rstInfo: {
-        RSU::RsuRst_S *reset = (RSU::RsuRst_S *)data;
+    case Artc::rstInfo: {
+        Artc::RsuRst_S *reset = (Artc::RsuRst_S *)data;
 
 
     } break;
     }
+#endif
 }
 
 void IPCamCallback(string staCode,string msg,IPCam::State_S state,void *userdata)
@@ -164,13 +168,6 @@ void IPCamCallback(string staCode,string msg,IPCam::State_S state,void *userdata
     printf("devicetype = %s\n",state.devicetype.c_str());
     printf("statuscode = %s\n",state.statuscode.c_str());
     printf("statusmsg = %s\n",state.statusmsg.c_str());
-}
-
-void HttpCallback(long code,char *data,uint32_t dLen,void *userdata)
-{
-    printf("\n*********** HTTP CALLBACK **********************\n");
-    printf("CODE = %ld  DATA length = %d\n\n",code,dLen);
-    printf("%s \r\n",data);
 }
 
 // p指针需要传进this,否则无法处理node中的数据
@@ -230,10 +227,9 @@ int main(void)
 	char str[256];
 	string ip;
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
-	int locker_addr = 1;
 	
 	//初始化看门狗
-//	WatchDogInit();
+	WatchDogInit();
 
 	WriteLog("now start program!\n");
 	//读设置文件
@@ -242,46 +238,71 @@ int main(void)
 
 	//遥控设备结构体
 	stuRemote_Ctrl = (REMOTE_CONTROL*)malloc(sizeof(REMOTE_CONTROL));
+	
+	//初始化Can
+    pCOsCan =  new CANNode((char *)"can0",CAN_500K,0,0x000,0xF00,0);
+	pCOsCan->setCallback(canNodeCallback,NULL);
 		
-	//初始化http服务端
-	Init_HttpServer();
-	
-	//初始化服务器线程
-	init_TCPServer();
-	usleep(500000); //delay 500ms
-	write(WDTfd, "\0", 1);
-	
 	Init_DO(pConf);
 	WalksnmpInit();
 
-	//华为的电子锁参数配置
-	for (i = 0; i < LOCKER_MAX_NUM; i++)
-	{
-		/*配置文件中是否有配置*/
-		if (pConf->StrAdrrLock[i].length() != 0)
-		{
-			 locker_addr = atoi(pConf->StrAdrrLock[i].c_str());
-			 Init_HwLocker((uint16_t)i,(uint16_t)locker_addr);
-		}
-	}
-
+	//CABINETTYPE  1：华为（包括华为单门 双门等） 5：中兴; 6：金晟安; 7：爱特斯; 8:诺龙; 9：容尊堡; 
+				//10:亚邦; 11：艾特网能；12：华软；13：利通
 	//机柜
 	for(i=0;i<HWSERVER_NUM;i++)
 	{
 		pCabinetClient[i] = new CabinetClient();
 	    initHUAWEIGantry(pCabinetClient[i]);
 		initHUAWEIALARM(pCabinetClient[i]);
-		pCabinetClient[i]->StrHWServer = pConf->StrHWServer;
-		pCabinetClient[i]->StrHWGetPasswd = pConf->StrHWGetPasswd;
-		pCabinetClient[i]->StrHWSetPasswd = pConf->StrHWSetPasswd;
-		if(i<atoi(pConf->StrHWServerCount.c_str()))
-			pCabinetClient[i]->Start();
+		if(atoi(pConf->StrCabinetType.c_str())>=1 && atoi(pConf->StrCabinetType.c_str())<=4) //华为机柜
+		{
+			pCabinetClient[i]->StrHWServer = pConf->StrHWServer;
+			pCabinetClient[i]->StrHWGetPasswd = pConf->StrHWGetPasswd;
+			pCabinetClient[i]->StrHWSetPasswd = pConf->StrHWSetPasswd;
+			if(i<atoi(pConf->StrHWServerCount.c_str()))
+				pCabinetClient[i]->Start();
+		}
 	}
 	//华为告警状态
 	pCTrapClient = new CTrapClient(pCabinetClient[0]);
 	pCTrapClient->SetTrapAlarmBack(TrapCallBack,(unsigned int)pCTrapClient);
 	pCTrapClient->Start();
 
+	if(pConf->StrCabinetType=="13") //利通机柜
+	{
+/*		//温湿度：传参为485地址 
+		for(i=0;i<TEMHUMI_NUM;i++)
+		{
+//			uint8_t addr=(i==0?TEMHUMI_ADDRESS_1:TEMHUMI_ADDRESS_2);
+			pCTemHumi[i] = new TemHumi(0x01);
+			pCTemHumi[i]->setCallback(TemHumiCallback, pCTemHumi[i]);
+		}*/
+		pCTemHumi = new TemHumi(0x1);
+		pCTemHumi->setCallback(TemHumiCallback, pCTemHumi);
+
+		/* 空调：传参为485地址 */
+/*		for(i=0;i<AIRCON_NUM;i++)
+		{
+		    pCAirCondition[i]=new AirCondition(0x6);
+		    pCAirCondition[i]->setCallback(AirConditionCallback,NULL);
+		    pCAirCondition[i]->config(AirCondition::Cfg_Refrigeration,20);
+		}*/
+	    pCAirCondition=new AirCondition(0x6); 
+	    pCAirCondition->setCallback(AirConditionCallback,NULL);
+	    pCAirCondition->config(AirCondition::Cfg_Refrigeration,20);
+
+		//IO
+	    pCIOdev = IODev::getInstance();
+	    pCIOdev->setCallback(IODevCallback,NULL);
+		
+		//电子锁对象
+		for(i=0;i<LOCK_NUM;i++)
+		{
+			pCLock[i] = new Lock(atoi(pConf->StrAdrrLock[i].c_str()));
+			pCLock[i]->setCallback(LockCallback, pCLock[i]);
+		}
+	}
+	
 	//防火墙 
 	for(i=0;i<FIREWARE_NUM;i++)
    	{
@@ -314,10 +335,18 @@ int main(void)
    	//RSU
    	for(i=0;i<atoi(pConf->StrRSUCount.c_str());i++)
    	{
-	    pCRSU[i]  = new RSU(pConf->StrRSUIP[i].c_str(),pConf->StrRSUPort[i].c_str());
-
-	    pCRSU[i]->setCallback(RsuCallback,pCRSU[i]);
-   	}
+   		if(pConf->StrRSUType=="1")	//门架通用型RSU
+   		{
+		    pCArtRSU[i]  = new Artc(pConf->StrRSUIP[i].c_str(),pConf->StrRSUPort[i].c_str());
+			pCArtRSU[i]->setCallback(RsuCallback,pCArtRSU[i]);
+   		}
+		else if(pConf->StrRSUType=="2")	//华为RSU
+		{
+printf("start rsu %s\r\n",pConf->StrIP.c_str());
+			pCHWRSU[i]  = new Huawei(pConf->StrIP.c_str(),pConf->StrRSUPort[i],"/tr069");
+			pCHWRSU[i]->setCallback(RsuCallback,pCHWRSU[i]);
+		}
+   	} 
 
 	//车牌识别仪
    	for(i=0;i<atoi(pConf->StrVehPlateCount.c_str());i++)
@@ -345,21 +374,15 @@ int main(void)
 			pCsshClient[i]->Start();
    	}
 
-	//初始化Can
-    pCOsCan =  new CANNode((char *)"can0",CAN_500K,0,0x000,0xF00,0);
-	pCOsCan->setCallback(canNodeCallback,NULL);
-
 	//初始化液晶屏
-	pCPanel =new tsPanel(pCabinetClient[0],&VMCtl_Config);
-	// 配置动环和机柜的数量逻辑，如果是1个动环，1/2个机柜，则配置为Box_Config(0,0)
-	// 如果是2个动环，则配置为Box_Config(0,1)
-	pCPanel->Box_Config(0,0);
-	pCPanel->time_interval = 2;		// 800ms刷新
+	pCPanel =new tsPanel(pCabinetClient[0],&VMCtl_Config);	
 		
 	//初始化SPD
 	pCSpdClent = new SpdClient();
     init_SPD(pCSpdClent, pConf);
 
+	usleep(500000); //delay 500ms
+	write(WDTfd, "\0", 1);
 	
     //初始化利通控制器状态获取线程
     init_lt_status();
@@ -373,14 +396,19 @@ int main(void)
 	//处理重启
 	init_DealDoReset();
 	
+	//初始化http服务端
+	Init_HttpServer();
+	
+	//初始化服务器线程
+	init_TCPServer();
+	
 	while(1)
 	{
 		sleep(5);
-		Locks[0]->open();
-		sleep(1);
-		Locks[1]->open();
 
-		//printf("GetTickCount=0x%x\n",GetTickCount());
+		write(WDTfd, "\0", 1);
+		
+		printf("GetTickCount=0x%x\n",GetTickCount());
 	}
 
    

@@ -324,10 +324,8 @@ WriteLog(strmsg);
     float FmenUse = (float)atoi(pSta->strmenUsed.c_str());
     float FmenRate = (FmenUse/FmenTotal)*100 ;
 
-    stringstream ss;
-    ss<<FmenRate;
-    pSta->strmenRate = ss.str();
-    pSta->strmenRate = pSta->strmenRate;
+	sprintf(infobuf,"%.1f\0",FmenRate);
+	pSta->strmenRate=infobuf;
 sprintf(strmsg,"内存占用率%s%\n",pSta->strmenRate.c_str());
 WriteLog(strmsg);
     printf("内存占用率%s%\r\n",pSta->strmenRate.c_str());

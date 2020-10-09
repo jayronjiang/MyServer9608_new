@@ -21,8 +21,9 @@ LIBS          =  $(SUBLIBS)  ./alib/CsshClient.a \
 							 ./alib/libnetsnmp.a \
 							 ./alib/libnetsnmptrapd.a \
 							 ./alib/ipcam.a \
-							 ./alib/http.a \
-							 ./alib/rsu.a \
+							 ./alib/librsu.a \
+							 ./alib/libxml.a \
+							 ./alib/libhttp.a \
 							 ./alib/CJsonObject.a \
 							 ./solib/libssl.so.1.1 \
 							 ./solib/libcrypto.so.1.1 \
@@ -32,8 +33,12 @@ LIBS          =  $(SUBLIBS)  ./alib/CsshClient.a \
 							 ./alib/SpdClient.a \
 							 ./alib/canNode.a \
 							 ./alib/canport.a \
-							 ./alib/hw_locker.a \
-							 ./alib/HWuart.a \
+							 ./alib/liblock.a \
+							 ./alib/libtemhumi.a \
+							 ./alib/libcamera.a \
+							 ./alib/libaircondition.a \
+							 ./alib/libiodev.a \
+							 ./alib/libuart.a \
 							 ./libiconv/lib/*.a \
 							 -L./goahead/bin -lgo -ldl  -lrt -lpthread 
 

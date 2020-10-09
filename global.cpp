@@ -25,7 +25,8 @@ extern VMCONTROL_CONFIG VMCtl_Config;	//控制器配置信息结构体
 extern CANNode *pCOsCan;		//Can对象
 extern CfirewallClient *pCfirewallClient[FIREWARE_NUM];
 extern CswitchClient *pCswitchClient[IPSWITCH_NUM];
-extern RSU *pCRSU[RSUCTL_NUM];;
+extern Artc *pCArtRSU[RSUCTL_NUM];;					//RSU对象
+extern Huawei *pCHWRSU[RSUCTL_NUM];;					//RSU对象
 extern IPCam *pCVehplate[VEHPLATE_NUM];
 extern IPCam *pCVehplate900[VEHPLATE900_NUM];
 extern CsshClient *pCsshClient[ATLAS_NUM];			//ATLAS对象
@@ -86,6 +87,7 @@ uint16_t linkStGetFromDevice(uint8_t seq)
 	int _pos=0,num=0;
 	uint16_t linkSt;
 	IPCam::State_S State;
+	Artc::RsuInfo_S ArtcState;
 	
 	string strDeviceName = pConf->StrDeviceNameSeq[seq];
 	if(strDeviceName.find("rsu")==0)
@@ -94,7 +96,13 @@ uint16_t linkStGetFromDevice(uint8_t seq)
 		
 		num=atoi(strDeviceName.substr(3,_pos-3).c_str());
 
-		linkSt=pCRSU[num-1]->controler.linked;
+		if(pConf->StrRSUType=="1")
+		{
+			ArtcState=pCArtRSU[num-1]->getRsuInfo();
+			linkSt=ArtcState.controler.linked;
+		}
+//		else if(pConf->StrRSUType=="2")
+//			linkSt=pCHWRSU[num-1]->RsuInfo_S.controler.linked;
 		if(linkSt==0)		//离线代码转换
 		{
 			linkSt=2;

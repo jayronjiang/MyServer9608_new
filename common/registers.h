@@ -130,12 +130,20 @@ typedef unsigned long long  UINT64;
 /*电表地址*/
 #define VA_STATION_ADDRESS_1	81
 #define VA_STATION_ADDRESS_2	82
+//预留2组温湿度
+#define TEMHUMI_NUM 1
+#define TEMHUMI_ADDRESS_1	0x01
+#define TEMHUMI_ADDRESS_2	0x11
+//预留1台空调
+#define AIRCON_NUM 1
+#define AIRCON_ADDRESS_1	0x06
+#define AIRCON_ADDRESS_2	0x16
 
 // 最大支持6个伏安表, 每个伏安表为6组电流电压值
 #define VA_METER_BD_NUM		6
 #define VA_PHASE_NUM 6
 //最大支持4路电子门锁
-#define LOCK_NUM			8
+#define LOCK_NUM			4
 //最大支持3层电源板
 #define POWER_BD_NUM			3
 //最大支持36路开关数量
@@ -316,6 +324,7 @@ typedef struct vmctl_config_struct
     
     string StrRSUCount;            //RSU数量
 	int RSUCount;	//RSU数量
+    string StrRSUType;            //RSU类型 1：门架通用RSU；2：示范工程华为RSU
     string StrRSUIP[RSUCTL_NUM];            //RSU控制器IP地址
     string StrRSUPort[RSUCTL_NUM];          //RSU控制器端口
     string StrVehPlateCount;            //识别仪数量

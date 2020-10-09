@@ -21,10 +21,13 @@
 #include "tsPanel.h"
 #include "CsshClient.h"
 #include "HttpServer.h"
-#include "canNode.h"
-#include "canport.h"
-#include "debug.h"
-#include "SpdClient.h"
+#include "lock.h"
+#include "tem_humi.h"
+#include "camera.h"
+#include "air_condition.h"
+#include "io_dev.h"
+#include "uart.h"
+#include "http.h"
 
 using namespace std; 
 

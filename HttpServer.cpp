@@ -74,10 +74,10 @@ int WritepUpdata(unsigned char *pDateBuf,int pDateLen)
 
 int WriteZipdata(unsigned char *pDateBuf,int pDateLen)
 {
-	if(access("/opt/9100.sh",0)==0)
+	if(access("/opt/autorun.sh",0)==0)
 	{
-		printf("/opt/9100.sh 存在，删除 /opt/9100.sh\r\n");
-		system("rm /opt/9100.sh") ;
+		printf("/opt/autorun.sh 存在，删除 /opt/autorun.sh\r\n");
+		system("rm /opt/autorun.sh") ;
 	}
 	if(access("/opt/upgrade.zip",0)==0)
 	{

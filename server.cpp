@@ -107,7 +107,25 @@ void SetIPinfo2()
     WriteNetconfig2((char *)(strwrconfig.c_str()),strwrconfig.length());
 }
 
+void GetIPinfo(IPInfo *ipInfo)
+{
+	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
+	
+	sprintf(ipInfo->ip,pConf->StrIP.c_str());
+	sprintf(ipInfo->submask ,pConf->StrMask.c_str());
+	sprintf(ipInfo->gateway_addr,pConf->StrGateway.c_str());
+	sprintf(ipInfo->dns ,pConf->StrDNS.c_str());
+}
 
+void GetIPinfo2(IPInfo *ipInfo)
+{
+	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
+	
+    sprintf(ipInfo->ip,pConf->StrIP2.c_str());
+    sprintf(ipInfo->submask ,pConf->StrMask2.c_str());
+    sprintf(ipInfo->gateway_addr,pConf->StrGateway2.c_str());
+    sprintf(ipInfo->dns ,pConf->StrDNS2.c_str());
+}
 
 void init_TCPServer()
 {
@@ -415,7 +433,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 				sprintf(tmpStringData,"date -s \"%s\"\n",tmpstr);		//IoT 9100
 				printf("setSystemTimer %s",tmpStringData);
 				system(tmpStringData);		//设置日期时间
-				system("hwclock -w");		//写入硬时钟
+				system("hwclock -u -w");		//写入硬时钟
 				pCMD->datalen =  0;
 
 			}
@@ -812,6 +830,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 
  void RemoteControl(UINT8* pRCtrl)
  {
+printf("cccc\rn");  
 	int i,j;
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;  //控制器配置信息结构体
 	REMOTE_CONTROL *pstuRCtrl=(REMOTE_CONTROL *)pRCtrl;
@@ -853,17 +872,18 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		strcmd="date -s \""+strtmp+"\"\n";
 		printf("setSystemTimer %s",strcmd.c_str());		//IoT 9100
 		system(strcmd.c_str());	  //设置日期时间
-		system("hwclock -w"); 	  //写入硬时钟
+		system("hwclock -u -w"); 	  //写入硬时钟 
 	}
-#if 0	  
+
 	 if(pstuRCtrl->FrontDoorCtrl==ACT_UNLOCK)					 //开锁
 	 {
-	 	printf("FrontDoorCtrl ACT_UNLOCK");
+	 	printf("设备柜前门 开锁\r\n");
+#if 0
 		 // 如果是华为机柜
 	#if (CABINETTYPE == 1)
 		 //if (CabinetTypeGet() <= CABIN_HUAWEI_1_1)
 		 {
-			locker_ctrl_flag |= LBIT(LOCKER_1_CTRL_UNLOCK);
+//			locker_ctrl_flag |= LBIT(LOCKER_1_CTRL_UNLOCK);
 		 }
 		 //else if (CabinetTypeGet == CABIN_ZTE)
 	#elif ((CABINETTYPE == 5)  || (CABINETTYPE == 6) )
@@ -880,33 +900,13 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 	#elif (CABINETTYPE == 9)
 		GsyjLockerContrl_Func(DEV_DOOR_IC,true);
 	#endif
-		 usleep(2000);
-	 }
-	 if(pstuRCtrl->FrontDoorCtrl==ACT_LOCK) 				 //关锁
-	 {
-		 printf("FrontDoorCtrl ACT_LOCK");
-		 // 如果是华为机柜
-		 #if (CABINETTYPE == 1)
-		 {
-		 	locker_ctrl_flag |= LBIT(LOCKER_1_CTRL_LOCK);
-		 }
-		 #elif ((CABINETTYPE == 5)  || (CABINETTYPE == 6) )
-		 {
-		 	if (zteLockDevID[0] != "")
-		 	{
-				memset(byteSend,0,BASE64_HEX_LEN);
-				// 开锁
-			   	zte_jsa_locker_process(0,DOOR_CLOSE_CMD,byteSend,mStrUser,mStrkey);
-		 	}
-		 }
-		 #elif (CABINETTYPE == 9)
-			GsyjLockerContrl_Func(DEV_DOOR_IC,false);
-		 #endif
+#endif
 		 usleep(2000);
 	 }
 	 if(pstuRCtrl->BackDoorCtrl==ACT_UNLOCK)				 //开锁
 	 {
-	 	printf("BackDoorCtrl ACT_UNLOCK");
+		 printf("设备柜后门 开锁\r\n");
+#if 0
 		 // 如果是华为机柜
 		 #if(CABINETTYPE == 1) //华为
 		 {
@@ -925,30 +925,13 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		 #elif (CABINETTYPE == 7)
 			 openatslock();
 		 #endif
-		 usleep(2000);
-	 }
-	 if(pstuRCtrl->BackDoorCtrl==ACT_LOCK)					 //关锁
-	 {
-		 printf("BackDoorCtrl ACT_LOCK") ;
-		 // 如果是华为机柜
-		 #if (CABINETTYPE == 1)
-		 {
-		 	locker_ctrl_flag |= LBIT(LOCKER_2_CTRL_LOCK);
-		 }
-		 #elif ((CABINETTYPE == 5)  || (CABINETTYPE == 6) )
-		 {
-		 	if (zteLockDevID[1] != "")
-		 	{
-				memset(byteSend,0,BASE64_HEX_LEN);
-			   	zte_jsa_locker_process(1,DOOR_CLOSE_CMD,byteSend,mStrUser,mStrkey);
-		 	}
-		 }
-		 #endif
+#endif
 		 usleep(2000);
 	 }
 	 if(pstuRCtrl->SideDoorCtrl==ACT_UNLOCK)				 //开锁
 	 {
-	 	printf("SideDoorCtrl ACT_UNLOCK");
+		 printf("电池柜前门 开锁\r\n");
+#if 0
 	     //CABINETTYPE  1：华为（包括华为单门 双门等） 5：中兴; 6：金晟安; 7：爱特斯 StrVersionNo
    	#if(CABINETTYPE == 1) //华为
 		 // 如果是华为机柜
@@ -969,32 +952,13 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 	#elif (CABINETTYPE == 9)
 		GsyjLockerContrl_Func(DEV_DOOR_IC_POWER,true);
 	#endif
-		 usleep(2000);
-	 }
-	 if(pstuRCtrl->SideDoorCtrl==ACT_LOCK)					 //关锁
-	 {
- 		 printf("SideDoorCtrl ACT_LOCK");
-		 // 如果是华为机柜
-		 #if (CABINETTYPE == 1)
-		 {
-		 	locker_ctrl_flag |= LBIT(LOCKER_3_CTRL_LOCK);
-		 }
-		 #elif ((CABINETTYPE == 5)  || (CABINETTYPE == 6) )
-		 {
-		 	if (zteLockDevID[2] != "")
-		 	{
-				memset(byteSend,0,BASE64_HEX_LEN);
-			   	zte_jsa_locker_process(2,DOOR_CLOSE_CMD,byteSend,mStrUser,mStrkey);
-		 	}
-		 }
-		 #elif (CABINETTYPE == 9)
-			GsyjLockerContrl_Func(DEV_DOOR_IC_POWER,false);
-		 #endif
+#endif
 		 usleep(2000);
 	 }
 	 if(pstuRCtrl->RightSideDoorCtrl==ACT_UNLOCK)				 //开锁
 	 {
-	 	printf("SideDoorCtrl ACT_UNLOCK");
+		 printf("电池柜后门 开锁\r\n");
+#if 0
 		 // 如果是华为机柜
 		 #if (CABINETTYPE == 1)
 		 {
@@ -1010,29 +974,10 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		 	}
 		 }
 		 #endif
-		 usleep(2000);
-	 }
-	 if(pstuRCtrl->RightSideDoorCtrl==ACT_LOCK)					 //关锁
-	 {
- 		 printf("SideDoorCtrl ACT_LOCK");
-		  // 如果是华为机柜
-		 #if (CABINETTYPE == 1)
-		 {
-		 	locker_ctrl_flag |= LBIT(LOCKER_4_CTRL_LOCK);
-		 }
-		 #elif ((CABINETTYPE == 5)  || (CABINETTYPE == 6) )
-		 {
-		 	if (zteLockDevID[3] != "")
-		 	{
-				memset(byteSend,0,BASE64_HEX_LEN);
-				// 开锁
-			   	zte_jsa_locker_process(3,DOOR_CLOSE_CMD,byteSend,mStrUser,mStrkey);
-		 	}
-		 }
-		 #endif
-		 usleep(2000);
-	 }
 #endif
+		 usleep(2000);
+	 }
+
 	 if(pHWDev->hwLinked && GetTickCount()-pHWDev->hwTimeStamp>5*60) //超过5分钟没更新，认为没有连接)
 	 	pHWDev->hwLinked=false;
  	 //控制单板复位 0：保持；1：热复位；
@@ -1041,6 +986,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		 sprintf(value,"%d",pstuRCtrl->hwctrlmonequipreset);
 		 printf("RemoteControl 控制单板复位=%s\n",value);
 		 pCab->SnmpSetOid(hwCtrlMonEquipReset,value,1);
+		 pCab->SetIntervalTime(1);
 	 }
  	 //AC过压点设置 0:保持；50-600（有效）；280（缺省值）
 	 if(pHWDev->hwLinked && pstuRCtrl->hwsetacsuppervoltlimit!=ACT_HOLD)
@@ -1048,6 +994,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		 sprintf(value,"%d",pstuRCtrl->hwsetacsuppervoltlimit);
 		 printf("RemoteControl AC过压点设置=%s\n",value);
 		 pCab->SnmpSetOid(hwSetAcsUpperVoltLimit,value,1);
+		 pCab->SetIntervalTime(1);
 	 }
 	 //AC欠压点设置 0:保持；50-600（有效）；180（缺省值）
 	 if(pHWDev->hwLinked && pstuRCtrl->hwsetacslowervoltlimit!=ACT_HOLD)
@@ -1055,6 +1002,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		 sprintf(value,"%d",pstuRCtrl->hwsetacslowervoltlimit);
 		 printf("RemoteControl AC欠压点设置=%s\n",value);
 		 pCab->SnmpSetOid(hwSetAcsLowerVoltLimit,value,1);
+		 pCab->SetIntervalTime(1);
 	 }
 	 //设置DC过压点 0:保持；53-600（有效）；58（缺省值）
 	 if(pHWDev->hwLinked && pstuRCtrl->hwsetdcsuppervoltlimit!=ACT_HOLD)
@@ -1062,6 +1010,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		 sprintf(value,"%d",pstuRCtrl->hwsetdcsuppervoltlimit*10);
 		 printf("RemoteControl 设置DC过压点=%s\n",value);
 		 pCab->SnmpSetOid(hwSetDcsUpperVoltLimit,value,1);
+		 pCab->SetIntervalTime(1);
 	 }
 	 //设置DC欠压点 0:保持；35 - 57（有效）；45（缺省值）
 	 if(pHWDev->hwLinked && pstuRCtrl->hwsetdcslowervoltlimit!=ACT_HOLD)
@@ -1069,6 +1018,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		 sprintf(value,"%d",pstuRCtrl->hwsetdcslowervoltlimit*10);
 		 printf("RemoteControl 设置DC欠压点=%s\n",value);
 		 pCab->SnmpSetOid(hwSetDcsLowerVoltLimit,value,1);
+		 pCab->SetIntervalTime(1);
 	 }
 	 //环境温度告警上限 0:保持；25-80（有效）；55（缺省值）
 	 for(i=0;i<2;i++)
@@ -1078,6 +1028,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 			 sprintf(value,"%d",pstuRCtrl->hwsetenvtempupperlimit[i]);
 			 printf("RemoteControl 环境温度告警上限%d=%s\n",i,value);
 			 pCab->SnmpSetOid(hwSetEnvTempUpperLimit,value,i+1);
+			 pCab->SetIntervalTime(1);
 		 }
 	 }
 	 //环境温度告警下限255:保持；-20-20（有效）；-20（缺省值）
@@ -1088,6 +1039,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 			 sprintf(value,"%d",pstuRCtrl->hwsetenvtemplowerlimit[i]);
 			 printf("RemoteControl 环境温度告警下限%d=%s\n",i,value);
 			 pCab->SnmpSetOid(hwSetEnvTempLowerLimit,value,i+1);
+			 pCab->SetIntervalTime(1);
 		 }
 	 }
 	 //环境湿度告警上限 255:保持；0-100（有效）；95（缺省值）
@@ -1098,6 +1050,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 			 sprintf(value,"%d",pstuRCtrl->hwsetenvhumidityupperlimit[i]);
 			 printf("RemoteControl 环境湿度告警上限%d=%s\n",i,value);
 			 pCab->SnmpSetOid(hwSetEnvHumidityUpperLimit,value,i+1);
+			 pCab->SetIntervalTime(1);
 		 }
 	 }
 	 //环境湿度告警下限 255:保持；0-100（有效）；5（缺省值）
@@ -1108,6 +1061,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 			 sprintf(value,"%d",pstuRCtrl->hwsetenvhumiditylowerlimit[i]);
 			 printf("RemoteControl 环境湿度告警下限%d=%s\n",i,value);
 			 pCab->SnmpSetOid(hwSetEnvHumidityLowerLimit,value,i+1);
+			 pCab->SetIntervalTime(1);
 		 }
 	 }
 	 //温控模式 	 0：保持；1：纯风扇模式；2：纯空调模式；3：智能模式；
@@ -1116,6 +1070,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
          sprintf(value,"%d",pstuRCtrl->hwcoolingdevicesmode);
          printf("RemoteControl 温控模式=%s\n",value);
          pCab->SnmpSetOid(hwCoolingDevicesMode,value,1);
+		 pCab->SetIntervalTime(1);
 	 }
 	 //空调开机温度点		 255:保持； -20-80（有效）；45(缺省值)
 	 for(i=0;i<2;i++)
@@ -1125,6 +1080,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 	         sprintf(value,"%d",pstuRCtrl->hwdcairpowerontemppoint[i]);
 	         printf("RemoteControl 空调开机温度点%d=%s\n",i,value);
 	         pCab->SnmpSetOid(hwDcAirPowerOnTempPoint,value,i+1);
+			 pCab->SetIntervalTime(1);
 		 }
 	 }
 	 //空调关机温度点		   255:保持； -20-80（有效）；37(缺省值)
@@ -1135,6 +1091,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 	         sprintf(value,"%d",pstuRCtrl->hwdcairpowerofftemppoint[i]);
 	         printf("RemoteControl 空调关机温度点%d=%s\n",i,value);
 	         pCab->SnmpSetOid(hwDcAirPowerOffTempPoint,value,i+1);
+			 pCab->SetIntervalTime(1);
 		 }
 	 }
 	 //空调控制模式 0：保持；1：自动；2：手动
@@ -1145,6 +1102,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 			 sprintf(value,"%d",pstuRCtrl->hwdcairctrlmode[i]);
 			 printf("RemoteControl 空调控制模式%d=%s\n",i,value);
 			 pCab->SnmpSetOid(hwDcAirCtrlMode,value,i+1);
+			 pCab->SetIntervalTime(1);
 		 }
 	 }
 	 //控制烟感复位 0：保持；1：不需复位；2：复位
@@ -1155,6 +1113,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 			 sprintf(value,"%d",pstuRCtrl->hwctrlsmokereset[i]);
 			 printf("RemoteControl 控制烟感复位%d=%s\n",i,value);
 			 pCab->SnmpSetOid(hwCtrlSmokeReset,value,i+1);
+			 pCab->SetIntervalTime(1);
 		 }
 	 }
 	 //SPD控制
@@ -1367,10 +1326,11 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 	 
 		}
 	 }
-	 else if(size>6 && pbuf[0] == 0x50 && pbuf[1] == 0x4b && pbuf[2] == 0x03 && pbuf[3] == 0x04 && pbuf[4] == 0x14 && pbuf[5] == 0x00) 
+	 else if(size>6 && pbuf[0] == 0x50 && pbuf[1] == 0x4b && pbuf[2] == 0x03 && pbuf[3] == 0x04 && pbuf[4] == 0x14 && pbuf[5] == 0x00
+	 		&& pbuf[size-3] == 0x00 && pbuf[size-2] == 0x00 && pbuf[size-1] == 0x00) 
 	 {
 		printf("start updata\r\n");
-		pthread_mutex_lock(&uprebootMutex);
+//		pthread_mutex_lock(&uprebootMutex);
 		write(WDTfd, "\0", 1);
 
 		if(WriteZipdata(pbuf,size) == 0)	//写文件成功
@@ -1381,16 +1341,16 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 			system("sync") ;
 
 			sleep(2);
-			if(access("9100.sh",0)==0)
+			if(access("autorun.sh",0)==0)
 			{
-				printf("9100.sh 存在，运行9100.sh\r\n");
-				system("chmod 777 9100.sh") ;
+				printf("autorun.sh 存在，运行autorun.sh\r\n");
+				system("chmod 777 autorun.sh") ;
 				system("chmod 777 tranter") ;
-				system("./9100.sh") ;
+				system("./autorun.sh") ;
 			}
 			else
 			{
-				printf("9100.sh 不存在，自动重启\r\n");
+				printf("autorun.sh 不存在，自动重启\r\n");
 				system("chmod 777 tranter") ;
 			}
 			sleep(1);
@@ -1414,13 +1374,13 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		}
 		return 1 ;
 
-		pthread_mutex_unlock(&uprebootMutex);
+//		pthread_mutex_unlock(&uprebootMutex);
 	 }
 	 else
 	 {
 		 strjsonback = strjsonback + "{\n";
 		 strjsonback = strjsonback + "\"result\":\"升级失败！\",\n";
-		 strjsonback = strjsonback + "\"dec\":\"文件格式错误！\"\n";
+		 strjsonback = strjsonback + "\"dec\":\"zip文件格式错误，请重新操作一次！\"\n";
 		 strjsonback = strjsonback + "}\n";
 		 printf("strjsonback=%s\r\n",strjsonback.c_str());
 	 }

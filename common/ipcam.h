@@ -74,7 +74,7 @@ private:
 private:
     static void *GetStateThread(void *arg);
     static void *ControlThread(void *arg);
-    static void HttpCallback(long code,char *data,uint32_t dLen,void *userdata);
+    // static void HttpCallback(Http *http,Http::void *value, void *userdata);
     static uint32_t GetTickCount(void);
 public:
     /**

@@ -475,12 +475,12 @@ void *WebSocketthread(void *param)
 							}
 							else
 							{
-/*								for(int j=0;j<20;j++)
+								for(int j=0;j<10;j++)
 									printf("%02x ",buffer[j]);
 								printf("\n");
-								for(int j=size-20;j<size;j++)
+								for(int j=size-10;j<size;j++)
 									printf("%02x ",buffer[j]);
-								printf("\n");*/
+								printf("\n");
 								
 								SoftwareUpdate((unsigned char*)buffer,size,mstrdata);
 								//echo head
