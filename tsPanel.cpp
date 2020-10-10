@@ -706,14 +706,11 @@ uint8_t tsPanel::tsPanelVarMsgStringPack(uint8_t *pbuf,uint16_t addr)
 	// 2个柜子的动环连接状态
 	// 柜1
 	t_value = linkStGetFrombox(dev_box);
-	// 测试
-	//t_value = 0;
 	cbuf[len++] =t_value>>8;
 	cbuf[len++] =t_value;
 	if (getBoxNum() == BOX_BI)
 	{
 		t_value = linkStGetFrombox(bat_box);
-		//t_value = 0;
 		cbuf[len++] =t_value>>8;
 		cbuf[len++] =t_value;
 	}
@@ -727,31 +724,27 @@ uint8_t tsPanel::tsPanelVarMsgStringPack(uint8_t *pbuf,uint16_t addr)
 	// 是否在线
 	for (i=0; i<MAX_CHANNEL; i++)
 	{
-		//if(isChannelNull(i) == false)
+		if(isChannelNull(i) == false)
 		{
 			// 这里要改
-			//t_value = linkStGetFromDevice(i);
-			t_value = 1;
+			t_value = linkStGetFromDevice(i);
 			cbuf[len++] =t_value>>8;
 			cbuf[len++] =t_value;
 		}
-		/*
 		else
 		{
 			// 没有配置就不显示
 			cbuf[len++] = 0;
 			cbuf[len++] = 0;
-		}*/
+		}
 	}
 
 	// 电源是否断电,断不断电和有没有配置没有关系
 	for (i=0; i<MAX_CHANNEL; i++)
 	{
-		//if(isChannelNull(i) == false)
 		{
 			// 这里要改
-			//t_value = powerStGetFromDevice(i);
-			t_value = 1;
+			t_value = powerStGetFromDevice(i);
 			cbuf[len++] =t_value>>8;
 			cbuf[len++] =t_value;
 		}

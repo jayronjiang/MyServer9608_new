@@ -586,6 +586,7 @@ void VAgetFromDevice(uint8_t seq, string& volt, string& amp)
 // 这个函数是电子锁那边的，需要重写
 uint16_t DoorStatusFromLocker(void)
 {
+	return LOCKER_CLOSED;
 	#if 0
 	uint16_t reval = LOCKER_CLOSED;
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
