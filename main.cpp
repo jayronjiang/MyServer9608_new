@@ -240,8 +240,8 @@ int main(void)
 	stuRemote_Ctrl = (REMOTE_CONTROL*)malloc(sizeof(REMOTE_CONTROL));
 	
 	//初始化Can
-    pCOsCan =  new CANNode((char *)"can0",CAN_500K,0,0x000,0xF00,0);
-	pCOsCan->setCallback(canNodeCallback,NULL);
+    //pCOsCan =  new CANNode((char *)"can0",CAN_500K,0,0x000,0xF00,0);
+	//pCOsCan->setCallback(canNodeCallback,NULL);
 		
 	Init_DO(pConf);
 	WalksnmpInit();
@@ -374,8 +374,16 @@ printf("start rsu %s\r\n",pConf->StrIP.c_str());
 			pCsshClient[i]->Start();
    	}
 
+	//初始化动力控制板
+    pCOsCan =  new CANNode((char *)"can0",CAN_500K,0,0x000,0xF00,0);
+	pCOsCan->setCallback(canNodeCallback,NULL);
+
 	//初始化液晶屏
-	pCPanel =new tsPanel(pCabinetClient[0],&VMCtl_Config);	
+	pCPanel =new tsPanel(pCabinetClient[0],&VMCtl_Config);
+	// 配置动环和机柜的数量逻辑，如果是1个动环，1/2个机柜，则配置为Box_Config(0,0)
+	// 如果是2个动环，则配置为Box_Config(0,1)
+	pCPanel->Box_Config(0,0);
+	pCPanel->time_interval = 2;		// 800ms刷新
 		
 	//初始化SPD
 	pCSpdClent = new SpdClient();

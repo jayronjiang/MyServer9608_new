@@ -7,8 +7,8 @@
  *
  * Description:
  ************************************************************************/
-#ifndef __LOCK_H_
-#define __LOCK_H_
+#ifndef __HW_LOCK_H_
+#define __HW_LOCK_H_
 
 /*******************************************************************************
  * includes
@@ -22,10 +22,9 @@ using namespace std;
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
-
-#define LOCKER_MAX_NUM						8		// 最大支持8把锁
-
-
+#define LOCKER_MAX_NUM						4		// 最大支持8把锁
+	
+	
 #define	MBUS_ADDR							0       //字节0：从站地址
 #define	MBUS_FUNC							1       //字节1：功能码
 #define	MBUS_REFS_ADDR_H 	                2       //字节2：寄存器起始地址高位
@@ -34,12 +33,12 @@ using namespace std;
 #define	MBUS_REFS_COUNT_L 	                5       //字节5：寄存器数量低位
 #define	MBUS_OPT_CODE_H 	                4       //字节4：操作码高位
 #define	MBUS_OPT_CODE_L 	                5       //字节5：操作码低位
-
-
-/*REMOTE CONTROL definition*/
+	
+	
+	/*REMOTE CONTROL definition*/
 #define	SINGLE_WRITE_HW		0x06	// function of the LOCKER
-
-/*功能码*/
+	
+	/*功能码*/
 #define	MBUS_READ_CMD				0x03           //读寄存器
 
 /*******************************************************************************
@@ -71,10 +70,14 @@ public:
     }Info_S;
 
     /* 回调函数 */
-    typedef void (*Callback)(uint8_t seq,Info_S info,void *userdata);
+    typedef void (*Callback)(uint8_t addr,Info_S info,void *userdata);
 	Signal_EN signal;
+	Info_S info;
 
 private:
+    uint8_t addr;
+	uint16_t last_cnt;
+
     Callback callback;
     void *userdata;
 
@@ -86,18 +89,18 @@ public:
     void open(void);
 	void close(void);
 
-	uint8_t addr;
-    Info_S info;
-
 private:
-    static void UartCallback(uint8_t port, uint8_t *buf, uint16_t len, void *userdata);
+    static void UartCallback(uint8_t port, uint8_t *buf, uint32_t len, void *userdata);
     static void *QueryTask(void *arg);
+
     void transmit(Signal_EN sgl,uint8_t addr,uint8_t *card);
-	uint16_t last_cnt;
 
 };
 
-extern Lock *Locks[LOCKER_MAX_NUM];
+
+
+
+
 
 #endif
 

@@ -14,6 +14,8 @@
 using namespace std;
 
 #define CARD_NUM		5	// 暂时为5张卡
+extern Lock *pCLock[LOCKER_MAX_NUM];
+
 
 //extern void Locker_Stream_To_Net(uint16_t addr,uint32_t card_read);
 
@@ -27,10 +29,11 @@ const uint32_t locker_id[CARD_NUM] =
 };
 
 
+#if 0
 // 锁的回调函数，上传卡号
 void LockCallback(uint8_t seq, Lock::Info_S info, void *userdata) 
 {
-	Lock *lock = Locks[seq];
+	Lock *lock = pCLock[seq];
     DEBUG_PRINTF("Lock(%d) isOpen:%02X Card{%08x} \r\n", seq, info.status, info.card_read);
 
 	// 测试是否能打开
@@ -50,9 +53,10 @@ void Init_HwLocker(uint16_t seq,uint16_t address)
 {
 	if (seq < LOCKER_MAX_NUM)
 	{
-	    Locks[seq] =  new Lock(address);
-		Locks[seq]->setCallback(LockCallback,NULL);
+	    pCLock[seq] =  new Lock(address);
+		pCLock[seq]->setCallback(LockCallback,NULL);
 	}
 }
+#endif
 
 

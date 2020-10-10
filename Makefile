@@ -46,6 +46,7 @@ TARGET        = tranter
 
 
 OBJECTS       =  build/main.o     \
+				 build/initmodule.o   \
 				 build/tsPanel.o     \
 				 build/hwlockercfg.o     \
                  build/MyCritical.o		\
@@ -114,6 +115,10 @@ build/lt_state_thread.o: lt_state_thread.cpp \
 build/global.o: global.cpp \
     common/global.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) $(LIBS) -o build/global.o global.cpp
+
+build/initmodule.o: initmodule.cpp \
+    common/initmodule.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) $(LIBS) -o build/initmodule.o initmodule.cpp
 
 build/tea.o: tea.cpp \
     common/tea.h

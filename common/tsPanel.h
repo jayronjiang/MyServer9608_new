@@ -4,12 +4,12 @@
 #include <stdint.h>
 #include <string>
 #include <pthread.h>
-//#include "tea.h"
+#include "tea.h"
 #include "comport.h"
 #include "arpa/inet.h"
-//#include "global.h"
-//#include "CabinetClient.h"
-//#include "registers.h"
+#include "global.h"
+#include "CabinetClient.h"
+#include "registers.h"
 
 
 
