@@ -28,6 +28,8 @@
 #include "io_dev.h"
 #include "uart.h"
 #include "http.h"
+#include "initmodule.h"
+
 
 using namespace std; 
 

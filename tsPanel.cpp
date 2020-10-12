@@ -19,9 +19,72 @@
 #include <cstring>
 #include <sstream>
 #include "tsPanel.h"
-#include "global.h"
+//#include "global.h"
+
+
+#define LOCKER_CLOSED			0
+#define LOCKER_OPEN				1
+#define BOX_NULL_VALUE  2147483647
+
+/*      DECLARATION              */
 extern CabinetClient *pCabinetClient[HWSERVER_NUM];//华为机柜状态
 extern VMCONTROL_CONFIG VMCtl_Config;	//控制器配置信息结构体
+
+/*      DECLARATION      global.h        */
+/****************************************************************/
+extern void IPGetFromDevice(uint8_t seq,char *ip);
+
+// 取CAN控制板的电压值
+extern float voltTrueGetFromDev(uint8_t seq);
+
+// 取CAN控制板的电压值
+extern float ampTrueGetFromDev(uint8_t seq);
+
+// 该机柜还是在线?
+// seq: 0:设备柜
+// 		1:电池柜
+extern uint16_t linkStGetFrombox(uint8_t seq);
+
+// 该设备离线还是在线?
+// 1：在线，2：离线
+extern uint16_t linkStGetFromDevice(uint8_t seq);
+
+// 该设备离线还是在线?
+// 1：有电，2：没电
+extern uint16_t powerStGetFromDevice(uint8_t seq);
+
+// 该通道是否配置?
+extern bool isChannelNull(uint8_t seq);
+
+// 单柜还是双柜?返回柜子个数
+extern uint8_t getBoxNum(void);
+
+// 从配置文件中读取CAN控制器版本号,只读地址为1的控制器
+extern string getCanVersion(uint8_t seq);
+
+// 获取机柜n的IP地址
+extern string IPGetFromBox(uint8_t seq);
+
+// 获取该机柜是离线还是在线?
+extern string linkStringGetFromBox(uint8_t seq);
+
+extern void GetIPinfo(IPInfo *ipInfo);
+
+extern void GetIPinfo2(IPInfo *ipInfo);
+
+// 取8个字节的ID号
+extern unsigned long long IDgetFromConfig(void);
+
+// seq:DO序号, DeviceName：返回的设备名称，ip:返回的ip地址,port:返回的端口号
+extern void IPgetFromDevice(uint8_t seq,string& DeviceName, string& ip, string& port);
+
+extern void VAgetFromDevice(uint8_t seq, string& volt, string& amp);
+
+extern uint16_t DoorStatusFromLocker(void);
+extern unsigned long GetTickCount(); //返回秒
+
+/****************************************************************/
+
 
 
 const uint8_t BOX_SINGLE = 1;

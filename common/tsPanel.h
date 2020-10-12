@@ -7,7 +7,7 @@
 #include "tea.h"
 #include "comport.h"
 #include "arpa/inet.h"
-#include "global.h"
+//#include "global.h"
 #include "CabinetClient.h"
 #include "registers.h"
 
