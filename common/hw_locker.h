@@ -22,7 +22,7 @@ using namespace std;
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
-#define LOCKER_MAX_NUM						4		// 最大支持8把锁
+#define LOCKER_MAX_NUM						4		// 最大支持4把锁
 	
 	
 #define	MBUS_ADDR							0       //字节0：从站地址
@@ -35,16 +35,16 @@ using namespace std;
 #define	MBUS_OPT_CODE_L 	                5       //字节5：操作码低位
 	
 	
-	/*REMOTE CONTROL definition*/
+/*REMOTE CONTROL definition*/
 #define	SINGLE_WRITE_HW		0x06	// function of the LOCKER
 	
-	/*功能码*/
+/*功能码*/
 #define	MBUS_READ_CMD				0x03           //读寄存器
 
 /*******************************************************************************
  * Class
  ******************************************************************************/
-class Lock {
+class HWLock {
 public:
 
     typedef enum {
@@ -82,8 +82,8 @@ private:
     void *userdata;
 
 public:
-    Lock(uint8_t addr);
-    ~Lock();
+    HWLock(uint8_t addr);
+    ~HWLock();
 
     void setCallback(Callback cb,void *userdata);
     void open(void);
@@ -96,11 +96,6 @@ private:
     void transmit(Signal_EN sgl,uint8_t addr,uint8_t *card);
 
 };
-
-
-
-
-
 
 #endif
 
