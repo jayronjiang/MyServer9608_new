@@ -34,6 +34,9 @@ extern Huawei *pCHWRSU[RSUCTL_NUM];;					//RSU对象
 extern IPCam *pCVehplate[VEHPLATE_NUM];
 extern IPCam *pCVehplate900[VEHPLATE900_NUM];
 extern CsshClient *pCsshClient[ATLAS_NUM];			//ATLAS对象
+extern AirCondition::AirInfo_S AirCondInfo;		//直流空调结构体
+extern TemHumi::Info_S TemHumiInfo;				//温湿度结构体
+extern Lock::Info_S LockInfo[LOCK_NUM];			//电子锁结构体
 
 bool isIPAddressValid(const char* pszIPAddr)
 {
@@ -1307,6 +1310,30 @@ bool jsonstrVmCtlParamReader(char* jsonstr, int len, UINT8 *pstPam)
 		}
 	}
 	
+	//门锁类型
+	jsonkey = cJSON_GetObjectItem(json, "locktype");
+	if(jsonkey!=0)				
+	{
+		sprintf(value,"%s",jsonkey->valuestring);
+		if(value!=pConf->StrLockType)
+		{
+			pConf->StrLockType=value;
+			sprintf(key,"LockType=");
+			Setconfig(key,value);
+		}
+	}
+	//门锁数量
+	jsonkey = cJSON_GetObjectItem(json, "locknum");
+	if(jsonkey!=0)				
+	{
+		sprintf(value,"%s",jsonkey->valuestring);
+		if(value!=pConf->StrLockNum)
+		{
+			pConf->StrLockNum=value;
+			sprintf(key,"LockNum=");
+			Setconfig(key,value);
+		}
+	}
 	for(i=0;i<LOCK_NUM;i++)
 	{
 		sprintf(key,"adrrlock%d",i+1);//门锁地址
@@ -2855,7 +2882,7 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
 		{
 			pConf->StrSPDAddr[SPD_NUM]=value;	
 			pConf->SPD_Address[SPD_NUM] = atoi(value);
-			Setconfig("SPDResPort=",value);
+			Setconfig("SPDResAddr=",value);
 			pConf->HZ_reset_pre[SPD_NUM] = true;
 //			pSpd->Ex_SPD_Set_Process(SPD_RES_SET,RES_ID_ADDR,dummy,pConf->SPD_Address[SPD_NUM]);
 		}
@@ -3061,7 +3088,7 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
 				//更新IP
 				if(ip!=pConf->StrCAMIP[no])
 				{
-					pConf->StrCAMIP[i]=ip; 
+					pConf->StrCAMIP[no]=ip; 
 					sprintf(key,"CAM%dIP=",no+1);
 					Setconfig(key,ip.c_str());
 				}
@@ -3072,12 +3099,12 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
 					sprintf(key,"CAM%dPort=",no+1);
 					Setconfig(key,port.c_str());
 				}
-				//更新端口
+				//更新密码
 				if(skey!=pConf->StrCAMKey[no])
 				{
 					pConf->StrCAMKey[no]=skey;
 					sprintf(key,"CAM%dKey=",no+1);
-					Setconfig(key,port.c_str());
+					Setconfig(key,skey.c_str());
 				}
 			}
 			
@@ -3429,6 +3456,30 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
 		Setconfig("SPDResIP=","");
 		Setconfig("SPDResPort=","");
 	}
+	//门锁类型
+	jsonkey = cJSON_GetObjectItem(json, "locktype");
+	if(jsonkey!=0)				
+	{
+		sprintf(value,"%s",jsonkey->valuestring);
+		if(value!=pConf->StrLockType)
+		{
+			pConf->StrLockType=value;
+			sprintf(key,"LockType=");
+			Setconfig(key,value);
+		}
+	}
+	//门锁数量
+	jsonkey = cJSON_GetObjectItem(json, "locknum");
+	if(jsonkey!=0)				
+	{
+		sprintf(value,"%s",jsonkey->valuestring);
+		if(value!=pConf->StrLockNum)
+		{
+			pConf->StrLockNum=value;
+			sprintf(key,"LockNum=");
+			Setconfig(key,value);
+		}
+	}
 	for(i=0;i<LOCK_NUM;i++)
 	{
 		sprintf(key,"adrrlock%d",i+1);//门锁地址
@@ -3754,6 +3805,10 @@ bool jsonStrVMCtlParamWriter(int messagetype,char *pstrVMCtl,string &mstrjson)
 		sprintf(str,"\"spdres_alarm_value\":\"%d\",\n",pSpd->stuSpd_Param->rSPD_res.alarm_value); //接地电阻报警值
 		strJson = strJson + str;
 	}
+	sprintf(str,"\"locktype\":\"%s\",\n",pConf->StrLockType.c_str()); //门锁类型
+	strJson = strJson + str;
+	sprintf(str,"\"locknum\":\"%s\",\n",pConf->StrLockNum.c_str()); //门锁数量
+	strJson = strJson + str;
 	for(i=0;i<LOCK_NUM;i++)
 	{
 		sprintf(str,"\"adrrlock%d\":\"%s\",\n",i+1,pConf->StrAdrrLock[i].c_str()); strJson = strJson + str;//门锁的地址
@@ -4110,6 +4165,10 @@ printf("jsonStrVMCtlParamWriterXY 开始\r\n");
 	}
 	strJson +=	"],\n";
 	
+	sprintf(str,"\"locktype\":\"%s\",\n",pConf->StrLockType.c_str()); //门锁类型
+	strJson = strJson + str;
+	sprintf(str,"\"locknum\":\"%s\",\n",pConf->StrLockNum.c_str()); //门锁数量
+	strJson = strJson + str;
 	for(i=0;i<LOCK_NUM;i++)
 	{
 		sprintf(str,"\"adrrlock%d\":\"%s\",\n",i+1,pConf->StrAdrrLock[i].c_str()); strJson = strJson + str;//门锁的地址
@@ -4819,7 +4878,10 @@ bool jsonStrHWCabinetWriter(int messagetype,char *pstPam, string &mstrjson)
 	int i,j,status; 
 	static int recordno=0;
 	CabinetClient *pCab=(CabinetClient *)pstPam;//华为机柜状态
+	AirCondition::AirInfo_S *ACInfo=&AirCondInfo;		//直流空调结构体
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
+	REMOTE_CONTROL *pRCtrl=stuRemote_Ctrl;	//遥控寄存器结构体
+	TemHumi::Info_S *pTemHumi=&TemHumiInfo;			//温湿度结构体
 	
     time_t nSeconds;
     struct tm * pTM;
@@ -4840,608 +4902,222 @@ bool jsonStrHWCabinetWriter(int messagetype,char *pstPam, string &mstrjson)
 	strJson = strJson + "\"cabinettype\":"+ pConf->StrCabinetType +",\n";	//机柜类型
 
     pthread_mutex_lock(&pCab->CabinetdataMutex);
-	if(pCab->HUAWEIDevValue.hwLinked && GetTickCount()-pCab->HUAWEIDevValue.hwTimeStamp<15*60)//超过15分钟没更新，认为没有连接
+	if(atoi(pConf->StrCabinetType.c_str())>=1 && atoi(pConf->StrCabinetType.c_str())<=4)
 	{
-	//华为机柜字段
-	#if(CABINETTYPE>=1 && CABINETTYPE<=4)
-		sprintf(str,"\"isonline\":\"%d\",\n",pCab->HUAWEIDevValue.hwLinked); strJson = strJson + str;//连接状态
-		sprintf(str,"\"acbgroupbatonline\":\"%d\",\n",pCab->HUAWEIDevValue.AcbGroupBatOnline); strJson = strJson + str;//锂电池组是否在线
-		sprintf(str,"\"dcaironline\":\"%d\",\n",pCab->HUAWEIDevValue.DcAirOnline); strJson = strJson + str;//直流空调是否在线（设备柜）
-		sprintf(str,"\"dcaironline2\":\"%d\",\n",pCab->HUAWEIDevValue.DcAirOnline2); strJson = strJson + str;//直流空调是否在线（电池柜）
-		sprintf(str,"\"temhumonline\":\"%d\",\n",pCab->HUAWEIDevValue.TemHumOnline); strJson = strJson + str;//温湿度传感器是否在线（设备柜）
-		sprintf(str,"\"temhumonline2\":\"%d\",\n",pCab->HUAWEIDevValue.TemHumOnline2); strJson = strJson + str;//温湿度传感器是否在线（电池柜）
+		if(pCab->HUAWEIDevValue.hwLinked && GetTickCount()-pCab->HUAWEIDevValue.hwTimeStamp<15*60)//超过15分钟没更新，认为没有连接
+		{
+			//华为机柜字段
+			sprintf(str,"\"isonline\":\"%d\",\n",pCab->HUAWEIDevValue.hwLinked); strJson = strJson + str;//连接状态
+			sprintf(str,"\"acbgroupbatonline\":\"%d\",\n",pCab->HUAWEIDevValue.AcbGroupBatOnline); strJson = strJson + str;//锂电池组是否在线
+			sprintf(str,"\"dcaironline\":\"%d\",\n",pCab->HUAWEIDevValue.DcAirOnline); strJson = strJson + str;//直流空调是否在线（设备柜）
+			sprintf(str,"\"dcaironline2\":\"%d\",\n",pCab->HUAWEIDevValue.DcAirOnline2); strJson = strJson + str;//直流空调是否在线（电池柜）
+			sprintf(str,"\"temhumonline\":\"%d\",\n",pCab->HUAWEIDevValue.TemHumOnline); strJson = strJson + str;//温湿度传感器是否在线（设备柜）
+			sprintf(str,"\"temhumonline2\":\"%d\",\n",pCab->HUAWEIDevValue.TemHumOnline2); strJson = strJson + str;//温湿度传感器是否在线（电池柜）
 
-	    strJson = strJson + "\"hwacbgroupbatvolt\": " + pCab->HUAWEIDevValue.strhwAcbGroupBatVolt.c_str() + ",\n";	//锂电电池电压 214
-	    strJson = strJson + "\"hwacbgroupbatcurr\": " + pCab->HUAWEIDevValue.strhwAcbGroupBatCurr.c_str() + ",\n";	//锂电电池电流 215
-	    strJson = strJson + "\"hwacbgrouptotalcapacity\": " + pCab->HUAWEIDevValue.strhwAcbGroupTotalCapacity.c_str() + ",\n";	//锂电电池总容量 216
-	    strJson = strJson + "\"hwacbgrouptotalremaincapacity\": " + pCab->HUAWEIDevValue.strhwAcbGroupTotalRemainCapacity.c_str() + ",\n";	//锂电电池剩余容量 217
-	    strJson = strJson + "\"hwacbgroupbackuptime\": " + pCab->HUAWEIDevValue.strhwAcbGroupBackupTime.c_str() + ",\n";	//电池备电时长 218
-	    strJson = strJson + "\"hwacbgroupbatsoh\": " + pCab->HUAWEIDevValue.strhwAcbGroupBatSoh.c_str() + ",\n";	//电池SOH 219
-	    strJson = strJson + "\"hwaporablvoltage\": " + pCab->HUAWEIDevValue.strhwApOrAblVoltage.c_str() + ",\n";	//A/AB电压 220
-	    strJson = strJson + "\"hwbporbclvoltage\": " + pCab->HUAWEIDevValue.strhwBpOrBclVoltage.c_str() + ",\n";	//B/BC电压 221
-	    strJson = strJson + "\"hwcporcalvoltage\": " + pCab->HUAWEIDevValue.strhwCpOrCalVoltage.c_str() + ",\n";	//C/CA电压 222
-	    strJson = strJson + "\"hwaphasecurrent\": " + pCab->HUAWEIDevValue.strhwAphaseCurrent.c_str() + ",\n";	//A相电流 223
-	    strJson = strJson + "\"hwbphasecurrent\": " + pCab->HUAWEIDevValue.strhwBphaseCurrent.c_str() + ",\n";	//B相电流 224
-	    strJson = strJson + "\"hwcphasecurrent\": " + pCab->HUAWEIDevValue.strhwCphaseCurrent.c_str() + ",\n";	//C相电流 225
-	    strJson = strJson + "\"hwdcoutputvoltage\": " + pCab->HUAWEIDevValue.strhwDcOutputVoltage.c_str() + ",\n";	//DC输出电压 226
-	    strJson = strJson + "\"hwdcoutputcurrent\": " + pCab->HUAWEIDevValue.strhwDcOutputCurrent.c_str() + ",\n";	//DC输出电流 227
-	    strJson = strJson + "\"hwenvtemperature\": " + pCab->HUAWEIDevValue.strhwEnvTemperature[0].c_str() + ",\n";	//环境温度值 228
-	    strJson = strJson + "\"hwenvtemperature2\": " + pCab->HUAWEIDevValue.strhwEnvTemperature[1].c_str() + ",\n";	//环境温度值 228
-	    strJson = strJson + "\"hwenvhumidity\": " + pCab->HUAWEIDevValue.strhwEnvHumidity[0].c_str() + ",\n";	//环境湿度值 229
-	    strJson = strJson + "\"hwenvhumidity2\": " + pCab->HUAWEIDevValue.strhwEnvHumidity[1].c_str() + ",\n";	//环境湿度值 229
-	//    strJson = strJson + "\"hwdcairctrlmode\": " + pCab->HUAWEIDevValue.strhwDcAirCtrlMode[0].c_str() + ",\n";	//空调控制模式 230
-	//    strJson = strJson + "\"hwdcairctrlmode2\": " + pCab->HUAWEIDevValue.strhwDcAirCtrlMode[1].c_str() + ",\n";	//空调控制模式 230
-	    strJson = strJson + "\"hwdcairrunstatus\": " + pCab->HUAWEIDevValue.strhwDcAirRunStatus[0].c_str() + ",\n";	//空调运行状态 231
-	    strJson = strJson + "\"hwdcairrunstatus2\": " + pCab->HUAWEIDevValue.strhwDcAirRunStatus[1].c_str() + ",\n";	//空调运行状态 231
-	    strJson = strJson + "\"hwdcaircompressorrunstatus\": " + pCab->HUAWEIDevValue.strhwDcAirCompressorRunStatus[0].c_str() + ",\n";	//空调压缩机运行状态 232
-	    strJson = strJson + "\"hwdcaircompressorrunstatus2\": " + pCab->HUAWEIDevValue.strhwDcAirCompressorRunStatus[1].c_str() + ",\n";	//空调压缩机运行状态 232
-	    strJson = strJson + "\"hwdcairinnrfanspeed\": " + pCab->HUAWEIDevValue.strhwDcAirInnrFanSpeed[0].c_str() + ",\n";	//空调内机转速 233
-	    strJson = strJson + "\"hwdcairinnrfanspeed2\": " + pCab->HUAWEIDevValue.strhwDcAirInnrFanSpeed[1].c_str() + ",\n";	//空调内机转速 233
-	    strJson = strJson + "\"hwdcairouterfanspeed\": " + pCab->HUAWEIDevValue.strhwDcAirOuterFanSpeed[0].c_str() + ",\n";	//空调外风机转速 234
-	    strJson = strJson + "\"hwdcairouterfanspeed2\": " + pCab->HUAWEIDevValue.strhwDcAirOuterFanSpeed[1].c_str() + ",\n";	//空调外风机转速 234
-	    strJson = strJson + "\"hwdcaircompressorruntime\": " + pCab->HUAWEIDevValue.strhwDcAirCompressorRunTime[0].c_str() + ",\n";	//空调压缩机运行时间 235
-	    strJson = strJson + "\"hwdcaircompressorruntime2\": " + pCab->HUAWEIDevValue.strhwDcAirCompressorRunTime[1].c_str() + ",\n";	//空调压缩机运行时间 235
-	    strJson = strJson + "\"hwdcairenterchanneltemp\": " + pCab->HUAWEIDevValue.strhwDcAirEnterChannelTemp[0].c_str() + ",\n";	//空调回风口温度 236
-	    strJson = strJson + "\"hwdcairenterchanneltemp2\": " + pCab->HUAWEIDevValue.strhwDcAirEnterChannelTemp[1].c_str() + ",\n";	//空调回风口温度 236
-	    strJson = strJson + "\"hwdcairpowerontemppoint\": " + pCab->HUAWEIDevValue.strhwDcAirPowerOnTempPoint[0].c_str() + ",\n";	//空调开机温度点 237
-	    strJson = strJson + "\"hwdcairpowerontemppoint2\": " + pCab->HUAWEIDevValue.strhwDcAirPowerOnTempPoint[1].c_str() + ",\n";	//空调开机温度点 237
-	    strJson = strJson + "\"hwdcairpowerofftemppoint\": " + pCab->HUAWEIDevValue.strhwDcAirPowerOffTempPoint[0].c_str() + ",\n";	//空调关机温度点 238
-	    strJson = strJson + "\"hwdcairpowerofftemppoint2\": " + pCab->HUAWEIDevValue.strhwDcAirPowerOffTempPoint[1].c_str() + ",\n";	//空调关机温度点 238
-	    strJson = strJson + "\"hwenvtempalarmtraps\": " + pCab->HUAWEIDevAlarm.hwEnvTempAlarmTraps.c_str() + ",\n";	//设备柜环境温度告警 239
-	    strJson = strJson + "\"hwenvtempalarmtraps2\": " + pCab->HUAWEIDevAlarm.hwEnvTempAlarmTraps2.c_str() + ",\n";	//电池柜环境温度告警 239
-	    strJson = strJson + "\"hwenvhumialarmresumetraps\": " + pCab->HUAWEIDevAlarm.hwEnvHumiAlarmTraps.c_str() + ",\n";	//设备柜环境湿度告警 240
-	    strJson = strJson + "\"hwenvhumialarmresumetraps2\": " + pCab->HUAWEIDevAlarm.hwEnvHumiAlarmTraps2.c_str() + ",\n";	//电池柜环境湿度告警 240
-	    strJson = strJson + "\"hwdooralarmtraps\": " + pCab->HUAWEIDevAlarm.hwDoorAlarmTraps.c_str() + ",\n";	//门禁告警(设备柜) 241
-	    strJson = strJson + "\"hwdooralarmtraps2\": " + pCab->HUAWEIDevAlarm.hwDoorAlarmTraps2.c_str() + ",\n";	//门禁告警（电池柜） 241
-	    strJson = strJson + "\"hwwateralarmtraps\": " + pCab->HUAWEIDevAlarm.hwWaterAlarmTraps.c_str() + ",\n";	//水浸告警 242
-	    strJson = strJson + "\"hwwateralarmtraps2\": " + pCab->HUAWEIDevAlarm.hwWaterAlarmTraps2.c_str() + ",\n";	//水浸告警 242
-	    strJson = strJson + "\"hwsmokealarmtraps\": " + pCab->HUAWEIDevAlarm.hwSmokeAlarmTraps.c_str() + ",\n";	//烟雾告警 243
-	    strJson = strJson + "\"hwsmokealarmtraps2\": " + pCab->HUAWEIDevAlarm.hwSmokeAlarmTraps2.c_str() + ",\n";	//烟雾告警 243
-	    strJson = strJson + "\"hwair_cond_infan_alarm\": " + pCab->HUAWEIDevAlarm.hwair_cond_infan_alarm.c_str() + ",\n";	//空调内风机故障 245
-	    strJson = strJson + "\"hwair_cond_infan_alarm2\": " + pCab->HUAWEIDevAlarm.hwair_cond_infan_alarm2.c_str() + ",\n";	//空调内风机故障 245
-	    strJson = strJson + "\"hwair_cond_outfan_alarm\": " + pCab->HUAWEIDevAlarm.hwair_cond_outfan_alarm.c_str() + ",\n";	//空调外风机故障 246
-	    strJson = strJson + "\"hwair_cond_outfan_alarm2\": " + pCab->HUAWEIDevAlarm.hwair_cond_outfan_alarm2.c_str() + ",\n";	//空调外风机故障 246
-	    strJson = strJson + "\"hwair_cond_comp_alarm\": " + pCab->HUAWEIDevAlarm.hwair_cond_comp_alarm.c_str() + ",\n";	//空调压缩机故障 247
-	    strJson = strJson + "\"hwair_cond_comp_alarm2\": " + pCab->HUAWEIDevAlarm.hwair_cond_comp_alarm2.c_str() + ",\n";	//空调压缩机故障 247
-	    strJson = strJson + "\"hwair_cond_return_port_sensor_alarm\": " + pCab->HUAWEIDevAlarm.hwair_cond_return_port_sensor_alarm.c_str() + ",\n";	//空调回风口传感器故障 248
-	    strJson = strJson + "\"hwair_cond_return_port_sensor_alarm2\": " + pCab->HUAWEIDevAlarm.hwair_cond_return_port_sensor_alarm2.c_str() + ",\n";	//空调回风口传感器故障 248
-	    strJson = strJson + "\"hwair_cond_evap_freezing_alarm\": " + pCab->HUAWEIDevAlarm.hwair_cond_evap_freezing_alarm.c_str() + ",\n";	//空调蒸发器冻结 249
-	    strJson = strJson + "\"hwair_cond_evap_freezing_alarm2\": " + pCab->HUAWEIDevAlarm.hwair_cond_evap_freezing_alarm2.c_str() + ",\n";	//空调蒸发器冻结 249
-	    strJson = strJson + "\"hwair_cond_freq_high_press_alarm\": " + pCab->HUAWEIDevAlarm.hwair_cond_freq_high_press_alarm.c_str() + ",\n";	//空调频繁高压力 250
-	    strJson = strJson + "\"hwair_cond_freq_high_press_alarm2\": " + pCab->HUAWEIDevAlarm.hwair_cond_freq_high_press_alarm2.c_str() + ",\n";	//空调频繁高压力 250
-	    strJson = strJson + "\"hwair_cond_comm_fail_alarm\": " + pCab->HUAWEIDevAlarm.hwair_cond_comm_fail_alarm.c_str() + ",\n";	//空调通信失败告警 251
-	    strJson = strJson + "\"hwair_cond_comm_fail_alarm2\": " + pCab->HUAWEIDevAlarm.hwair_cond_comm_fail_alarm2.c_str() + ",\n";	//空调通信失败告警 251
-		//防雷器告警
-	    strJson = strJson + "\"hwacspdalarmtraps\": " + pCab->HUAWEIDevAlarm.hwACSpdAlarmTraps.c_str() + ",\n";	//交流防雷器故障
-	    strJson = strJson + "\"hwdcspdalarmtraps\": " + pCab->HUAWEIDevAlarm.hwDCSpdAlarmTraps.c_str() + ",\n";	//直流防雷器故障
-		//新增加的状态
+		    strJson = strJson + "\"hwacbgroupbatvolt\": " + pCab->HUAWEIDevValue.strhwAcbGroupBatVolt.c_str() + ",\n";	//锂电电池电压 214
+		    strJson = strJson + "\"hwacbgroupbatcurr\": " + pCab->HUAWEIDevValue.strhwAcbGroupBatCurr.c_str() + ",\n";	//锂电电池电流 215
+		    strJson = strJson + "\"hwacbgrouptotalcapacity\": " + pCab->HUAWEIDevValue.strhwAcbGroupTotalCapacity.c_str() + ",\n";	//锂电电池总容量 216
+		    strJson = strJson + "\"hwacbgrouptotalremaincapacity\": " + pCab->HUAWEIDevValue.strhwAcbGroupTotalRemainCapacity.c_str() + ",\n";	//锂电电池剩余容量 217
+		    strJson = strJson + "\"hwacbgroupbackuptime\": " + pCab->HUAWEIDevValue.strhwAcbGroupBackupTime.c_str() + ",\n";	//电池备电时长 218
+		    strJson = strJson + "\"hwacbgroupbatsoh\": " + pCab->HUAWEIDevValue.strhwAcbGroupBatSoh.c_str() + ",\n";	//电池SOH 219
+		    strJson = strJson + "\"hwaporablvoltage\": " + pCab->HUAWEIDevValue.strhwApOrAblVoltage.c_str() + ",\n";	//A/AB电压 220
+		    strJson = strJson + "\"hwbporbclvoltage\": " + pCab->HUAWEIDevValue.strhwBpOrBclVoltage.c_str() + ",\n";	//B/BC电压 221
+		    strJson = strJson + "\"hwcporcalvoltage\": " + pCab->HUAWEIDevValue.strhwCpOrCalVoltage.c_str() + ",\n";	//C/CA电压 222
+		    strJson = strJson + "\"hwaphasecurrent\": " + pCab->HUAWEIDevValue.strhwAphaseCurrent.c_str() + ",\n";	//A相电流 223
+		    strJson = strJson + "\"hwbphasecurrent\": " + pCab->HUAWEIDevValue.strhwBphaseCurrent.c_str() + ",\n";	//B相电流 224
+		    strJson = strJson + "\"hwcphasecurrent\": " + pCab->HUAWEIDevValue.strhwCphaseCurrent.c_str() + ",\n";	//C相电流 225
+		    strJson = strJson + "\"hwdcoutputvoltage\": " + pCab->HUAWEIDevValue.strhwDcOutputVoltage.c_str() + ",\n";	//DC输出电压 226
+		    strJson = strJson + "\"hwdcoutputcurrent\": " + pCab->HUAWEIDevValue.strhwDcOutputCurrent.c_str() + ",\n";	//DC输出电流 227
+		    strJson = strJson + "\"hwenvtemperature\": " + pCab->HUAWEIDevValue.strhwEnvTemperature[0].c_str() + ",\n";	//环境温度值 228
+		    strJson = strJson + "\"hwenvtemperature2\": " + pCab->HUAWEIDevValue.strhwEnvTemperature[1].c_str() + ",\n";	//环境温度值 228
+		    strJson = strJson + "\"hwenvhumidity\": " + pCab->HUAWEIDevValue.strhwEnvHumidity[0].c_str() + ",\n";	//环境湿度值 229
+		    strJson = strJson + "\"hwenvhumidity2\": " + pCab->HUAWEIDevValue.strhwEnvHumidity[1].c_str() + ",\n";	//环境湿度值 229
+		//    strJson = strJson + "\"hwdcairctrlmode\": " + pCab->HUAWEIDevValue.strhwDcAirCtrlMode[0].c_str() + ",\n";	//空调控制模式 230
+		//    strJson = strJson + "\"hwdcairctrlmode2\": " + pCab->HUAWEIDevValue.strhwDcAirCtrlMode[1].c_str() + ",\n";	//空调控制模式 230
+		    strJson = strJson + "\"hwdcairrunstatus\": " + pCab->HUAWEIDevValue.strhwDcAirRunStatus[0].c_str() + ",\n";	//空调运行状态 231
+		    strJson = strJson + "\"hwdcairrunstatus2\": " + pCab->HUAWEIDevValue.strhwDcAirRunStatus[1].c_str() + ",\n";	//空调运行状态 231
+		    strJson = strJson + "\"hwdcaircompressorrunstatus\": " + pCab->HUAWEIDevValue.strhwDcAirCompressorRunStatus[0].c_str() + ",\n";	//空调压缩机运行状态 232
+		    strJson = strJson + "\"hwdcaircompressorrunstatus2\": " + pCab->HUAWEIDevValue.strhwDcAirCompressorRunStatus[1].c_str() + ",\n";	//空调压缩机运行状态 232
+		    strJson = strJson + "\"hwdcairinnrfanspeed\": " + pCab->HUAWEIDevValue.strhwDcAirInnrFanSpeed[0].c_str() + ",\n";	//空调内机转速 233
+		    strJson = strJson + "\"hwdcairinnrfanspeed2\": " + pCab->HUAWEIDevValue.strhwDcAirInnrFanSpeed[1].c_str() + ",\n";	//空调内机转速 233
+		    strJson = strJson + "\"hwdcairouterfanspeed\": " + pCab->HUAWEIDevValue.strhwDcAirOuterFanSpeed[0].c_str() + ",\n";	//空调外风机转速 234
+		    strJson = strJson + "\"hwdcairouterfanspeed2\": " + pCab->HUAWEIDevValue.strhwDcAirOuterFanSpeed[1].c_str() + ",\n";	//空调外风机转速 234
+		    strJson = strJson + "\"hwdcaircompressorruntime\": " + pCab->HUAWEIDevValue.strhwDcAirCompressorRunTime[0].c_str() + ",\n";	//空调压缩机运行时间 235
+		    strJson = strJson + "\"hwdcaircompressorruntime2\": " + pCab->HUAWEIDevValue.strhwDcAirCompressorRunTime[1].c_str() + ",\n";	//空调压缩机运行时间 235
+		    strJson = strJson + "\"hwdcairenterchanneltemp\": " + pCab->HUAWEIDevValue.strhwDcAirEnterChannelTemp[0].c_str() + ",\n";	//空调回风口温度 236
+		    strJson = strJson + "\"hwdcairenterchanneltemp2\": " + pCab->HUAWEIDevValue.strhwDcAirEnterChannelTemp[1].c_str() + ",\n";	//空调回风口温度 236
+		    strJson = strJson + "\"hwdcairpowerontemppoint\": " + pCab->HUAWEIDevValue.strhwDcAirPowerOnTempPoint[0].c_str() + ",\n";	//空调开机温度点 237
+		    strJson = strJson + "\"hwdcairpowerontemppoint2\": " + pCab->HUAWEIDevValue.strhwDcAirPowerOnTempPoint[1].c_str() + ",\n";	//空调开机温度点 237
+		    strJson = strJson + "\"hwdcairpowerofftemppoint\": " + pCab->HUAWEIDevValue.strhwDcAirPowerOffTempPoint[0].c_str() + ",\n";	//空调关机温度点 238
+		    strJson = strJson + "\"hwdcairpowerofftemppoint2\": " + pCab->HUAWEIDevValue.strhwDcAirPowerOffTempPoint[1].c_str() + ",\n";	//空调关机温度点 238
+		    strJson = strJson + "\"hwenvtempalarmtraps\": " + pCab->HUAWEIDevAlarm.hwEnvTempAlarmTraps.c_str() + ",\n";	//设备柜环境温度告警 239
+		    strJson = strJson + "\"hwenvtempalarmtraps2\": " + pCab->HUAWEIDevAlarm.hwEnvTempAlarmTraps2.c_str() + ",\n";	//电池柜环境温度告警 239
+		    strJson = strJson + "\"hwenvhumialarmresumetraps\": " + pCab->HUAWEIDevAlarm.hwEnvHumiAlarmTraps.c_str() + ",\n";	//设备柜环境湿度告警 240
+		    strJson = strJson + "\"hwenvhumialarmresumetraps2\": " + pCab->HUAWEIDevAlarm.hwEnvHumiAlarmTraps2.c_str() + ",\n";	//电池柜环境湿度告警 240
+		    strJson = strJson + "\"hwdooralarmtraps\": " + pCab->HUAWEIDevAlarm.hwDoorAlarmTraps.c_str() + ",\n";	//门禁告警(设备柜) 241
+		    strJson = strJson + "\"hwdooralarmtraps2\": " + pCab->HUAWEIDevAlarm.hwDoorAlarmTraps2.c_str() + ",\n";	//门禁告警（电池柜） 241
+		    strJson = strJson + "\"hwwateralarmtraps\": " + pCab->HUAWEIDevAlarm.hwWaterAlarmTraps.c_str() + ",\n";	//水浸告警 242
+		    strJson = strJson + "\"hwwateralarmtraps2\": " + pCab->HUAWEIDevAlarm.hwWaterAlarmTraps2.c_str() + ",\n";	//水浸告警 242
+		    strJson = strJson + "\"hwsmokealarmtraps\": " + pCab->HUAWEIDevAlarm.hwSmokeAlarmTraps.c_str() + ",\n";	//烟雾告警 243
+		    strJson = strJson + "\"hwsmokealarmtraps2\": " + pCab->HUAWEIDevAlarm.hwSmokeAlarmTraps2.c_str() + ",\n";	//烟雾告警 243
+		    strJson = strJson + "\"hwair_cond_infan_alarm\": " + pCab->HUAWEIDevAlarm.hwair_cond_infan_alarm.c_str() + ",\n";	//空调内风机故障 245
+		    strJson = strJson + "\"hwair_cond_infan_alarm2\": " + pCab->HUAWEIDevAlarm.hwair_cond_infan_alarm2.c_str() + ",\n";	//空调内风机故障 245
+		    strJson = strJson + "\"hwair_cond_outfan_alarm\": " + pCab->HUAWEIDevAlarm.hwair_cond_outfan_alarm.c_str() + ",\n";	//空调外风机故障 246
+		    strJson = strJson + "\"hwair_cond_outfan_alarm2\": " + pCab->HUAWEIDevAlarm.hwair_cond_outfan_alarm2.c_str() + ",\n";	//空调外风机故障 246
+		    strJson = strJson + "\"hwair_cond_comp_alarm\": " + pCab->HUAWEIDevAlarm.hwair_cond_comp_alarm.c_str() + ",\n";	//空调压缩机故障 247
+		    strJson = strJson + "\"hwair_cond_comp_alarm2\": " + pCab->HUAWEIDevAlarm.hwair_cond_comp_alarm2.c_str() + ",\n";	//空调压缩机故障 247
+		    strJson = strJson + "\"hwair_cond_return_port_sensor_alarm\": " + pCab->HUAWEIDevAlarm.hwair_cond_return_port_sensor_alarm.c_str() + ",\n";	//空调回风口传感器故障 248
+		    strJson = strJson + "\"hwair_cond_return_port_sensor_alarm2\": " + pCab->HUAWEIDevAlarm.hwair_cond_return_port_sensor_alarm2.c_str() + ",\n";	//空调回风口传感器故障 248
+		    strJson = strJson + "\"hwair_cond_evap_freezing_alarm\": " + pCab->HUAWEIDevAlarm.hwair_cond_evap_freezing_alarm.c_str() + ",\n";	//空调蒸发器冻结 249
+		    strJson = strJson + "\"hwair_cond_evap_freezing_alarm2\": " + pCab->HUAWEIDevAlarm.hwair_cond_evap_freezing_alarm2.c_str() + ",\n";	//空调蒸发器冻结 249
+		    strJson = strJson + "\"hwair_cond_freq_high_press_alarm\": " + pCab->HUAWEIDevAlarm.hwair_cond_freq_high_press_alarm.c_str() + ",\n";	//空调频繁高压力 250
+		    strJson = strJson + "\"hwair_cond_freq_high_press_alarm2\": " + pCab->HUAWEIDevAlarm.hwair_cond_freq_high_press_alarm2.c_str() + ",\n";	//空调频繁高压力 250
+		    strJson = strJson + "\"hwair_cond_comm_fail_alarm\": " + pCab->HUAWEIDevAlarm.hwair_cond_comm_fail_alarm.c_str() + ",\n";	//空调通信失败告警 251
+		    strJson = strJson + "\"hwair_cond_comm_fail_alarm2\": " + pCab->HUAWEIDevAlarm.hwair_cond_comm_fail_alarm2.c_str() + ",\n";	//空调通信失败告警 251
+			//防雷器告警
+		    strJson = strJson + "\"hwacspdalarmtraps\": " + pCab->HUAWEIDevAlarm.hwACSpdAlarmTraps.c_str() + ",\n";	//交流防雷器故障
+		    strJson = strJson + "\"hwdcspdalarmtraps\": " + pCab->HUAWEIDevAlarm.hwDCSpdAlarmTraps.c_str() + ",\n";	//直流防雷器故障
+			//新增加的状态
+			//设备信息 
+		    strJson = strJson + "\"hwmonequipsoftwareversion\": \"" + pCab->HUAWEIDevValue.strhwMonEquipSoftwareVersion.c_str() + "\",\n";	//软件版本
+		    strJson = strJson + "\"hwmonequipmanufacturer\": \"" + pCab->HUAWEIDevValue.strhwMonEquipManufacturer.c_str() + "\",\n";	//设备生产商
+			//锂电(新增加)
+		    strJson = strJson + "\"hwacbgrouptemperature\": " + pCab->HUAWEIDevValue.strhwAcbGroupTemperature.c_str() + ",\n";	//电池温度
+		    strJson = strJson + "\"hwacbgroupovercurthr\": " + pCab->HUAWEIDevValue.strhwAcbGroupOverCurThr.c_str() + ",\n";	//充电过流告警点
+		    strJson = strJson + "\"hwacbgrouphightempthr\": " + pCab->HUAWEIDevValue.strhwAcbGroupHighTempThr.c_str() + ",\n";	//高温告警点
+		    strJson = strJson + "\"hwacbgrouplowtempth\": " + pCab->HUAWEIDevValue.strhwAcbGroupLowTempTh.c_str() + ",\n";	//低温告警点
+		    strJson = strJson + "\"hwacbgroupdodtoacidbattery\": " + pCab->HUAWEIDevValue.strhwAcbGroupDodToAcidBattery.c_str() + ",\n";	//锂电放电DOD
+			//开关电源(新增加)
+		    strJson = strJson + "\"hwsetacsuppervoltlimit\": " + pCab->HUAWEIDevValue.strhwSetAcsUpperVoltLimit.c_str() + ",\n";	//AC过压点设置
+		    strJson = strJson + "\"hwsetacslowervoltlimit\": " + pCab->HUAWEIDevValue.strhwSetAcsLowerVoltLimit.c_str() + ",\n";	//AC欠压点设置
+		    strJson = strJson + "\"hwsetdcsuppervoltlimit\": " + pCab->HUAWEIDevValue.strhwSetDcsUpperVoltLimit.c_str() + ",\n";	//设置DC过压点
+		    strJson = strJson + "\"hwsetdcslowervoltlimit\": " + pCab->HUAWEIDevValue.strhwSetDcsLowerVoltLimit.c_str() + ",\n";	//设置DC欠压点
+		    strJson = strJson + "\"hwsetlvdvoltage\": " + pCab->HUAWEIDevValue.strhwSetLvdVoltage.c_str() + ",\n";	//设置LVD电压
+			//环境传感器(新增加)
+		    strJson = strJson + "\"hwsetenvtempupperlimit\": " + pCab->HUAWEIDevValue.strhwSetEnvTempUpperLimit[0].c_str() + ",\n";	//环境温度告警上限
+		    strJson = strJson + "\"hwsetenvtempupperlimit2\": " + pCab->HUAWEIDevValue.strhwSetEnvTempUpperLimit[1].c_str() + ",\n";	//环境温度告警上限
+		    strJson = strJson + "\"hwsetenvtemplowerlimit\": " + pCab->HUAWEIDevValue.strhwSetEnvTempLowerLimit[0].c_str() + ",\n";	//环境温度告警下限
+		    strJson = strJson + "\"hwsetenvtemplowerlimit2\": " + pCab->HUAWEIDevValue.strhwSetEnvTempLowerLimit[1].c_str() + ",\n";	//环境温度告警下限
+		    strJson = strJson + "\"hwsetenvhumidityupperlimit\": " + pCab->HUAWEIDevValue.strhwSetEnvHumidityUpperLimit[0].c_str() + ",\n";	//环境湿度告警上限
+		    strJson = strJson + "\"hwsetenvhumidityupperlimit2\": " + pCab->HUAWEIDevValue.strhwSetEnvHumidityUpperLimit[1].c_str() + ",\n";	//环境湿度告警上限
+		    strJson = strJson + "\"hwsetenvhumiditylowerlimit\": " + pCab->HUAWEIDevValue.strhwSetEnvHumidityLowerLimit[0].c_str() + ",\n";	//环境湿度告警下限
+		    strJson = strJson + "\"hwsetenvhumiditylowerlimit2\": " + pCab->HUAWEIDevValue.strhwSetEnvHumidityLowerLimit[1].c_str() + ",\n";	//环境湿度告警下限
+			//直流空调(新增加)
+		    strJson = strJson + "\"hwdcairruntime\": " + pCab->HUAWEIDevValue.strhwDcAirRunTime[0].c_str() + ",\n";	//设备柜空调运行时间
+		    strJson = strJson + "\"hwdcairruntime2\": " + pCab->HUAWEIDevValue.strhwDcAirRunTime[1].c_str() + ",\n";	//电池柜空调运行时间
+		    strJson = strJson + "\"hwcoolingdevicesmode\": " + pCab->HUAWEIDevValue.strhwCoolingDevicesMode.c_str() + ",\n";	//温控模式
+			//供配电
+			//电源告警
+			sprintf(str,"\"hwacinputfailalarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcInputFailAlarm.c_str());strJson += str;		 //交流电源输入停电告警
+			sprintf(str,"\"hwacinputl1failalarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcInputL1FailAlarm.c_str());strJson += str;		 //交流电源输入L1	相缺相告警
+			sprintf(str,"\"hwacinputl2failalarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcInputL2FailAlarm.c_str());strJson += str;		 //交流电源输入L2	相缺相告警
+			sprintf(str,"\"hwacinputl3failalarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcInputL3FailAlarm.c_str());strJson += str;		 //交流电源输入L3	相缺相告警
+			sprintf(str,"\"hwdcvoltalarmtraps\": %s,\n", pCab->HUAWEIDevAlarm.hwDcVoltAlarmTraps.c_str());strJson += str;		 //直流电源输出告警
+			sprintf(str,"\"hwloadlvdalarmtraps\": %s,\n", pCab->HUAWEIDevAlarm.hwLoadLvdAlarmTraps.c_str());strJson += str;		 //LLVD1下电告警
+			//锂电池告警
+			sprintf(str,"\"hwacbgroup_comm_fail_alarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcbGroup_comm_fail_alarm.c_str());strJson += str;		 //所有锂电通信失败
+			sprintf(str,"\"hwacbgroup_discharge_alarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcbGroup_discharge_alarm.c_str());strJson += str;		 //电池放电告警
+			sprintf(str,"\"hwacbgroup_charge_overcurrent_alarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcbGroup_charge_overcurrent_alarm.c_str());strJson += str;		 //电池充电过流
+			sprintf(str,"\"hwacbgroup_temphigh_alarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcbGroup_temphigh_alarm.c_str());strJson += str;		 //电池温度高
+			sprintf(str,"\"hwacbgroup_templow_alarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcbGroup_templow_alarm.c_str());strJson += str;		 //电池温度低
+			sprintf(str,"\"hwacbgroup_poweroff_alarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcbGroup_poweroff_alarm.c_str());strJson += str;		 //电池下电
+			sprintf(str,"\"hwacbgroup_fusebreak_alarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcbGroup_fusebreak_alarm.c_str());strJson += str;		 //电池熔丝断
+			sprintf(str,"\"hwacbgroup_moduleloss_alarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcbGroup_moduleloss_alarm.c_str());strJson += str;		 //模块丢失
+			//2019-08-20新增
+			sprintf(str,"\"hwacbgroupbatrunningstate\": %s,\n", pCab->HUAWEIDevValue.strhwAcbGroupBatRunningState.c_str());strJson += str;		 //电池状态
+			sprintf(str,"\"hwsmokesensorstatus\": %s,\n", pCab->HUAWEIDevAlarm.hwSmokeAlarmTraps.c_str());strJson += str;		 //烟雾传感器状态
+			sprintf(str,"\"hwsmokesensorstatus2\": %s,\n", pCab->HUAWEIDevAlarm.hwSmokeAlarmTraps2.c_str());strJson += str;		 //烟雾传感器状态
+			sprintf(str,"\"hwwatersensorstatus\": %s,\n", pCab->HUAWEIDevAlarm.hwWaterAlarmTraps.c_str());strJson += str;		 //水浸传感器状态
+			sprintf(str,"\"hwwatersensorstatus2\": %s,\n", pCab->HUAWEIDevAlarm.hwWaterAlarmTraps2.c_str());strJson += str;		 //水浸传感器状态
+			sprintf(str,"\"hwdoorsensorstatus\": %s,\n", pCab->HUAWEIDevAlarm.hwDoorAlarmTraps.c_str());strJson += str;		 //（电池柜）门磁传感器状态
+			sprintf(str,"\"hwdoorsensorstatus2\": %s,\n", pCab->HUAWEIDevAlarm.hwDoorAlarmTraps2.c_str());strJson += str;		 //（设备柜）门磁传感器状态
+			sprintf(str,"\"hwdcairequipaddress\": %d,\n", pCab->hwAirAddrbuf[0]);strJson += str;		 //空调地址（设备柜）
+			sprintf(str,"\"hwdcairequipaddress2\": %d,\n", pCab->hwAirAddrbuf[1]);strJson += str;		 //空调地址（电池柜）
+			sprintf(str,"\"hwtemhumequipaddress\": %d,\n", pCab->hwTemAddrbuf[0]);strJson += str;		 //温湿度地址（设备柜）
+			sprintf(str,"\"hwtemhumequipaddress2\": %d,\n", pCab->hwTemAddrbuf[1]);strJson += str;		 //空调地址（电池柜）
+			if(pCab->HUAWEIDevValue.strhwAcbBatVolt!="2147483647")
+				{sprintf(str,"\"hwacbbatvolt\": %.1f,\n", atoi(pCab->HUAWEIDevValue.strhwAcbBatVolt.c_str())/10.0);strJson += str;}		 //单个电池电压
+			else	
+				{sprintf(str,"\"hwacbbatvolt\": %d,\n", pCab->HUAWEIDevValue.strhwAcbBatVolt.c_str());strJson += str;}		 //单个电池电压
+			sprintf(str,"\"hwacbbatcurr\": %s,\n", pCab->HUAWEIDevValue.strhwAcbBatCurr.c_str());strJson += str;		 //单个电池电流
+			sprintf(str,"\"hwacbbatsoh\": %s,\n", pCab->HUAWEIDevValue.strhwAcbBatSoh.c_str());strJson += str;		 //单个电池串SOH
+			sprintf(str,"\"hwacbbatcapacity\": %s,\n", pCab->HUAWEIDevValue.strhwAcbBatCapacity.c_str());strJson += str;		 //单个电池容量
+			//2019-11-19新增4个门锁状态
+			status=LockInfo[0].isOpen;	sprintf(str,"\"hwequcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜前门锁状态
+			status=LockInfo[1].isOpen;	sprintf(str,"\"hwequcabbackdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜后门锁状态
+			status=LockInfo[2].isOpen;	sprintf(str,"\"hwbatcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;		 //电池柜前门锁状态
+			status=LockInfo[3].isOpen;	sprintf(str,"\"hwbatcabbackdoorstatus\": \"%d\",\n", status);strJson += str;		 //电池柜后门锁状态
+		}
+		else
+		{
+			char msg[256];
+			sprintf(msg,"HWCabinet now=0x%x last=0x%x \r\n",GetTickCount(),pCab->HUAWEIDevValue.hwTimeStamp);
+			WriteLog(msg);
+			initHUAWEIGantry(pCab);
+			initHUAWEIALARM(pCab);
+			sprintf(str,"\"isonline\":\"%d\",\n",pCab->HUAWEIDevValue.hwLinked); strJson = strJson + str;//连接状态
+		}
+	}
+	else if(atoi(pConf->StrCabinetType.c_str())==13)	//利通机柜
+	{
 		//设备信息 
-	    strJson = strJson + "\"hwmonequipsoftwareversion\": \"" + pCab->HUAWEIDevValue.strhwMonEquipSoftwareVersion.c_str() + "\",\n";	//软件版本
-	    strJson = strJson + "\"hwmonequipmanufacturer\": \"" + pCab->HUAWEIDevValue.strhwMonEquipManufacturer.c_str() + "\",\n";	//设备生产商
-		//锂电(新增加)
-	    strJson = strJson + "\"hwacbgrouptemperature\": " + pCab->HUAWEIDevValue.strhwAcbGroupTemperature.c_str() + ",\n";	//电池温度
-	    strJson = strJson + "\"hwacbgroupovercurthr\": " + pCab->HUAWEIDevValue.strhwAcbGroupOverCurThr.c_str() + ",\n";	//充电过流告警点
-	    strJson = strJson + "\"hwacbgrouphightempthr\": " + pCab->HUAWEIDevValue.strhwAcbGroupHighTempThr.c_str() + ",\n";	//高温告警点
-	    strJson = strJson + "\"hwacbgrouplowtempth\": " + pCab->HUAWEIDevValue.strhwAcbGroupLowTempTh.c_str() + ",\n";	//低温告警点
-	    strJson = strJson + "\"hwacbgroupdodtoacidbattery\": " + pCab->HUAWEIDevValue.strhwAcbGroupDodToAcidBattery.c_str() + ",\n";	//锂电放电DOD
-		//开关电源(新增加)
-	    strJson = strJson + "\"hwsetacsuppervoltlimit\": " + pCab->HUAWEIDevValue.strhwSetAcsUpperVoltLimit.c_str() + ",\n";	//AC过压点设置
-	    strJson = strJson + "\"hwsetacslowervoltlimit\": " + pCab->HUAWEIDevValue.strhwSetAcsLowerVoltLimit.c_str() + ",\n";	//AC欠压点设置
-	    strJson = strJson + "\"hwsetdcsuppervoltlimit\": " + pCab->HUAWEIDevValue.strhwSetDcsUpperVoltLimit.c_str() + ",\n";	//设置DC过压点
-	    strJson = strJson + "\"hwsetdcslowervoltlimit\": " + pCab->HUAWEIDevValue.strhwSetDcsLowerVoltLimit.c_str() + ",\n";	//设置DC欠压点
-	    strJson = strJson + "\"hwsetlvdvoltage\": " + pCab->HUAWEIDevValue.strhwSetLvdVoltage.c_str() + ",\n";	//设置LVD电压
-		//环境传感器(新增加)
-	    strJson = strJson + "\"hwsetenvtempupperlimit\": " + pCab->HUAWEIDevValue.strhwSetEnvTempUpperLimit[0].c_str() + ",\n";	//环境温度告警上限
-	    strJson = strJson + "\"hwsetenvtempupperlimit2\": " + pCab->HUAWEIDevValue.strhwSetEnvTempUpperLimit[1].c_str() + ",\n";	//环境温度告警上限
-	    strJson = strJson + "\"hwsetenvtemplowerlimit\": " + pCab->HUAWEIDevValue.strhwSetEnvTempLowerLimit[0].c_str() + ",\n";	//环境温度告警下限
-	    strJson = strJson + "\"hwsetenvtemplowerlimit2\": " + pCab->HUAWEIDevValue.strhwSetEnvTempLowerLimit[1].c_str() + ",\n";	//环境温度告警下限
-	    strJson = strJson + "\"hwsetenvhumidityupperlimit\": " + pCab->HUAWEIDevValue.strhwSetEnvHumidityUpperLimit[0].c_str() + ",\n";	//环境湿度告警上限
-	    strJson = strJson + "\"hwsetenvhumidityupperlimit2\": " + pCab->HUAWEIDevValue.strhwSetEnvHumidityUpperLimit[1].c_str() + ",\n";	//环境湿度告警上限
-	    strJson = strJson + "\"hwsetenvhumiditylowerlimit\": " + pCab->HUAWEIDevValue.strhwSetEnvHumidityLowerLimit[0].c_str() + ",\n";	//环境湿度告警下限
-	    strJson = strJson + "\"hwsetenvhumiditylowerlimit2\": " + pCab->HUAWEIDevValue.strhwSetEnvHumidityLowerLimit[1].c_str() + ",\n";	//环境湿度告警下限
-		//直流空调(新增加)
-	    strJson = strJson + "\"hwdcairruntime\": " + pCab->HUAWEIDevValue.strhwDcAirRunTime[0].c_str() + ",\n";	//设备柜空调运行时间
-	    strJson = strJson + "\"hwdcairruntime2\": " + pCab->HUAWEIDevValue.strhwDcAirRunTime[1].c_str() + ",\n";	//电池柜空调运行时间
-	    strJson = strJson + "\"hwcoolingdevicesmode\": " + pCab->HUAWEIDevValue.strhwCoolingDevicesMode.c_str() + ",\n";	//温控模式
-		//供配电
-		//电源告警
-		sprintf(str,"\"hwacinputfailalarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcInputFailAlarm.c_str());strJson += str;		 //交流电源输入停电告警
-		sprintf(str,"\"hwacinputl1failalarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcInputL1FailAlarm.c_str());strJson += str;		 //交流电源输入L1	相缺相告警
-		sprintf(str,"\"hwacinputl2failalarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcInputL2FailAlarm.c_str());strJson += str;		 //交流电源输入L2	相缺相告警
-		sprintf(str,"\"hwacinputl3failalarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcInputL3FailAlarm.c_str());strJson += str;		 //交流电源输入L3	相缺相告警
-		sprintf(str,"\"hwdcvoltalarmtraps\": %s,\n", pCab->HUAWEIDevAlarm.hwDcVoltAlarmTraps.c_str());strJson += str;		 //直流电源输出告警
-		sprintf(str,"\"hwloadlvdalarmtraps\": %s,\n", pCab->HUAWEIDevAlarm.hwLoadLvdAlarmTraps.c_str());strJson += str;		 //LLVD1下电告警
-		//锂电池告警
-		sprintf(str,"\"hwacbgroup_comm_fail_alarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcbGroup_comm_fail_alarm.c_str());strJson += str;		 //所有锂电通信失败
-		sprintf(str,"\"hwacbgroup_discharge_alarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcbGroup_discharge_alarm.c_str());strJson += str;		 //电池放电告警
-		sprintf(str,"\"hwacbgroup_charge_overcurrent_alarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcbGroup_charge_overcurrent_alarm.c_str());strJson += str;		 //电池充电过流
-		sprintf(str,"\"hwacbgroup_temphigh_alarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcbGroup_temphigh_alarm.c_str());strJson += str;		 //电池温度高
-		sprintf(str,"\"hwacbgroup_templow_alarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcbGroup_templow_alarm.c_str());strJson += str;		 //电池温度低
-		sprintf(str,"\"hwacbgroup_poweroff_alarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcbGroup_poweroff_alarm.c_str());strJson += str;		 //电池下电
-		sprintf(str,"\"hwacbgroup_fusebreak_alarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcbGroup_fusebreak_alarm.c_str());strJson += str;		 //电池熔丝断
-		sprintf(str,"\"hwacbgroup_moduleloss_alarm\": %s,\n", pCab->HUAWEIDevAlarm.hwAcbGroup_moduleloss_alarm.c_str());strJson += str;		 //模块丢失
-		//2019-08-20新增
-		sprintf(str,"\"hwacbgroupbatrunningstate\": %s,\n", pCab->HUAWEIDevValue.strhwAcbGroupBatRunningState.c_str());strJson += str;		 //电池状态
-		sprintf(str,"\"hwsmokesensorstatus\": %s,\n", pCab->HUAWEIDevAlarm.hwSmokeAlarmTraps.c_str());strJson += str;		 //烟雾传感器状态
-		sprintf(str,"\"hwsmokesensorstatus2\": %s,\n", pCab->HUAWEIDevAlarm.hwSmokeAlarmTraps2.c_str());strJson += str;		 //烟雾传感器状态
-		sprintf(str,"\"hwwatersensorstatus\": %s,\n", pCab->HUAWEIDevAlarm.hwWaterAlarmTraps.c_str());strJson += str;		 //水浸传感器状态
-		sprintf(str,"\"hwwatersensorstatus2\": %s,\n", pCab->HUAWEIDevAlarm.hwWaterAlarmTraps2.c_str());strJson += str;		 //水浸传感器状态
-		sprintf(str,"\"hwdoorsensorstatus\": %s,\n", pCab->HUAWEIDevAlarm.hwDoorAlarmTraps.c_str());strJson += str;		 //（电池柜）门磁传感器状态
-		sprintf(str,"\"hwdoorsensorstatus2\": %s,\n", pCab->HUAWEIDevAlarm.hwDoorAlarmTraps2.c_str());strJson += str;		 //（设备柜）门磁传感器状态
-		sprintf(str,"\"hwdcairequipaddress\": %d,\n", pCab->hwAirAddrbuf[0]);strJson += str;		 //空调地址（设备柜）
-		sprintf(str,"\"hwdcairequipaddress2\": %d,\n", pCab->hwAirAddrbuf[1]);strJson += str;		 //空调地址（电池柜）
-		sprintf(str,"\"hwtemhumequipaddress\": %d,\n", pCab->hwTemAddrbuf[0]);strJson += str;		 //温湿度地址（设备柜）
-		sprintf(str,"\"hwtemhumequipaddress2\": %d,\n", pCab->hwTemAddrbuf[1]);strJson += str;		 //空调地址（电池柜）
-		if(pCab->HUAWEIDevValue.strhwAcbBatVolt!="2147483647")
-			{sprintf(str,"\"hwacbbatvolt\": %.1f,\n", atoi(pCab->HUAWEIDevValue.strhwAcbBatVolt.c_str())/10.0);strJson += str;}		 //单个电池电压
-		else	
-			{sprintf(str,"\"hwacbbatvolt\": %d,\n", pCab->HUAWEIDevValue.strhwAcbBatVolt.c_str());strJson += str;}		 //单个电池电压
-		sprintf(str,"\"hwacbbatcurr\": %s,\n", pCab->HUAWEIDevValue.strhwAcbBatCurr.c_str());strJson += str;		 //单个电池电流
-		sprintf(str,"\"hwacbbatsoh\": %s,\n", pCab->HUAWEIDevValue.strhwAcbBatSoh.c_str());strJson += str;		 //单个电池串SOH
-		sprintf(str,"\"hwacbbatcapacity\": %s,\n", pCab->HUAWEIDevValue.strhwAcbBatCapacity.c_str());strJson += str;		 //单个电池容量
-		//2019-11-19新增4个门锁状态
-		status=0;	sprintf(str,"\"hwequcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜前门锁状态
-		status=0;	sprintf(str,"\"hwequcabbackdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜后门锁状态
-		status=0;	sprintf(str,"\"hwbatcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;		 //电池柜前门锁状态
-		status=0;	sprintf(str,"\"hwbatcabbackdoorstatus\": \"%d\",\n", status);strJson += str;		 //电池柜后门锁状态
-#if 0
-		status=LockerStatusGet(0);	sprintf(str,"\"hwequcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜前门锁状态
-		status=LockerStatusGet(1);	sprintf(str,"\"hwequcabbackdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜后门锁状态
-		status=LockerStatusGet(2);	sprintf(str,"\"hwbatcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;		 //电池柜前门锁状态
-		status=LockerStatusGet(3);	sprintf(str,"\"hwbatcabbackdoorstatus\": \"%d\",\n", status);strJson += str;		 //电池柜后门锁状态
-#endif
-	//CABINETTYPE  1：华为（包括华为单门 双门等） 5：中兴; 6：金晟安; 7：爱特斯 StrVersionNo
-	//2019-12-13新增飞达中兴机柜状态
-	#elif(CABINETTYPE==5)//飞达中兴
-		sprintf(str,"\"isonline\":\"%d\",\n",HUAWEIDevValue.hwLinked); strJson = strJson + str;//连接状态
-		sprintf(str,"\"acbgroupbatonline\":\"%d\",\n",HUAWEIDevValue.AcbGroupBatOnline); strJson = strJson + str;//锂电池组是否在线
-		sprintf(str,"\"dcaironline\":\"%d\",\n",HUAWEIDevValue.DcAirOnline); strJson = strJson + str;//直流空调是否在线（设备柜）
-		sprintf(str,"\"dcaironline2\":\"%d\",\n",HUAWEIDevValue.DcAirOnline2); strJson = strJson + str;//直流空调是否在线（电池柜）
-		sprintf(str,"\"temhumonline\":\"%d\",\n",HUAWEIDevValue.TemHumOnline); strJson = strJson + str;//温湿度传感器是否在线（设备柜）
-		sprintf(str,"\"temhumonline2\":\"%d\",\n",HUAWEIDevValue.TemHumOnline2); strJson = strJson + str;//温湿度传感器是否在线（电池柜）
-
-		sprintf(str,"\"hwmonequipmanufacturer\": \"中兴\",\n");	strJson += str;//设备生产商
-		strJson = strJson + "\"hwaporablvoltage\": " + HUAWEIDevValue.strhwApOrAblVoltage.c_str() + ",\n";	//A/AB电压 220
-		strJson = strJson + "\"hwbporbclvoltage\": " + HUAWEIDevValue.strhwBpOrBclVoltage.c_str() + ",\n";	//B/BC电压 221
-		strJson = strJson + "\"hwcporcalvoltage\": " + HUAWEIDevValue.strhwCpOrCalVoltage.c_str() + ",\n";	//C/CA电压 222
-		strJson = strJson + "\"hwaphasecurrent\": " + HUAWEIDevValue.strhwAphaseCurrent.c_str() + ",\n";	//A相电流 223
-		strJson = strJson + "\"hwbphasecurrent\": " + HUAWEIDevValue.strhwBphaseCurrent.c_str() + ",\n";	//B相电流 224
-		strJson = strJson + "\"hwcphasecurrent\": " + HUAWEIDevValue.strhwCphaseCurrent.c_str() + ",\n";	//C相电流 225
-		strJson = strJson + "\"hwenvtemperature\": " + HUAWEIDevValue.strhwEnvTemperature[0].c_str() + ",\n";	//环境温度值 228
-		strJson = strJson + "\"hwenvtemperature2\": " + HUAWEIDevValue.strhwEnvTemperature[1].c_str() + ",\n";	//环境温度值 228
-		strJson = strJson + "\"hwenvhumidity\": " + HUAWEIDevValue.strhwEnvHumidity[0].c_str() + ",\n"; //环境湿度值 229
-		strJson = strJson + "\"hwenvhumidity2\": " + HUAWEIDevValue.strhwEnvHumidity[1].c_str() + ",\n";	//环境湿度值 229
-		strJson = strJson + "\"hwdcairenterchanneltemp\": " + HUAWEIDevValue.strhwDcAirEnterChannelTemp[0].c_str() + ",\n"; //空调回风口温度 236
-		strJson = strJson + "\"hwdcairenterchanneltemp2\": " + HUAWEIDevValue.strhwDcAirEnterChannelTemp[1].c_str() + ",\n";	//空调回风口温度 236
-		strJson = strJson + "\"hwdcairpowerontemppoint\": " + HUAWEIDevValue.strhwDcAirPowerOnTempPoint[0].c_str() + ",\n"; //空调开机温度点 237
-		strJson = strJson + "\"hwdcairpowerontemppoint2\": " + HUAWEIDevValue.strhwDcAirPowerOnTempPoint[1].c_str() + ",\n";	//空调开机温度点 237
-		//环境传感器(新增加)
-		strJson = strJson + "\"hwsetenvtempupperlimit\": " + HUAWEIDevValue.strhwSetEnvTempUpperLimit[0].c_str() + ",\n";	//环境温度告警上限
-		strJson = strJson + "\"hwsetenvtempupperlimit2\": " + HUAWEIDevValue.strhwSetEnvTempUpperLimit[1].c_str() + ",\n";	//环境温度告警上限
-		strJson = strJson + "\"hwsetenvtemplowerlimit\": " + HUAWEIDevValue.strhwSetEnvTempLowerLimit[0].c_str() + ",\n";	//环境温度告警下限
-		strJson = strJson + "\"hwsetenvtemplowerlimit2\": " + HUAWEIDevValue.strhwSetEnvTempLowerLimit[1].c_str() + ",\n";	//环境温度告警下限
-		strJson = strJson + "\"hwsetenvhumidityupperlimit\": " + HUAWEIDevValue.strhwSetEnvHumidityUpperLimit[0].c_str() + ",\n";	//环境湿度告警上限
-		strJson = strJson + "\"hwsetenvhumidityupperlimit2\": " + HUAWEIDevValue.strhwSetEnvHumidityUpperLimit[1].c_str() + ",\n";	//环境湿度告警上限
-		strJson = strJson + "\"hwsetenvhumiditylowerlimit\": " + HUAWEIDevValue.strhwSetEnvHumidityLowerLimit[0].c_str() + ",\n";	//环境湿度告警下限
-		strJson = strJson + "\"hwsetenvhumiditylowerlimit2\": " + HUAWEIDevValue.strhwSetEnvHumidityLowerLimit[1].c_str() + ",\n";	//环境湿度告警下限
-	    strJson = strJson + "\"hwdooralarmtraps\": " + HUAWEIDevAlarm.hwDoorAlarmTraps.c_str() + ",\n";	//门禁告警(设备柜) 241
-	    strJson = strJson + "\"hwdooralarmtraps2\": " + HUAWEIDevAlarm.hwDoorAlarmTraps2.c_str() + ",\n";	//门禁告警（电池柜） 241
-	    strJson = strJson + "\"hwwateralarmtraps\": " + HUAWEIDevAlarm.hwWaterAlarmTraps.c_str() + ",\n";	//水浸告警 242
-	    strJson = strJson + "\"hwwateralarmtraps2\": " + HUAWEIDevAlarm.hwWaterAlarmTraps2.c_str() + ",\n";	//水浸告警 242
-	    strJson = strJson + "\"hwsmokealarmtraps\": " + HUAWEIDevAlarm.hwSmokeAlarmTraps.c_str() + ",\n";	//烟雾告警 243
-	    strJson = strJson + "\"hwsmokealarmtraps2\": " + HUAWEIDevAlarm.hwSmokeAlarmTraps2.c_str() + ",\n";	//烟雾告警 243
-		//供配电
-		//电源告警
-		sprintf(str,"\"hwacinputfailalarm\": %s,\n", HUAWEIDevAlarm.hwAcInputFailAlarm.c_str());strJson += str; 	 //交流电源输入停电告警
-		sprintf(str,"\"hwacinputl1failalarm\": %s,\n", HUAWEIDevAlarm.hwAcInputL1FailAlarm.c_str());strJson += str; 	 //交流电源输入L1 相缺相告警
-		sprintf(str,"\"hwacinputl2failalarm\": %s,\n", HUAWEIDevAlarm.hwAcInputL2FailAlarm.c_str());strJson += str; 	 //交流电源输入L2 相缺相告警
-		sprintf(str,"\"hwacinputl3failalarm\": %s,\n", HUAWEIDevAlarm.hwAcInputL3FailAlarm.c_str());strJson += str; 	 //交流电源输入L3 相缺相告警
-		sprintf(str,"\"hwsmokesensorstatus\": %s,\n", HUAWEIDevAlarm.hwSmokeAlarmTraps.c_str());strJson += str; 	 //烟雾传感器状态
-		sprintf(str,"\"hwsmokesensorstatus2\": %s,\n", HUAWEIDevAlarm.hwSmokeAlarmTraps2.c_str());strJson += str; 	 //烟雾传感器状态
-		sprintf(str,"\"hwwatersensorstatus\": %s,\n", HUAWEIDevAlarm.hwWaterAlarmTraps.c_str());strJson += str; 	 //水浸传感器状态
-		sprintf(str,"\"hwwatersensorstatus2\": %s,\n", HUAWEIDevAlarm.hwWaterAlarmTraps2.c_str());strJson += str; 	 //水浸传感器状态
-		sprintf(str,"\"hwdoorsensorstatus\": %s,\n", HUAWEIDevAlarm.hwDoorAlarmTraps.c_str());strJson += str;		 //（电池柜）门磁传感器状态
-		sprintf(str,"\"hwdoorsensorstatus2\": %s,\n", HUAWEIDevAlarm.hwDoorAlarmTraps2.c_str());strJson += str;		 //（电池柜）门磁传感器状态
-
-		sprintf(str,"\"rectifiermodulevol\": %s,\n", HUAWEIDevValue.RectifierModuleVol.c_str());strJson += str;		 //整流器输出电压
-		sprintf(str,"\"rectifiermodulecurr\": %s,\n", HUAWEIDevValue.RectifierModuleCurr.c_str());strJson += str;		 //整流器输出电流
-		sprintf(str,"\"rectifiermoduletemp\": %s,\n", HUAWEIDevValue.RectifierModuleTemp.c_str());strJson += str;		 //整流器机内温度
-	    //空调
-		sprintf(str,"\"in_fanstate\": %s,\n", HUAWEIDevValue.StrIn_FanState.c_str());strJson += str;		 //内风机状态 0代表关闭 1代表开启
-		sprintf(str,"\"in_fanstate2\": %s,\n", HUAWEIDevValue.StrIn_FanState2.c_str());strJson += str;		 //内风机状态2 0代表关闭 1代表开启
-		sprintf(str,"\"out_fanstate\": %s,\n", HUAWEIDevValue.StrOut_FanState.c_str());strJson += str;		 //外风机状态 0代表关闭 1代表开启
-		sprintf(str,"\"out_fanstate2\": %s,\n", HUAWEIDevValue.StrOut_FanState2.c_str());strJson += str;		 //外风机状态2 0代表关闭 1代表开启
-		//中兴机柜增加开关电源报警
-		sprintf(str,"\"switchpowercom_alarm\": %s,\n", HUAWEIDevAlarm.SwitchPowerCom_alarm.c_str());strJson += str;		 //开关电源断线告警 0代表正常 1代表告警
-		sprintf(str,"\"rectifiermodulecom_alarm\": %s,\n", HUAWEIDevAlarm.RectifierModuleCom_alarm.c_str());strJson += str;		 //整流模块通讯故障 0代表正常 1代表告警
-		sprintf(str,"\"hwacinputfailalarm\": %s,\n", HUAWEIDevAlarm.hwAcInputFailAlarm.c_str());strJson += str; 	 //交流电源输入停电告警
-		//空调
-		sprintf(str,"\"air_high_temper_alarm\": %s,\n", HUAWEIDevAlarm.Air_High_temper_alarm.c_str());strJson += str;		 //高温告警 0代表正常 1代表告警
-		sprintf(str,"\"air_lower_temper_alarm\": %s,\n", HUAWEIDevAlarm.Air_Lower_temper_alarm.c_str());strJson += str;		 //低温告警 0代表正常 1代表告警
-		sprintf(str,"\"air_heater_alarm\": %s,\n", HUAWEIDevAlarm.Air_Heater_alarm.c_str());strJson += str;		 //加热器故障告警 0代表正常 1代表告警
-		sprintf(str,"\"air_temper_sensor_alarm\": %s,\n", HUAWEIDevAlarm.Air_Temper_Sensor_alarm.c_str());strJson += str;		 //温度传感器故障 0代表正常 1代表告警
-	#elif(CABINETTYPE==6)//金晟安
-		sprintf(str,"\"isonline\":\"%d\",\n",HUAWEIDevValue.hwLinked); strJson = strJson + str;//连接状态
-		sprintf(str,"\"acbgroupbatonline\":\"%d\",\n",HUAWEIDevValue.AcbGroupBatOnline); strJson = strJson + str;//锂电池组是否在线
-		sprintf(str,"\"dcaironline\":\"%d\",\n",HUAWEIDevValue.DcAirOnline); strJson = strJson + str;//直流空调是否在线（设备柜）
-		sprintf(str,"\"dcaironline2\":\"%d\",\n",HUAWEIDevValue.DcAirOnline2); strJson = strJson + str;//直流空调是否在线（电池柜）
-		sprintf(str,"\"temhumonline\":\"%d\",\n",HUAWEIDevValue.TemHumOnline); strJson = strJson + str;//温湿度传感器是否在线（设备柜）
-		sprintf(str,"\"temhumonline2\":\"%d\",\n",HUAWEIDevValue.TemHumOnline2); strJson = strJson + str;//温湿度传感器是否在线（电池柜）
-
-		sprintf(str,"\"hwmonequipmanufacturer\": \"金晟安\",\n");	strJson += str;//设备生产商
-		strJson = strJson + "\"hwacbgroupbatvolt\": " + HUAWEIDevValue.strhwAcbGroupBatVolt.c_str() + ",\n";	//锂电电池电压 214
-		strJson = strJson + "\"hwacbgrouptotalcapacity\": " + HUAWEIDevValue.strhwAcbGroupTotalCapacity.c_str() + ",\n";	//锂电电池总容量 216
-		strJson = strJson + "\"hwacbgrouptotalremaincapacity\": " + HUAWEIDevValue.strhwAcbGroupTotalRemainCapacity.c_str() + ",\n";	//锂电电池剩余容量 217
-		strJson = strJson + "\"hwdcoutputvoltage\": " + HUAWEIDevValue.strhwDcOutputVoltage.c_str() + ",\n";	//DC输出电压 226
-		strJson = strJson + "\"hwenvtemperature\": " + HUAWEIDevValue.strhwEnvTemperature[0].c_str() + ",\n";	//环境温度值 228
-		strJson = strJson + "\"hwenvtemperature2\": " + HUAWEIDevValue.strhwEnvTemperature[1].c_str() + ",\n";	//环境温度值 228
-		strJson = strJson + "\"hwenvhumidity\": " + HUAWEIDevValue.strhwEnvHumidity[0].c_str() + ",\n"; //环境湿度值 229
-		strJson = strJson + "\"hwenvhumidity2\": " + HUAWEIDevValue.strhwEnvHumidity[1].c_str() + ",\n";	//环境湿度值 229
-		strJson = strJson + "\"hwdcairrunstatus\": " + HUAWEIDevValue.strhwDcAirRunStatus[0].c_str() + ",\n";	//空调运行状态 231
-		strJson = strJson + "\"hwdcairrunstatus2\": " + HUAWEIDevValue.strhwDcAirRunStatus[1].c_str() + ",\n";	//空调运行状态 231
-		strJson = strJson + "\"hwdcaircompressorrunstatus\": " + HUAWEIDevValue.strhwDcAirCompressorRunStatus[0].c_str() + ",\n";	//空调压缩机运行状态 232
-		strJson = strJson + "\"hwdcaircompressorrunstatus2\": " + HUAWEIDevValue.strhwDcAirCompressorRunStatus[1].c_str() + ",\n";	//空调压缩机运行状态 232
-		strJson = strJson + "\"hwdcairenterchanneltemp\": " + HUAWEIDevValue.strhwDcAirEnterChannelTemp[0].c_str() + ",\n"; //空调回风口温度 236
-		strJson = strJson + "\"hwdcairenterchanneltemp2\": " + HUAWEIDevValue.strhwDcAirEnterChannelTemp[1].c_str() + ",\n";	//空调回风口温度 236
-		strJson = strJson + "\"hwdcairpowerontemppoint\": " + HUAWEIDevValue.strhwDcAirPowerOnTempPoint[0].c_str() + ",\n"; //空调开机温度点 237
-		strJson = strJson + "\"hwdcairpowerontemppoint2\": " + HUAWEIDevValue.strhwDcAirPowerOnTempPoint[1].c_str() + ",\n";	//空调开机温度点 237
-		strJson = strJson + "\"hwdcairpowerofftemppoint\": " + HUAWEIDevValue.strhwDcAirPowerOffTempPoint[0].c_str() + ",\n";	//空调关机温度点 238
-		strJson = strJson + "\"hwdcairpowerofftemppoint2\": " + HUAWEIDevValue.strhwDcAirPowerOffTempPoint[1].c_str() + ",\n";	//空调关机温度点 238
-		strJson = strJson + "\"hwenvtempalarmtraps\": " + HUAWEIDevAlarm.hwEnvTempAlarmTraps.c_str() + ",\n";	//设备柜环境温度告警 239
-		strJson = strJson + "\"hwenvtempalarmtraps2\": " + HUAWEIDevAlarm.hwEnvTempAlarmTraps2.c_str() + ",\n"; //电池柜环境温度告警 239
-		strJson = strJson + "\"hwenvhumialarmresumetraps\": " + HUAWEIDevAlarm.hwEnvHumiAlarmTraps.c_str() + ",\n"; //设备柜环境湿度告警 240
-		strJson = strJson + "\"hwenvhumialarmresumetraps2\": " + HUAWEIDevAlarm.hwEnvHumiAlarmTraps2.c_str() + ",\n";	//电池柜环境湿度告警 240
-		strJson = strJson + "\"hwdooralarmtraps\": " + HUAWEIDevAlarm.hwDoorAlarmTraps.c_str() + ",\n"; //门禁告警(设备柜) 241
-		strJson = strJson + "\"hwdooralarmtraps2\": " + HUAWEIDevAlarm.hwDoorAlarmTraps2.c_str() + ",\n";	//门禁告警（电池柜） 241
-		strJson = strJson + "\"hwwateralarmtraps\": " + HUAWEIDevAlarm.hwWaterAlarmTraps.c_str() + ",\n";	//水浸告警 242
-		strJson = strJson + "\"hwwateralarmtraps2\": " + HUAWEIDevAlarm.hwWaterAlarmTraps2.c_str() + ",\n"; //水浸告警 242
-		strJson = strJson + "\"hwsmokealarmtraps\": " + HUAWEIDevAlarm.hwSmokeAlarmTraps.c_str() + ",\n";	//烟雾告警 243
-		strJson = strJson + "\"hwsmokealarmtraps2\": " + HUAWEIDevAlarm.hwSmokeAlarmTraps2.c_str() + ",\n"; //烟雾告警 243
-		strJson = strJson + "\"hwair_cond_infan_alarm\": " + HUAWEIDevAlarm.hwair_cond_infan_alarm.c_str() + ",\n"; //空调内风机故障 245
-		strJson = strJson + "\"hwair_cond_infan_alarm2\": " + HUAWEIDevAlarm.hwair_cond_infan_alarm2.c_str() + ",\n";	//空调内风机故障 245
-		strJson = strJson + "\"hwair_cond_outfan_alarm\": " + HUAWEIDevAlarm.hwair_cond_outfan_alarm.c_str() + ",\n";	//空调外风机故障 246
-		strJson = strJson + "\"hwair_cond_outfan_alarm2\": " + HUAWEIDevAlarm.hwair_cond_outfan_alarm2.c_str() + ",\n"; //空调外风机故障 246
-		strJson = strJson + "\"hwair_cond_evap_freezing_alarm\": " + HUAWEIDevAlarm.hwair_cond_evap_freezing_alarm.c_str() + ",\n"; //空调蒸发器冻结 249
-		strJson = strJson + "\"hwair_cond_evap_freezing_alarm2\": " + HUAWEIDevAlarm.hwair_cond_evap_freezing_alarm2.c_str() + ",\n";	//空调蒸发器冻结 249
-		//锂电(新增加)
-		strJson = strJson + "\"hwacbgrouptemperature\": " + HUAWEIDevValue.strhwAcbGroupTemperature.c_str() + ",\n";	//电池温度
-		//开关电源(新增加)
-		strJson = strJson + "\"hwsetacslowervoltlimit\": " + HUAWEIDevValue.strhwSetAcsLowerVoltLimit.c_str() + ",\n";	//AC欠压点设置
-		//环境传感器(新增加)
-		strJson = strJson + "\"hwsetenvtempupperlimit\": " + HUAWEIDevValue.strhwSetEnvTempUpperLimit[0].c_str() + ",\n";	//环境温度告警上限
-		strJson = strJson + "\"hwsetenvtempupperlimit2\": " + HUAWEIDevValue.strhwSetEnvTempUpperLimit[1].c_str() + ",\n";	//环境温度告警上限
-		strJson = strJson + "\"hwsetenvtemplowerlimit\": " + HUAWEIDevValue.strhwSetEnvTempLowerLimit[0].c_str() + ",\n";	//环境温度告警下限
-		strJson = strJson + "\"hwsetenvtemplowerlimit2\": " + HUAWEIDevValue.strhwSetEnvTempLowerLimit[1].c_str() + ",\n";	//环境温度告警下限
-		strJson = strJson + "\"hwsetenvhumidityupperlimit\": " + HUAWEIDevValue.strhwSetEnvHumidityUpperLimit[0].c_str() + ",\n";	//环境湿度告警上限
-		strJson = strJson + "\"hwsetenvhumidityupperlimit2\": " + HUAWEIDevValue.strhwSetEnvHumidityUpperLimit[1].c_str() + ",\n";	//环境湿度告警上限
-		strJson = strJson + "\"hwsetenvhumiditylowerlimit\": " + HUAWEIDevValue.strhwSetEnvHumidityLowerLimit[0].c_str() + ",\n";	//环境湿度告警下限
-		strJson = strJson + "\"hwsetenvhumiditylowerlimit2\": " + HUAWEIDevValue.strhwSetEnvHumidityLowerLimit[1].c_str() + ",\n";	//环境湿度告警下限
-		//供配电
-		//电源告警
-		sprintf(str,"\"hwacinputfailalarm\": %s,\n", HUAWEIDevAlarm.hwAcInputFailAlarm.c_str());strJson += str; 	 //交流电源输入停电告警
-		sprintf(str,"\"hwacinputl1failalarm\": %s,\n", HUAWEIDevAlarm.hwAcInputL1FailAlarm.c_str());strJson += str; 	 //交流电源输入L1 相缺相告警
-		//锂电池告警
-		sprintf(str,"\"hwacbgroup_temphigh_alarm\": %s,\n", HUAWEIDevAlarm.hwAcbGroup_temphigh_alarm.c_str());strJson += str;		 //电池温度高
-		sprintf(str,"\"hwacbgroup_templow_alarm\": %s,\n", HUAWEIDevAlarm.hwAcbGroup_templow_alarm.c_str());strJson += str; 	 //电池温度低
-		//2019-08-20新增
-		sprintf(str,"\"hwacbgroupbatrunningstate\": %s,\n", HUAWEIDevValue.strhwAcbGroupBatRunningState.c_str());strJson += str;		 //电池状态
-		sprintf(str,"\"hwsmokesensorstatus\": %s,\n", HUAWEIDevAlarm.hwSmokeAlarmTraps.c_str());strJson += str; 	 //烟雾传感器状态
-		sprintf(str,"\"hwsmokesensorstatus2\": %s,\n", HUAWEIDevAlarm.hwSmokeAlarmTraps2.c_str());strJson += str;		 //烟雾传感器状态
-		sprintf(str,"\"hwwatersensorstatus\": %s,\n", HUAWEIDevAlarm.hwWaterAlarmTraps.c_str());strJson += str; 	 //水浸传感器状态
-		sprintf(str,"\"hwwatersensorstatus2\": %s,\n", HUAWEIDevAlarm.hwWaterAlarmTraps2.c_str());strJson += str;		 //水浸传感器状态
-		sprintf(str,"\"hwdoorsensorstatus\": %s,\n", HUAWEIDevAlarm.hwDoorAlarmTraps.c_str());strJson += str;		 //（电池柜）门磁传感器状态
-		sprintf(str,"\"hwdoorsensorstatus2\": %s,\n", HUAWEIDevAlarm.hwDoorAlarmTraps2.c_str());strJson += str; 	 //（设备柜）门磁传感器状态
-		sprintf(str,"\"hwacbbatvolt\": %d,\n", HUAWEIDevValue.strhwAcbBatVolt.c_str());strJson += str;		 //单个电池电压
-		sprintf(str,"\"hwacbbatcapacity\": %s,\n", HUAWEIDevValue.strhwAcbBatCapacity.c_str());strJson += str;		 //单个电池容量
-#if 0
-		//2019-11-19新增4个门锁状态
-		status=LockerStatusGet(0);	sprintf(str,"\"hwequcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜前门锁状态
-		status=LockerStatusGet(1);	sprintf(str,"\"hwequcabbackdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜后门锁状态
-		status=LockerStatusGet(2);	sprintf(str,"\"hwbatcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;		 //电池柜前门锁状态
-		status=LockerStatusGet(3);	sprintf(str,"\"hwbatcabbackdoorstatus\": \"%d\",\n", status);strJson += str;		 //电池柜后门锁状态
-#endif
-		sprintf(str,"\"upscityvol\": %s,\n", HUAWEIDevValue.StrUpsCityVol.c_str());strJson += str;		 //Ups市电电压
-		sprintf(str,"\"upscityvol2\": %s,\n", HUAWEIDevValue.StrUpsCityVol2.c_str());strJson += str;		 //Ups2市电电压
-		sprintf(str,"\"upsovol\": %s,\n", HUAWEIDevValue.StrUpsOVol.c_str());strJson += str;		 //Ups输出电压
-		sprintf(str,"\"upsovol2\": %s,\n", HUAWEIDevValue.StrUpsOVol2.c_str());strJson += str;		 //Ups2输出电压
-		sprintf(str,"\"upstemp\": %s,\n", HUAWEIDevValue.StrUpsTemp.c_str());strJson += str;		 //Ups温度
-		sprintf(str,"\"upstemp2\": %s,\n", HUAWEIDevValue.StrUpsTemp2.c_str());strJson += str;		 //Ups2温度
-		sprintf(str,"\"upsloadout\": %s,\n", HUAWEIDevValue.StrUpsLoadout.c_str());strJson += str;		 //Ups负载百分比
-		sprintf(str,"\"upsloadout2\": %s,\n", HUAWEIDevValue.StrUpsLoadout2.c_str());strJson += str;		 //Ups2负载百分比
-		sprintf(str,"\"upsfreqin\": %s,\n", HUAWEIDevValue.StrUpsFreqin.c_str());strJson += str;		 //Ups输入频率
-		sprintf(str,"\"upsfreqin\": %s,\n", HUAWEIDevValue.StrUpsFreqin2.c_str());strJson += str;		 //Ups2输入频率
-		sprintf(str,"\"upsisbypass\": %s,\n", HUAWEIDevValue.StrUpsIsBypass.c_str());strJson += str;		 //Ups是否旁路
-		sprintf(str,"\"upsisbypass2\": %s,\n", HUAWEIDevValue.StrUpsIsBypass2.c_str());strJson += str;		 //Ups2是否旁路
-		sprintf(str,"\"upsonoff\": %s,\n", HUAWEIDevValue.StrUpsOnOff.c_str());strJson += str;		 //Ups开关机状态
-		sprintf(str,"\"upsonoff\": %s,\n", HUAWEIDevValue.StrUpsOnOff2.c_str());strJson += str;		 //Ups2开关机状态
-	    //空调
-		sprintf(str,"\"in_fanstate\": %s,\n", HUAWEIDevValue.StrIn_FanState.c_str());strJson += str;		 //内风机状态 0代表关闭 1代表开启
-		sprintf(str,"\"in_fanstate2\": %s,\n", HUAWEIDevValue.StrIn_FanState2.c_str());strJson += str;		 //内风机状态2 0代表关闭 1代表开启
-		sprintf(str,"\"out_fanstate\": %s,\n", HUAWEIDevValue.StrOut_FanState.c_str());strJson += str;		 //外风机状态 0代表关闭 1代表开启
-		sprintf(str,"\"out_fanstate2\": %s,\n", HUAWEIDevValue.StrOut_FanState2.c_str());strJson += str;		 //外风机状态2 0代表关闭 1代表开启
-		//报警
-		sprintf(str,"\"ups_alarm\": %s,\n", HUAWEIDevAlarm.Ups_Alarm.c_str());strJson += str;		 //ups故障状态
-		sprintf(str,"\"ups_alarm2\": %s,\n", HUAWEIDevAlarm.Ups_Alarm2.c_str());strJson += str;		 //ups2故障状态
-		sprintf(str,"\"acbgrouplowvoltalarm\": %s,\n", HUAWEIDevAlarm.AcbgroupLowVoltAlarm.c_str());strJson += str;		 //电池电压低报警
-		//空调
-		sprintf(str,"\"air_high_temper_alarm\": %s,\n", HUAWEIDevAlarm.Air_High_temper_alarm.c_str());strJson += str;		 //高温告警 0代表正常 1代表告警
-		sprintf(str,"\"air_lower_temper_alarm\": %s,\n", HUAWEIDevAlarm.Air_Lower_temper_alarm.c_str());strJson += str;		 //低温告警 0代表正常 1代表告警
-		sprintf(str,"\"air_heater_alarm\": %s,\n", HUAWEIDevAlarm.Air_Heater_alarm.c_str());strJson += str;		 //加热器故障告警 0代表正常 1代表告警
-		sprintf(str,"\"air_temper_sensor_alarm\": %s,\n", HUAWEIDevAlarm.Air_Temper_Sensor_alarm.c_str());strJson += str;		 //温度传感器故障 0代表正常 1代表告警
-	#elif(CABINETTYPE==7)//爱特思
-		sprintf(str,"\"isonline\":\"%d\",\n",HUAWEIDevValue.hwLinked); strJson = strJson + str;//连接状态
-		sprintf(str,"\"acbgroupbatonline\":\"%d\",\n",HUAWEIDevValue.AcbGroupBatOnline); strJson = strJson + str;//锂电池组是否在线
-		sprintf(str,"\"dcaironline\":\"%d\",\n",HUAWEIDevValue.DcAirOnline); strJson = strJson + str;//直流空调是否在线（设备柜）
-		sprintf(str,"\"dcaironline2\":\"%d\",\n",HUAWEIDevValue.DcAirOnline2); strJson = strJson + str;//直流空调是否在线（电池柜）
-		sprintf(str,"\"temhumonline\":\"%d\",\n",HUAWEIDevValue.TemHumOnline); strJson = strJson + str;//温湿度传感器是否在线（设备柜）
-		sprintf(str,"\"temhumonline2\":\"%d\",\n",HUAWEIDevValue.TemHumOnline2); strJson = strJson + str;//温湿度传感器是否在线（电池柜）
-
-		sprintf(str,"\"hwmonequipmanufacturer\": \"爱特思\",\n"); strJson += str;//设备生产商
-		strJson = strJson + "\"hwacbgroupbatvolt\": " + HUAWEIDevValue.strhwAcbGroupBatVolt.c_str() + ",\n";	//锂电电池电压 214
-		strJson = strJson + "\"hwacbgroupbatcurr\": " + HUAWEIDevValue.strhwAcbGroupBatCurr.c_str() + ",\n";	//锂电电池电流 215
-		strJson = strJson + "\"hwacbgrouptotalcapacity\": " + HUAWEIDevValue.strhwAcbGroupTotalCapacity.c_str() + ",\n";	//锂电电池总容量 216
-		strJson = strJson + "\"hwacbgrouptotalremaincapacity\": " + HUAWEIDevValue.strhwAcbGroupTotalRemainCapacity.c_str() + ",\n";	//锂电电池剩余容量 217
-		strJson = strJson + "\"hwaporablvoltage\": " + HUAWEIDevValue.strhwApOrAblVoltage.c_str() + ",\n";	//A/AB电压 220
-		strJson = strJson + "\"hwaphasecurrent\": " + HUAWEIDevValue.strhwAphaseCurrent.c_str() + ",\n";	//A相电流 223
-		strJson = strJson + "\"hwenvtemperature\": " + HUAWEIDevValue.strhwEnvTemperature[0].c_str() + ",\n";	//环境温度值 228
-		strJson = strJson + "\"hwenvhumidity\": " + HUAWEIDevValue.strhwEnvHumidity[0].c_str() + ",\n"; //环境湿度值 229
-		strJson = strJson + "\"hwdooralarmtraps\": " + HUAWEIDevAlarm.hwDoorAlarmTraps.c_str() + ",\n"; //门禁告警(设备柜) 241
-		//锂电(新增加)
-		strJson = strJson + "\"hwacbgrouptemperature\": " + HUAWEIDevValue.strhwAcbGroupTemperature.c_str() + ",\n";	//电池温度
-		//供配电
-		//电源告警
-		sprintf(str,"\"hwacinputfailalarm\": %s,\n", HUAWEIDevAlarm.hwAcInputFailAlarm.c_str());strJson += str; 	 //交流电源输入停电告警
-		sprintf(str,"\"hwacinputl1failalarm\": %s,\n", HUAWEIDevAlarm.hwAcInputL1FailAlarm.c_str());strJson += str; 	 //交流电源输入L1 相缺相告警
-		sprintf(str,"\"hwacbgroup_poweroff_alarm\": %s,\n", HUAWEIDevAlarm.hwAcbGroup_poweroff_alarm.c_str());strJson += str;		 //电池下电
-		sprintf(str,"\"hwsmokesensorstatus\": %s,\n", HUAWEIDevAlarm.hwSmokeAlarmTraps.c_str());strJson += str; 	 //烟雾传感器状态
-		sprintf(str,"\"hwwatersensorstatus\": %s,\n", HUAWEIDevAlarm.hwWaterAlarmTraps.c_str());strJson += str; 	 //水浸传感器状态
-		sprintf(str,"\"hwacbbatvolt\": %d,\n", HUAWEIDevValue.strhwAcbBatVolt.c_str());strJson += str;		 //单个电池电压
-		sprintf(str,"\"hwacbbatcurr\": %s,\n", HUAWEIDevValue.strhwAcbBatCurr.c_str());strJson += str;		 //单个电池电流
-
-		sprintf(str,"\"upscityvol\": %s,\n", HUAWEIDevValue.StrUpsCityVol.c_str());strJson += str;		 //
-		sprintf(str,"\"upsovol\": %s,\n", HUAWEIDevValue.StrUpsOVol.c_str());strJson += str;		 //
-		sprintf(str,"\"upstemp\": %s,\n", HUAWEIDevValue.StrUpsTemp.c_str());strJson += str;		 //
-		strJson = strJson + "\"upsloadout\": \"" + HUAWEIDevValue.StrUpsLoadout.c_str() + "\",\n";	//Ups电池负载 %比
-		//空调
-		sprintf(str,"\"coolerstate\": %s,\n", HUAWEIDevValue.StrCoolerState.c_str());strJson += str;		 //制冷器状态
-		sprintf(str,"\"in_fanstate\": %s,\n", HUAWEIDevValue.StrIn_FanState.c_str());strJson += str;		 //内风机状态 0代表关闭 1代表开启
-		sprintf(str,"\"out_fanstate\": %s,\n", HUAWEIDevValue.StrOut_FanState.c_str());strJson += str;		 //外风机状态 0代表关闭 1代表开启
-		sprintf(str,"\"heaterstate\": %s,\n", HUAWEIDevValue.StrHeaterState.c_str());strJson += str;		 //加热器状态
-		//报警
-		sprintf(str,"\"ups_alarm\": %s,\n", HUAWEIDevAlarm.Ups_alarm.c_str());strJson += str;		 //ups故障状态
-		//空调
-		sprintf(str,"\"air_cooler_alarm\": %s,\n", HUAWEIDevAlarm.Air_Cooler_alarm.c_str());strJson += str;		 //制冷器故障告警
-		sprintf(str,"\"air_high_temper_alarm\": %s,\n", HUAWEIDevAlarm.Air_High_temper_alarm.c_str());strJson += str;		 //高温告警 0代表正常 1代表告警
-		sprintf(str,"\"air_lower_temper_alarm\": %s,\n", HUAWEIDevAlarm.Air_Lower_temper_alarm.c_str());strJson += str;		 //低温告警 0代表正常 1代表告警
-		sprintf(str,"\"air_heater_alarm\": %s,\n", HUAWEIDevAlarm.Air_Heater_alarm.c_str());strJson += str;		 //加热器故障告警 0代表正常 1代表告警
-		sprintf(str,"\"air_temper_sensor_alarm\": %s,\n", HUAWEIDevAlarm.Air_Temper_Sensor_alarm.c_str());strJson += str;		 //温度传感器故障 0代表正常 1代表告警
-		sprintf(str,"\"air_high_vol_alarm\": %s,\n", HUAWEIDevAlarm.Air_High_Vol_alarm.c_str());strJson += str;		 //电压高压告警 0代表正常 1代表告警
-		sprintf(str,"\"air_lower_vol_alarm\": %s,\n", HUAWEIDevAlarm.Air_Lower_Vol_alarm.c_str());strJson += str;		 //电压低压告警 0代表正常 1代表告警
-	#elif(CABINETTYPE==8 || CABINETTYPE==10)//诺龙/亚邦
-		sprintf(str,"\"isonline\":\"%d\",\n",HUAWEIDevValue.hwLinked); strJson = strJson + str;//连接状态
-		sprintf(str,"\"acbgroupbatonline\":\"%d\",\n",HUAWEIDevValue.AcbGroupBatOnline); strJson = strJson + str;//锂电池组是否在线
-		sprintf(str,"\"dcaironline\":\"%d\",\n",HUAWEIDevValue.DcAirOnline); strJson = strJson + str;//直流空调是否在线（设备柜）
-		sprintf(str,"\"dcaironline2\":\"%d\",\n",HUAWEIDevValue.DcAirOnline2); strJson = strJson + str;//直流空调是否在线（电池柜）
-		sprintf(str,"\"temhumonline\":\"%d\",\n",HUAWEIDevValue.TemHumOnline); strJson = strJson + str;//温湿度传感器是否在线（设备柜）
-		sprintf(str,"\"temhumonline2\":\"%d\",\n",HUAWEIDevValue.TemHumOnline2); strJson = strJson + str;//温湿度传感器是否在线（电池柜）
-
-		if(StrCabinetType=="8")
+		strJson = strJson + "\"hwmonequipmanufacturer\": \"利通\",\n";	//设备生产商
+		sprintf(str,"\"isonline\":\"1\",\n"); strJson = strJson + str;//连接状态
+		
+		if(GetTickCount()-pRCtrl->TempHumTimeStamp>1*60)//超过1分钟没更新，认为没有连接
 		{
-			sprintf(str,"\"hwmonequipmanufacturer\": \"诺龙\",\n");	strJson += str;//设备生产商
+			sprintf(str,"\"temhumonline\":\"0\",\n"); strJson = strJson + str;//温湿度传感器是否在线（设备柜）
 		}
-		else if(StrCabinetType=="10")
+		else
 		{
-			sprintf(str,"\"hwmonequipmanufacturer\": \"亚邦\",\n");	strJson += str;//设备生产商
+			sprintf(str,"\"temhumonline\":\"1\",\n"); strJson = strJson + str;//温湿度传感器是否在线（设备柜）
+			sprintf(str,"\"hwenvtemperature\":\"%.1f\",\n", pTemHumi->tempture); strJson = strJson + str;//环境温度值 228
+			sprintf(str,"\"hwenvhumidity\":\"%.1f\",\n", pTemHumi->humidity); strJson = strJson + str;//环境湿度值 229
 		}
-		strJson = strJson + "\"hwacbgroupbatvolt\": " + HUAWEIDevValue.strhwAcbGroupBatVolt.c_str() + ",\n";	//锂电电池电压 214
-		strJson = strJson + "\"hwacbgrouptotalcapacity\": " + HUAWEIDevValue.strhwAcbGroupTotalCapacity.c_str() + ",\n";	//锂电电池总容量 216
-		strJson = strJson + "\"hwaporablvoltage\": " + HUAWEIDevValue.strhwApOrAblVoltage.c_str() + ",\n";	//A/AB电压 220
-		strJson = strJson + "\"hwbporbclvoltage\": " + HUAWEIDevValue.strhwBpOrBclVoltage.c_str() + ",\n";	//B/BC电压 221
-		strJson = strJson + "\"hwaphasecurrent\": " + HUAWEIDevValue.strhwAphaseCurrent.c_str() + ",\n";	//A相电流 223
-		strJson = strJson + "\"hwbphasecurrent\": " + HUAWEIDevValue.strhwBphaseCurrent.c_str() + ",\n";	//B相电流 224
-		strJson = strJson + "\"hwenvtemperature\": " + HUAWEIDevValue.strhwEnvTemperature[0].c_str() + ",\n";	//环境温度值 228
-		strJson = strJson + "\"hwenvtemperature2\": " + HUAWEIDevValue.strhwEnvTemperature[1].c_str() + ",\n";	//环境温度值 228
-		strJson = strJson + "\"hwenvhumidity\": " + HUAWEIDevValue.strhwEnvHumidity[0].c_str() + ",\n"; //环境湿度值 229
-		strJson = strJson + "\"hwenvhumidity2\": " + HUAWEIDevValue.strhwEnvHumidity[1].c_str() + ",\n";	//环境湿度值 229
-		strJson = strJson + "\"hwdcairrunstatus\": " + HUAWEIDevValue.strhwDcAirRunStatus[0].c_str() + ",\n";	//空调运行状态 231
-		strJson = strJson + "\"hwdcairrunstatus2\": " + HUAWEIDevValue.strhwDcAirRunStatus[1].c_str() + ",\n";	//空调运行状态 231
-		strJson = strJson + "\"hwdcaircompressorrunstatus\": " + HUAWEIDevValue.strhwDcAirCompressorRunStatus[0].c_str() + ",\n";	//空调压缩机运行状态 232
-		strJson = strJson + "\"hwdcaircompressorrunstatus2\": " + HUAWEIDevValue.strhwDcAirCompressorRunStatus[1].c_str() + ",\n";	//空调压缩机运行状态 232
-		strJson = strJson + "\"hwdcairenterchanneltemp\": " + HUAWEIDevValue.strhwDcAirEnterChannelTemp[0].c_str() + ",\n"; //空调回风口温度 236
-		strJson = strJson + "\"hwdcairenterchanneltemp2\": " + HUAWEIDevValue.strhwDcAirEnterChannelTemp[1].c_str() + ",\n";	//空调回风口温度 236
-		strJson = strJson + "\"hwenvtempalarmtraps\": " + HUAWEIDevAlarm.hwEnvTempAlarmTraps.c_str() + ",\n";	//设备柜环境温度告警 239
-		strJson = strJson + "\"hwenvtempalarmtraps2\": " + HUAWEIDevAlarm.hwEnvTempAlarmTraps2.c_str() + ",\n"; //电池柜环境温度告警 239
-		strJson = strJson + "\"hwdooralarmtraps\": " + HUAWEIDevAlarm.hwDoorAlarmTraps.c_str() + ",\n"; //门禁告警(设备柜) 241
-		strJson = strJson + "\"hwdooralarmtraps2\": " + HUAWEIDevAlarm.hwDoorAlarmTraps2.c_str() + ",\n";	//门禁告警（电池柜） 241
-		strJson = strJson + "\"hwwateralarmtraps\": " + HUAWEIDevAlarm.hwWaterAlarmTraps.c_str() + ",\n";	//水浸告警 242
-		strJson = strJson + "\"hwwateralarmtraps2\": " + HUAWEIDevAlarm.hwWaterAlarmTraps2.c_str() + ",\n"; //水浸告警 242
-		strJson = strJson + "\"hwsmokealarmtraps\": " + HUAWEIDevAlarm.hwSmokeAlarmTraps.c_str() + ",\n";	//烟雾告警 243
-		strJson = strJson + "\"hwsmokealarmtraps2\": " + HUAWEIDevAlarm.hwSmokeAlarmTraps2.c_str() + ",\n"; //烟雾告警 243
-		//锂电(新增加)
-		strJson = strJson + "\"hwacbgrouptemperature\": " + HUAWEIDevValue.strhwAcbGroupTemperature.c_str() + ",\n";	//电池温度
-		//供配电
-		//电源告警
-		sprintf(str,"\"hwacinputfailalarm\": %s,\n", HUAWEIDevAlarm.hwAcInputFailAlarm.c_str());strJson += str; 	 //交流电源输入停电告警
-		sprintf(str,"\"hwacinputl1failalarm\": %s,\n", HUAWEIDevAlarm.hwAcInputL1FailAlarm.c_str());strJson += str; 	 //交流电源输入L1 相缺相告警
-		sprintf(str,"\"hwacinputl2failalarm\": %s,\n", HUAWEIDevAlarm.hwAcInputL2FailAlarm.c_str());strJson += str; 	 //交流电源输入L2 相缺相告警
-		//锂电池告警
-		sprintf(str,"\"hwacbgroup_temphigh_alarm\": %s,\n", HUAWEIDevAlarm.hwAcbGroup_temphigh_alarm.c_str());strJson += str;		 //电池温度高
-		sprintf(str,"\"hwacbgroup_temphigh_alarm2\": %s,\n", HUAWEIDevAlarm.hwAcbGroup_temphigh_alarm2.c_str());strJson += str;		 //电池温度高
-		sprintf(str,"\"hwacbgroup_templow_alarm\": %s,\n", HUAWEIDevAlarm.hwAcbGroup_templow_alarm.c_str());strJson += str; 	 //电池温度低
-		sprintf(str,"\"hwacbgroup_templow_alarm2\": %s,\n", HUAWEIDevAlarm.hwAcbGroup_templow_alarm2.c_str());strJson += str; 	 //电池温度低
-		sprintf(str,"\"hwacbbatvolt\": %d,\n", HUAWEIDevValue.strhwAcbBatVolt.c_str());strJson += str;		 //单个电池电压
-#if 0
-		status=LockerStatusGet(0);	sprintf(str,"\"hwequcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜前门锁状态
-		status=LockerStatusGet(2);	sprintf(str,"\"hwbatcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;		 //电池柜前门锁状态
-#endif
-		sprintf(str,"\"upscityvol\": %s,\n", HUAWEIDevValue.StrUpsCityVol.c_str());strJson += str;		 //Ups市电电压(设备柜)
-		sprintf(str,"\"upscityvol2\": %s,\n", HUAWEIDevValue.StrUpsCityVol2.c_str());strJson += str;		 //Ups市电电压(电池柜)
-		sprintf(str,"\"upsovol\": %s,\n", HUAWEIDevValue.StrUpsOVol.c_str());strJson += str;		 //Ups输出电压(设备柜)
-		sprintf(str,"\"upsovol2\": %s,\n", HUAWEIDevValue.StrUpsOVol2.c_str());strJson += str;		 //Ups输出电压(电池柜)
+		if(GetTickCount()-pRCtrl->AirConTimeStamp>1*60)//超过1分钟没更新，认为没有连接
+		{
+			sprintf(str,"\"dcaironline\":\"0\",\n"); strJson = strJson + str;//直流空调是否在线（设备柜）
+		}
+		else
+		{
+			sprintf(str,"\"dcaironline\":\"1\",\n"); strJson = strJson + str;//直流空调是否在线（设备柜）
+			strJson = strJson + "\"hwdcairrunstatus\": " + ACInfo->runSta.interFan.c_str() + ",\n"; //空调运行状态 231
+			strJson = strJson + "\"hwdcaircompressorrunstatus\": " + ACInfo->runSta.compressor.c_str() + ",\n"; //空调压缩机运行状态 232
+			strJson = strJson + "\"hwdcairenterchanneltemp\": " + ACInfo->sensorSta.indoorTemp.c_str() + ",\n";	//空调回风口温度 236
+			strJson = strJson + "\"hwair_cond_infan_alarm\": " + ACInfo->warnings.inFanFault.c_str() + ",\n";	//空调内风机故障 245
+			strJson = strJson + "\"hwair_cond_outfan_alarm\": " + ACInfo->warnings.exFanFault.c_str() + ",\n"; //空调外风机故障 246
+			strJson = strJson + "\"hwair_cond_comp_alarm\": " + ACInfo->warnings.compresFault.c_str() + ",\n"; //空调压缩机故障 247
+			strJson = strJson + "\"hwair_cond_return_port_sensor_alarm\": " + ACInfo->warnings.inSensInval.c_str() + ",\n"; //空调回风口传感器故障 248
+			strJson = strJson + "\"hwair_cond_freq_high_press_alarm\": " + ACInfo->warnings.highPressure.c_str() + ",\n";	//空调频繁高压力 250
+			strJson = strJson + "\"hwsetenvtempupperlimit\": " + ACInfo->sysVal.highTemp.c_str() + ",\n"; //环境温度告警上限
+			strJson = strJson + "\"hwsetenvtemplowerlimit\": " + ACInfo->sysVal.lowTemp.c_str() + ",\n"; //环境温度告警下限
+			strJson = strJson + "\"hwsetenvhumidityupperlimit\": " + ACInfo->sysVal.highHumi.c_str() + ",\n"; //环境湿度告警上限
+			strJson = strJson + "\"hwsetenvhumiditylowerlimit\": " + ACInfo->sysVal.highHumi.c_str() + ",\n"; //环境湿度告警下限
+			strJson = strJson + "\"in_fanstate\": " + ACInfo->runSta.interFan.c_str() + ",\n"; //内风机状态
+			strJson = strJson + "\"out_fanstate\": " + ACInfo->runSta.exterFan.c_str() + ",\n"; //外风机状态
+			strJson = strJson + "\"heaterstate\": " + ACInfo->runSta.heating.c_str() + ",\n"; //加热器状态
+			strJson = strJson + "\"urgfanstate\": " + ACInfo->runSta.urgFan.c_str() + ",\n"; //应急风机状态
+			strJson = strJson + "\"coiltemp\": " + ACInfo->sensorSta.coilTemp.c_str() + ",\n"; //盘管温度
+			strJson = strJson + "\"outdoortemp\": " + ACInfo->sensorSta.outdoorTemp.c_str() + ",\n"; //室外温度
+			strJson = strJson + "\"condtemp\": " + ACInfo->sensorSta.condTemp.c_str() + ",\n"; //冷凝温度
+			strJson = strJson + "\"indoortemp\": " + ACInfo->sensorSta.indoorTemp.c_str() + ",\n"; //室内温度
+			strJson = strJson + "\"airouttemp\": " + ACInfo->sensorSta.airOutTemp.c_str() + ",\n"; //排气温度
+			strJson = strJson + "\"humity\": " + ACInfo->sensorSta.humity.c_str() + ",\n"; //室内湿度
+			strJson = strJson + "\"current\": " + ACInfo->sensorSta.current.c_str() + ",\n"; //电流
+			strJson = strJson + "\"acvoltage\": " + ACInfo->sensorSta.acVoltage.c_str() + ",\n"; //交流电压
+			strJson = strJson + "\"dcvoltage\": " + ACInfo->sensorSta.dcVoltage.c_str() + ",\n"; //直流电压
+			strJson = strJson + "\"hwenvtempalarmtraps\": " + ACInfo->warnings.highTemp.c_str() + ",\n"; //设备柜环境温度告警 239
+			strJson = strJson + "\"hwenvhumialarmresumetraps\": " + ACInfo->warnings.highHumi.c_str() + ",\n";	//设备柜环境湿度告警 240
+		}
 	
-	    //空调
-		sprintf(str,"\"coolervol\": %s,\n", HUAWEIDevValue.StrCoolerVol.c_str());strJson += str;		 //空调电压(设备柜)
-		sprintf(str,"\"coolervol2\": %s,\n", HUAWEIDevValue.StrCoolerVol2.c_str());strJson += str;		 //空调电压(电池柜)
-		sprintf(str,"\"coolercur\": %s,\n", HUAWEIDevValue.StrCoolerCur.c_str());strJson += str;		 //空调电流(设备柜)
-		sprintf(str,"\"coolercur2\": %s,\n", HUAWEIDevValue.StrCoolerCur2.c_str());strJson += str;		 //空调电流(电池柜)
-		sprintf(str,"\"in_fanstate\": %s,\n", HUAWEIDevValue.StrIn_FanState.c_str());strJson += str;		 //内风机状态(设备柜) 0代表关闭 1代表开启
-		sprintf(str,"\"in_fanstate2\": %s,\n", HUAWEIDevValue.StrIn_FanState2.c_str());strJson += str;		 //内风机状态(电池柜) 0代表关闭 1代表开启
-		sprintf(str,"\"out_fanstate\": %s,\n", HUAWEIDevValue.StrOut_FanState.c_str());strJson += str;		 //外风机状态(设备柜) 0代表关闭 1代表开启
-		sprintf(str,"\"out_fanstate2\": %s,\n", HUAWEIDevValue.StrOut_FanState2.c_str());strJson += str;		 //外风机状态(电池柜) 0代表关闭 1代表开启
-
-		//告警
-		sprintf(str,"\"ups_alarm\": %s,\n", HUAWEIDevAlarm.Ups_alarm.c_str());strJson += str;		 //ups故障状态（设备柜）
-		sprintf(str,"\"ups_alarm2\": %s,\n", HUAWEIDevAlarm.Ups_alarm2.c_str());strJson += str;		 //ups故障状态（电池柜）
-		sprintf(str,"\"ups_city_off_alarm\": %s,\n", HUAWEIDevAlarm.Ups_city_off_alarm.c_str());strJson += str;		 //ups市电断开（设备柜）
-		sprintf(str,"\"ups_city_off_alarm2\": %s,\n", HUAWEIDevAlarm.Ups_city_off_alarm2.c_str());strJson += str;		 //ups市电断开（电池柜）
-		//空调
-		sprintf(str,"\"air_high_temper_alarm\": %s,\n", HUAWEIDevAlarm.Air_High_temper_alarm.c_str());strJson += str;		 //高温告警（设备柜）
-		sprintf(str,"\"air_high_temper_alarm2\": %s,\n", HUAWEIDevAlarm.Air_High_temper_alarm2.c_str());strJson += str;		 //高温告警（电池柜）
-	#elif(CABINETTYPE==9)//容尊
-		sprintf(str,"\"isonline\":\"%d\",\n",HUAWEIDevValue.hwLinked); strJson = strJson + str;//连接状态
-		sprintf(str,"\"acbgroupbatonline\":\"%d\",\n",HUAWEIDevValue.AcbGroupBatOnline); strJson = strJson + str;//锂电池组是否在线
-		sprintf(str,"\"dcaironline\":\"%d\",\n",HUAWEIDevValue.DcAirOnline); strJson = strJson + str;//直流空调是否在线（设备柜）
-		sprintf(str,"\"dcaironline2\":\"%d\",\n",HUAWEIDevValue.DcAirOnline2); strJson = strJson + str;//直流空调是否在线（电池柜）
-		sprintf(str,"\"temhumonline\":\"%d\",\n",HUAWEIDevValue.TemHumOnline); strJson = strJson + str;//温湿度传感器是否在线（设备柜）
-		sprintf(str,"\"temhumonline2\":\"%d\",\n",HUAWEIDevValue.TemHumOnline2); strJson = strJson + str;//温湿度传感器是否在线（电池柜）
-
-		sprintf(str,"\"hwmonequipmanufacturer\": \"容尊\",\n"); strJson += str;//设备生产商
-		strJson = strJson + "\"hwacbgroupbatvolt\": " + HUAWEIDevValue.strhwAcbGroupBatVolt.c_str() + ",\n";	//锂电电池电压 214
-		strJson = strJson + "\"hwacbgroupbatcurr\": " + HUAWEIDevValue.strhwAcbGroupBatCurr.c_str() + ",\n";	//锂电电池电流 215
-		strJson = strJson + "\"hwacbgrouptotalcapacity\": " + HUAWEIDevValue.strhwAcbGroupTotalCapacity.c_str() + ",\n";	//锂电电池总容量 216
-		strJson = strJson + "\"hwacbgrouptotalremaincapacity\": " + HUAWEIDevValue.strhwAcbGroupTotalRemainCapacity.c_str() + ",\n";	//锂电电池剩余容量 217
-		strJson = strJson + "\"hwaporablvoltage\": " + HUAWEIDevValue.strhwApOrAblVoltage.c_str() + ",\n";	//A/AB电压 220
-		strJson = strJson + "\"hwaphasecurrent\": " + HUAWEIDevValue.strhwAphaseCurrent.c_str() + ",\n";	//A相电流 223
-		strJson = strJson + "\"hwdcoutputvoltage\": " + HUAWEIDevValue.strhwDcOutputVoltage.c_str() + ",\n";	//DC输出电压 226
-		strJson = strJson + "\"hwdcoutputcurrent\": " + HUAWEIDevValue.strhwDcOutputCurrent.c_str() + ",\n";	//DC输出电流 227
-		strJson = strJson + "\"hwenvtemperature\": " + HUAWEIDevValue.strhwEnvTemperature[0].c_str() + ",\n";	//环境温度值 228
-		strJson = strJson + "\"hwenvhumidity\": " + HUAWEIDevValue.strhwEnvHumidity[0].c_str() + ",\n"; //环境湿度值 229
-		strJson = strJson + "\"hwdcairrunstatus\": " + HUAWEIDevValue.strhwDcAirRunStatus[0].c_str() + ",\n";	//空调运行状态 231
-		strJson = strJson + "\"hwdcairrunstatus2\": " + HUAWEIDevValue.strhwDcAirRunStatus[1].c_str() + ",\n";	//空调运行状态 231
-		strJson = strJson + "\"hwenvtempalarmtraps\": " + HUAWEIDevAlarm.hwEnvTempAlarmTraps.c_str() + ",\n";	//设备柜环境温度告警 239
-		strJson = strJson + "\"hwenvhumialarmresumetraps\": " + HUAWEIDevAlarm.hwEnvHumiAlarmTraps.c_str() + ",\n"; //设备柜环境湿度告警 240
-		strJson = strJson + "\"hwdooralarmtraps\": " + HUAWEIDevAlarm.hwDoorAlarmTraps.c_str() + ",\n"; //门禁告警(设备柜) 241
-		strJson = strJson + "\"hwdooralarmtraps2\": " + HUAWEIDevAlarm.hwDoorAlarmTraps2.c_str() + ",\n";	//门禁告警（电池柜） 241
-		strJson = strJson + "\"hwwateralarmtraps\": " + HUAWEIDevAlarm.hwWaterAlarmTraps.c_str() + ",\n";	//水浸告警 242
-		strJson = strJson + "\"hwsmokealarmtraps\": " + HUAWEIDevAlarm.hwSmokeAlarmTraps.c_str() + ",\n";	//烟雾告警 243
-		strJson = strJson + "\"hwair_cond_infan_alarm\": " + HUAWEIDevAlarm.hwair_cond_infan_alarm.c_str() + ",\n"; //空调内风机故障 245
-		strJson = strJson + "\"hwair_cond_infan_alarm2\": " + HUAWEIDevAlarm.hwair_cond_infan_alarm2.c_str() + ",\n";	//空调内风机故障 245
-		strJson = strJson + "\"hwair_cond_outfan_alarm\": " + HUAWEIDevAlarm.hwair_cond_outfan_alarm.c_str() + ",\n";	//空调外风机故障 246
-		strJson = strJson + "\"hwair_cond_outfan_alarm2\": " + HUAWEIDevAlarm.hwair_cond_outfan_alarm2.c_str() + ",\n"; //空调外风机故障 246
-		strJson = strJson + "\"hwair_cond_return_port_sensor_alarm\": " + HUAWEIDevAlarm.hwair_cond_return_port_sensor_alarm.c_str() + ",\n";	//空调回风口传感器故障 248
-		strJson = strJson + "\"hwair_cond_return_port_sensor_alarm2\": " + HUAWEIDevAlarm.hwair_cond_return_port_sensor_alarm2.c_str() + ",\n"; //空调回风口传感器故障 248
-		strJson = strJson + "\"hwacbgrouptemperature\": " + HUAWEIDevValue.strhwAcbGroupTemperature.c_str() + ",\n";	//电池温度
-		sprintf(str,"\"hwacinputfailalarm\": %s,\n", HUAWEIDevAlarm.hwAcInputFailAlarm.c_str());strJson += str; 	 //交流电源输入停电告警
-		sprintf(str,"\"hwacinputl1failalarm\": %s,\n", HUAWEIDevAlarm.hwAcInputL1FailAlarm.c_str());strJson += str; 	 //交流电源输入L1 相缺相告警
-		sprintf(str,"\"hwacbgroup_discharge_alarm\": %s,\n", HUAWEIDevAlarm.hwAcbGroup_discharge_alarm.c_str());strJson += str; 	 //电池放电告警
-		sprintf(str,"\"hwacbgroup_charge_overcurrent_alarm\": %s,\n", HUAWEIDevAlarm.hwAcbGroup_charge_overcurrent_alarm.c_str());strJson += str;		 //电池充电过流
-		sprintf(str,"\"hwacbgroup_temphigh_alarm\": %s,\n", HUAWEIDevAlarm.hwAcbGroup_temphigh_alarm.c_str());strJson += str;		 //电池温度高
-		sprintf(str,"\"hwacbgroup_templow_alarm\": %s,\n", HUAWEIDevAlarm.hwAcbGroup_templow_alarm.c_str());strJson += str; 	 //电池温度低
-		sprintf(str,"\"hwacbgroup_poweroff_alarm\": %s,\n", HUAWEIDevAlarm.hwAcbGroup_poweroff_alarm.c_str());strJson += str;		 //电池下电
-		sprintf(str,"\"hwacbgroup_fusebreak_alarm\": %s,\n", HUAWEIDevAlarm.hwAcbGroup_fusebreak_alarm.c_str());strJson += str; 	 //电池熔丝断
-		sprintf(str,"\"hwacbgroupbatrunningstate\": %s,\n", HUAWEIDevValue.strhwAcbGroupBatRunningState.c_str());strJson += str;		 //电池状态
-		sprintf(str,"\"hwsmokesensorstatus\": %s,\n", HUAWEIDevAlarm.hwSmokeAlarmTraps.c_str());strJson += str; 	 //烟雾传感器状态
-		sprintf(str,"\"hwwatersensorstatus\": %s,\n", HUAWEIDevAlarm.hwWaterAlarmTraps.c_str());strJson += str; 	 //水浸传感器状态
-		sprintf(str,"\"hwdoorsensorstatus\": %s,\n", HUAWEIDevAlarm.hwDoorAlarmTraps.c_str());strJson += str;		 //（电池柜）门磁传感器状态
-
-		strJson = strJson + "\"upscityvol\": \"" + HUAWEIDevValue.StrUpsCityVol.c_str() + "\",\n";	//Ups市电电压
-		strJson = strJson + "\"upscityfreq\": \"" + HUAWEIDevValue.StrUpsCityFreq.c_str() + "\",\n";	//ups输入频率
-		strJson = strJson + "\"upsovol\": \"" + HUAWEIDevValue.StrUpsOVol.c_str() + "\",\n";	//Ups输出电压
-		strJson = strJson + "\"upsoamp\": \"" + HUAWEIDevValue.StrUpsOAmp.c_str() + "\",\n";	//Ups输出电流
-		strJson = strJson + "\"upstemp\": \"" + HUAWEIDevValue.StrUpsTemp.c_str() + "\",\n";	//Ups温度
-		strJson = strJson + "\"upsbatload\": \"" + HUAWEIDevValue.StrUpsBatLoad.c_str() + "\",\n";	//Ups电池负载 %比
-		strJson = strJson + "\"upsbypass\": \"" + HUAWEIDevValue.UpsByPass.c_str() + "\",\n";	//Ups旁路模式
-		strJson = strJson + "\"upsworkmode\": \"" + HUAWEIDevValue.StrUpsWorkMode.c_str() + "\",\n";	//Ups工作模式	  0:在线式，1:后备式
-		strJson = strJson + "\"upsbatlowvol_alarm\": \"" + HUAWEIDevAlarm.UpsBatLowVol_alarm.c_str() + "\",\n";	//ups电池电压低
-		strJson = strJson + "\"ups_alarm\": \"" + HUAWEIDevAlarm.Ups_alarm.c_str() + "\",\n";	// Ups故障
-		strJson = strJson + "\"ups_on_off_alarm\": \"" + HUAWEIDevAlarm.Ups_On_off_alarm.c_str() + "\",\n";	//1:关机 0:开机
-		strJson = strJson + "\"in_fanstate\": \"" + HUAWEIDevValue.StrIn_FanState.c_str() + "\",\n";	//设备柜内风机状态 0代表关闭 1代表开启
-		strJson = strJson + "\"in_fanstate2\": \"" + HUAWEIDevValue.StrIn_FanState2.c_str() + "\",\n";	//内风机状态 0代表关闭 1代表开启
-		strJson = strJson + "\"out_fanstate\": \"" + HUAWEIDevValue.StrOut_FanState.c_str() + "\",\n";	//电源柜外风机状态 0代表关闭 1代表开启
-		strJson = strJson + "\"out_fanstate2\": \"" + HUAWEIDevValue.StrOut_FanState2.c_str() + "\",\n";	//外风机状态 0代表关闭 1代表开启
-		strJson = strJson + "\"dcairtec_alarm\": \"" + HUAWEIDevAlarm.DcAirTEC_alarm.c_str() + "\",\n";	//设备柜TEC运行故障
-		strJson = strJson + "\"dcairtec_alarm2\": \"" + HUAWEIDevAlarm.DcAirTEC_alarm2.c_str() + "\",\n";	//电源柜TEC运行故障
-		strJson = strJson + "\"hwbackdooralarmtraps\": \"" + HUAWEIDevAlarm.hwBackDoorAlarmTraps.c_str() + "\",\n";	//后门禁告警(设备柜)
-		strJson = strJson + "\"hwbackdooralarmtraps2\": \"" + HUAWEIDevAlarm.hwBackDoorAlarmTraps2.c_str() + "\",\n";	//后门禁告警(电池柜)
-		strJson = strJson + "\"dc_power_alarm\": \"" + HUAWEIDevAlarm.DC_Power_alarm.c_str() + "\",\n";	//开关电源主报警
-		strJson = strJson + "\"bat_alarm\": \"" + HUAWEIDevAlarm.Bat_alarm.c_str() + "\",\n";	//电池状态  0:正常，1：告警
-	#elif(CABINETTYPE==11)//艾特网能
-		sprintf(str,"\"isonline\":\"%d\",\n",HUAWEIDevValue.hwLinked); strJson = strJson + str;//连接状态
-		if(HUAWEIDevValue.strBatteryStatus!="2147483647") HUAWEIDevValue.AcbGroupBatOnline=true;
-		sprintf(str,"\"acbgroupbatonline\":\"%d\",\n",HUAWEIDevValue.AcbGroupBatOnline); strJson = strJson + str;//锂电池组是否在线
-		if(HUAWEIDevValue.strCoolSta[0]!="2147483647") HUAWEIDevValue.DcAirOnline=true;
-		sprintf(str,"\"dcaironline\":\"%d\",\n",HUAWEIDevValue.DcAirOnline); strJson = strJson + str;//直流空调是否在线（设备柜）
-		if(HUAWEIDevValue.strCoolSta[1]!="2147483647") HUAWEIDevValue.DcAirOnline2=true;
-		sprintf(str,"\"dcaironline2\":\"%d\",\n",HUAWEIDevValue.DcAirOnline2); strJson = strJson + str;//直流空调是否在线（电池柜）
-		if(HUAWEIDevValue.strhwEnvTemperature[EQUIPMENT_CABINET]!="2147483647") HUAWEIDevValue.TemHumOnline=true;
-		sprintf(str,"\"temhumonline\":\"%d\",\n",HUAWEIDevValue.TemHumOnline); strJson = strJson + str;//温湿度传感器是否在线（设备柜）
-		if(HUAWEIDevValue.strhwEnvTemperature[BATTERY_CABINET]!="2147483647") HUAWEIDevValue.TemHumOnline2=true;
-		sprintf(str,"\"temhumonline2\":\"%d\",\n",HUAWEIDevValue.TemHumOnline2); strJson = strJson + str;//温湿度传感器是否在线（电池柜）
-
-		sprintf(str,"\"hwmonequipmanufacturer\": \"艾特网能\",\n"); strJson += str;//设备生产商
-	    strJson = strJson + "\"hwacbgroupbatvolt\": " + HUAWEIDevValue.strPositiveBatPackVol.c_str() + ",\n";	//锂电电池电压 214
-	    strJson = strJson + "\"hwacbgrouptotalremaincapacity\": " + HUAWEIDevValue.strBatteryCapacity.c_str() + ",\n";	//锂电电池剩余容量 217
-	    strJson = strJson + "\"hwacbgroupbackuptime\": " + HUAWEIDevValue.strBatteryRemaindingTime.c_str() + ",\n";	//电池备电时长 218
-	    strJson = strJson + "\"hwaporablvoltage\": " + HUAWEIDevValue.strVoltage[EQUIPMENT_CABINET].c_str() + ",\n";	//A/AB电压 220
-	    strJson = strJson + "\"hwbporbclvoltage\": " + HUAWEIDevValue.strVoltage[BATTERY_CABINET].c_str() + ",\n";	//B/BC电压 221
-	    strJson = strJson + "\"hwaphasecurrent\": " + HUAWEIDevValue.strCurrent[EQUIPMENT_CABINET].c_str() + ",\n";	//A相电流 223
-	    strJson = strJson + "\"hwbphasecurrent\": " + HUAWEIDevValue.strCurrent[BATTERY_CABINET].c_str() + ",\n";	//B相电流 224
-	    strJson = strJson + "\"hwenvtemperature\": " + HUAWEIDevValue.strhwEnvTemperature[EQUIPMENT_CABINET].c_str() + ",\n";	//环境温度值 228
-	    strJson = strJson + "\"hwenvtemperature2\": " + HUAWEIDevValue.strhwEnvTemperature[BATTERY_CABINET].c_str() + ",\n";	//环境温度值 228
-	    strJson = strJson + "\"hwenvhumidity\": " + HUAWEIDevValue.strhwEnvHumidity[EQUIPMENT_CABINET].c_str() + ",\n";	//环境湿度值 229
-	    strJson = strJson + "\"hwenvhumidity2\": " + HUAWEIDevValue.strhwEnvHumidity[BATTERY_CABINET].c_str() + ",\n";	//环境湿度值 229
-		if(HUAWEIDevValue.strInternalFanSta[0]!="0") HUAWEIDevValue.strhwDcAirRunStatus[0]="1";
-		else if(HUAWEIDevValue.strInternalFanSta[0]!="1") HUAWEIDevValue.strhwDcAirRunStatus[0]="2";
-		strJson = strJson + "\"hwdcairrunstatus\": " + HUAWEIDevValue.strhwDcAirRunStatus[0].c_str() + ",\n";	//空调运行状态 231
-		if(HUAWEIDevValue.strInternalFanSta[1]!="0") HUAWEIDevValue.strhwDcAirRunStatus[1]="1";
-		else if(HUAWEIDevValue.strInternalFanSta[1]!="1") HUAWEIDevValue.strhwDcAirRunStatus[1]="2";
-	    strJson = strJson + "\"hwdcairrunstatus2\": " + HUAWEIDevValue.strhwDcAirRunStatus[1].c_str() + ",\n";	//空调运行状态 231
-		if(HUAWEIDevValue.strCoolSta[0]!="0") HUAWEIDevValue.strhwDcAirCompressorRunStatus[0]="1";
-		else if(HUAWEIDevValue.strCoolSta[0]!="1") HUAWEIDevValue.strhwDcAirCompressorRunStatus[0]="2";
-	    strJson = strJson + "\"hwdcaircompressorrunstatus\": " + HUAWEIDevValue.strhwDcAirCompressorRunStatus[0].c_str() + ",\n";	//空调压缩机运行状态 232
-		if(HUAWEIDevValue.strCoolSta[1]!="0") HUAWEIDevValue.strhwDcAirCompressorRunStatus[1]="1";
-		else if(HUAWEIDevValue.strCoolSta[1]!="1") HUAWEIDevValue.strhwDcAirCompressorRunStatus[1]="2";
-	    strJson = strJson + "\"hwdcaircompressorrunstatus2\": " + HUAWEIDevValue.strhwDcAirCompressorRunStatus[1].c_str() + ",\n";	//空调压缩机运行状态 232
-	    strJson = strJson + "\"hwenvtempalarmtraps\": " + HUAWEIDevAlarm.strHighTemperatureWarn[0].c_str() + ",\n";	//高温/低温/高高温告警
-	    strJson = strJson + "\"hwenvtempalarmtraps2\": " + HUAWEIDevAlarm.strHighTemperatureWarn[1].c_str() + ",\n";	//高温/低温/高高温告警
-	    strJson = strJson + "\"hwenvhumialarmresumetraps\": " + HUAWEIDevAlarm.strHighHumidityWarn[0].c_str() + ",\n";	//高湿/低湿告警
-	    strJson = strJson + "\"hwenvhumialarmresumetraps2\": " + HUAWEIDevAlarm.strHighHumidityWarn[1].c_str() + ",\n";	//高湿/低湿告警
-	    strJson = strJson + "\"hwwateralarmtraps\": " + HUAWEIDevAlarm.hwWaterAlarmTraps.c_str() + ",\n";	//水浸告警 242
-	    strJson = strJson + "\"hwwateralarmtraps2\": " + HUAWEIDevAlarm.hwWaterAlarmTraps2.c_str() + ",\n";	//水浸告警 242
-	    strJson = strJson + "\"hwsmokealarmtraps\": " + HUAWEIDevAlarm.hwSmokeAlarmTraps.c_str() + ",\n";	//烟雾告警 243
-	    strJson = strJson + "\"hwsmokealarmtraps2\": " + HUAWEIDevAlarm.hwSmokeAlarmTraps2.c_str() + ",\n";	//烟雾告警 243
-		//防雷器告警
-	    strJson = strJson + "\"hwacspdalarmtraps\": " + HUAWEIDevAlarm.strSpdAlarmTraps[EQUIPMENT_CABINET][0].c_str() + ",\n";	//交流防雷器故障
-	    strJson = strJson + "\"hwdcspdalarmtraps\": " + HUAWEIDevAlarm.strSpdAlarmTraps[BATTERY_CABINET][0].c_str() + ",\n";	//直流防雷器故障
-		//新增加的状态
-		//锂电(新增加)
-	    strJson = strJson + "\"hwacbgrouptemperature\": " + HUAWEIDevValue.strhwAcbGroupTemperature.c_str() + ",\n";	//电池温度
-		//供配电
-		//电源告警
-		sprintf(str,"\"hwacinputfailalarm\": %s,\n", HUAWEIDevAlarm.strACInputFailure.c_str());strJson += str;		 //交流电源输入停电告警
-		sprintf(str,"\"hwacbgroup_poweroff_alarm\": %s,\n", HUAWEIDevAlarm.strBatteryLowVol.c_str());strJson += str;		 //电池下电
-		//2019-08-20新增
-		sprintf(str,"\"hwacbgroupbatrunningstate\": %s,\n", HUAWEIDevValue.strBatteryStatus.c_str());strJson += str;		 //电池状态
-		sprintf(str,"\"hwsmokesensorstatus\": %s,\n", HUAWEIDevAlarm.hwSmokeAlarmTraps.c_str());strJson += str;		 //烟雾传感器状态
-		sprintf(str,"\"hwsmokesensorstatus2\": %s,\n", HUAWEIDevAlarm.hwSmokeAlarmTraps2.c_str());strJson += str;		 //烟雾传感器状态
-		sprintf(str,"\"hwwatersensorstatus\": %s,\n", HUAWEIDevAlarm.hwWaterAlarmTraps.c_str());strJson += str;		 //水浸传感器状态
-		sprintf(str,"\"hwwatersensorstatus2\": %s,\n", HUAWEIDevAlarm.hwWaterAlarmTraps2.c_str());strJson += str;		 //水浸传感器状态
+		strJson = strJson + "\"hwdooralarmtraps\": " + pCab->HUAWEIDevAlarm.hwDoorAlarmTraps.c_str() + ",\n";	//门禁告警(设备柜) 241
+		strJson = strJson + "\"hwwateralarmtraps\": " + pCab->HUAWEIDevAlarm.hwWaterAlarmTraps.c_str() + ",\n"; //水浸告警 242
+		strJson = strJson + "\"hwsmokealarmtraps\": " + pCab->HUAWEIDevAlarm.hwSmokeAlarmTraps.c_str() + ",\n"; //烟雾告警 243
 		//2019-11-19新增4个门锁状态
-		sprintf(str,"\"hwequcabfrontdoorstatus\": %s,\n", HUAWEIDevAlarm.strDoorAlarmTraps[EQUIPMENT_CABINET][0].c_str());strJson += str;		 //设备柜前门锁状态
-		sprintf(str,"\"hwequcabbackdoorstatus\": %s,\n", HUAWEIDevAlarm.strDoorAlarmTraps[EQUIPMENT_CABINET][1].c_str());strJson += str;		 //设备柜后门锁状态
-		sprintf(str,"\"hwbatcabfrontdoorstatus\": %s,\n", HUAWEIDevAlarm.strDoorAlarmTraps[BATTERY_CABINET][0].c_str());strJson += str;		 //电池柜前门锁状态
-		sprintf(str,"\"hwbatcabbackdoorstatus\": %s,\n", HUAWEIDevAlarm.strDoorAlarmTraps[BATTERY_CABINET][1].c_str());strJson += str;		 //电池柜后门锁状态
-#endif
+		status=LockInfo[0].isOpen;	sprintf(str,"\"hwequcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜前门锁状态
+		status=LockInfo[1].isOpen;	sprintf(str,"\"hwequcabbackdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜后门锁状态
 	}
-	else
-	{
-		char msg[256];
-		sprintf(msg,"HWCabinet now=0x%x last=0x%x \r\n",GetTickCount(),pCab->HUAWEIDevValue.hwTimeStamp);
-		WriteLog(msg);
-		initHUAWEIGantry(pCab);
-		initHUAWEIALARM(pCab);
-		sprintf(str,"\"isonline\":\"%d\",\n",pCab->HUAWEIDevValue.hwLinked); strJson = strJson + str;//连接状态
-	}
+		
     pthread_mutex_unlock(&pCab->CabinetdataMutex);
 	
 	strJson = strJson + "\"opttime\": \"" + sDateTime + "\"\n";	//时间
@@ -5475,7 +5151,7 @@ void SetjsonIPSwitchStatusStr(int messagetype,string &mstrjson)
     strJson +=  "{\n";
 	sprintf(str,"\"messagetype\":%d,\n",messagetype); strJson = strJson + str;//消息类型
 	strJson = strJson + "\"vmctrl_ipaddr\":\""+ pConf->StrIP +"\",\n";	//IP地址
-	strJson = strJson + "\"cabinettype\":"+ pConf->StrCabinetType +",\n";	//机柜类型
+//	strJson = strJson + "\"cabinettype\":"+ pConf->StrCabinetType +",\n";	//机柜类型
 	strJson = strJson + "\"opttime\": \"" + sDateTime + "\",\n";	//时间
 	strJson = strJson + "\"ipswitchcnt\": \"" + pConf->StrIPSwitchCount + "\",\n";	//交换机数量
 	strJson = strJson + "\"ipswitchlist\": [\n";	//交换机列表
@@ -5556,7 +5232,7 @@ void SetjsonFireWallStatusStr(int messagetype,string &mstrjson)
     strJson +=  "{\n";
 	sprintf(str,"\"messagetype\":%d,\n",messagetype); strJson = strJson + str;//消息类型
 	strJson = strJson + "\"vmctrl_ipaddr\":\""+ pConf->StrIP +"\",\n";	//IP地址
-	strJson = strJson + "\"cabinettype\":"+ pConf->StrCabinetType +",\n";	//机柜类型
+//	strJson = strJson + "\"cabinettype\":"+ pConf->StrCabinetType +",\n";	//机柜类型
 	strJson = strJson + "\"opttime\": \"" + sDateTime + "\",\n";	//时间
 	strJson = strJson + "\"firewarecnt\": \"" + pConf->StrFireWareCount + "\",\n";	//防火墙数量
 	strJson = strJson + "\"firewarelist\": [\n";	//防火墙列表

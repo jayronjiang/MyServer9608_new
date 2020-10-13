@@ -226,6 +226,8 @@ int GetConfig(void)
     pConf->StrWIFIUSER = "";		//WIIFI用户名
     pConf->StrWIFIKEY = "" ;		//WIIFI密码
 
+    pConf->StrLockType = "";		//门锁类型
+    pConf->StrLockNum = "" ;		//门锁数量
 	for (i = 0; i < LOCK_NUM; i++)
 	{
 		pConf->StrAdrrLock[i] = "" ;			//门锁地址
@@ -290,7 +292,7 @@ int GetConfig(void)
 
     printf("Version:%s\n",pConf->StrVersionNo.c_str()) ;
 
-    printf("-----config----\n%s\n----end config----\n",strbuf) ;
+//    printf("-----config----\n%s\n----end config----\n",strbuf) ;
     pConf->STRCONFIG = strbuf ;
 
     printf("-----netconfig----\n%s\n----end netconfig----\n",stripbuf) ;
@@ -664,7 +666,13 @@ int GetConfig(void)
     Strkey = "DirDescription=";
     pConf->StrDirDescription = getstring(StrConfig,Strkey) ;//行车方向说明
 	
-	/*电子锁的地址配置, 最大支持3把*/
+	/*电子锁的地址配置, 最大支持4把*/
+    Strkey = "LockType=";
+    pConf->StrLockType = getstring(StrConfig,Strkey);		//门锁类型
+    if(pConf->StrLockType=="") pConf->StrLockType="1";		//默认华为锁
+    Strkey = "LockNum=";
+    pConf->StrLockNum = getstring(StrConfig,Strkey);		//门锁数量
+    if(pConf->StrLockNum=="") pConf->StrLockNum="4";		//默认4把
 	for (i = 0; i < LOCK_NUM; i++)
 	{
 		sprintf(key,"LOCKADD%d=",i+1);

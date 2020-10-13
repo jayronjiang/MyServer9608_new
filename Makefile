@@ -35,11 +35,14 @@ LIBS          =  $(SUBLIBS)  ./alib/CsshClient.a \
 							 ./alib/canNode.a \
 							 ./alib/canport.a \
 							 ./alib/liblock.a \
+							 ./alib/hw_locker.a \
 							 ./alib/libtemhumi.a \
 							 ./alib/libcamera.a \
 							 ./alib/libaircondition.a \
 							 ./alib/libiodev.a \
 							 ./alib/libuart.a \
+							 ./alib/libmoninterface.a \
+							 ./alib/libtcp.a \
 							 ./libiconv/lib/*.a \
 							 -L./goahead/bin -lgo -ldl  -lrt -lpthread 
 
@@ -47,7 +50,7 @@ TARGET        = tranter
 
 
 OBJECTS       =  build/main.o     \
-				 build/initmodule.o   \
+                 build/initmodule.o   \
                  build/MyCritical.o		\
                  build/server.o     \
                  build/jsonPackage.o  \
@@ -58,7 +61,7 @@ OBJECTS       =  build/main.o     \
                  build/global.o \
                  build/tea.o   \
                  build/HttpServer.o \
-                 build/config.o  
+                 build/config.o   
 
 
 

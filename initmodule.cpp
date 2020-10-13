@@ -21,6 +21,7 @@
 
 extern CabinetClient *pCabinetClient[HWSERVER_NUM];//华为机柜状态
 extern VMCONTROL_CONFIG VMCtl_Config;	//控制器配置信息结构体
+extern REMOTE_CONTROL *stuRemote_Ctrl;	//遥控寄存器结构体
 extern CANNode *pCOsCan;		//Can对象
 extern CfirewallClient *pCfirewallClient[FIREWARE_NUM];
 extern CswitchClient *pCswitchClient[IPSWITCH_NUM];
@@ -29,7 +30,10 @@ extern Huawei *pCHWRSU[RSUCTL_NUM];;					//RSU对象
 extern IPCam *pCVehplate[VEHPLATE_NUM];
 extern IPCam *pCVehplate900[VEHPLATE900_NUM];
 extern CsshClient *pCsshClient[ATLAS_NUM];			//ATLAS对象
-//extern SpdClient *pCSpdClent;		//SPD防雷器
+extern AirCondition::AirInfo_S AirCondInfo;		//直流空调结构体
+extern TemHumi::Info_S TemHumiInfo;				//温湿度结构体
+extern Lock::Info_S LockInfo[LOCK_NUM];			//电子锁结构体
+extern unsigned long GetTickCount();
 
 
 //初始化机柜结构体
@@ -595,7 +599,8 @@ int TrapCallBack(string Stroid,int AlarmID,int mgetIndex,unsigned int mRetID)
 }
 
 /* 华为RSU回调函数 */
-void HuaweiCallback(void *data, void *userdata) {
+void HuaweiCallback(void *data, void *userdata) 
+{
     Huawei::RsuInfo_S *info = (Huawei::RsuInfo_S *)data;
 
     printf("cpuRate = %s\n", info->cpuRate.c_str());
@@ -610,12 +615,35 @@ void HuaweiCallback(void *data, void *userdata) {
 }
 
 /* 门锁回调函数 */
-void LockCallback(uint8_t addr, Lock::Info_S info, void *userdata) {
-    printf("Lock(%d) isOpen:%02X Card{%02X %02X %02X %02X} Event:%02X isAuthorCard:%02X\n", addr, info.isOpen, info.cardId[0], info.cardId[1], info.cardId[2], info.cardId[3], info.event,
+void LockCallback(uint8_t addr, Lock::Info_S info, void *userdata) 
+{
+    printf("LockCallback Lock(%d) isOpen:%02X Card{%02X %02X %02X %02X} Event:%02X isAuthorCard:%02X\n", addr, info.isOpen, info.cardId[0], info.cardId[1], info.cardId[2], info.cardId[3], info.event,
            info.isAuthorCard);
+	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
+	for(int i=0;i<LOCK_NUM;i++)
+	{
+		if(addr==atoi(pConf->StrAdrrLock[i].c_str()))
+			memcpy(&LockInfo[i],&info,sizeof(info));
+	}
 }
 
-void UartCallback(uint8_t port, uint8_t *buf, uint32_t len, void *userdata) {
+/* 华为门锁回调函数 */
+void HWLockCallback(uint8_t addr, HWLock::Info_S info, void *userdata) 
+{
+    printf("LockCallback Lock(%d) isOpen:%02X Card{%02X %02X %02X %02X} reason:%02X \n", addr, info.status, info.cardId[0], info.cardId[1], info.cardId[2], info.cardId[3], info.reason);
+	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
+	for(int i=0;i<LOCK_NUM;i++)
+	{
+		if(addr==atoi(pConf->StrAdrrLock[i].c_str()))
+		{
+			LockInfo[i].isOpen=info.status;
+//			LockInfo[i].event=info.reason;
+		}
+	}
+}
+
+void UartCallback(uint8_t port, uint8_t *buf, uint32_t len, void *userdata) 
+{
     int i;
     printf("Uart %d receive len = %d ,data: { ", port, len);
     for (i = 0; i < len; i++)
@@ -624,10 +652,17 @@ void UartCallback(uint8_t port, uint8_t *buf, uint32_t len, void *userdata) {
 }
 
 /* 空调回调函数 */
-void AirConditionCallback(AirCondition::AirInfo_S info, void *userdata){
+void AirConditionCallback(AirCondition::AirInfo_S info, void *userdata)
+{
     // printf("Air condition callback\n");
     int i;
     
+	REMOTE_CONTROL *pRCtrl=stuRemote_Ctrl;	//遥控寄存器结构体
+	
+	pRCtrl->AirConTimeStamp=GetTickCount();
+	
+	memcpy(&AirCondInfo,&info,sizeof(info));
+	
     printf("Air condition callback!! ver:%s\n",info.version.c_str());
 
     printf("Run state:\n");
@@ -652,15 +687,206 @@ void AirConditionCallback(AirCondition::AirInfo_S info, void *userdata){
 }
 
 /* 温湿度回调函数 */
-void TemHumiCallback(uint8_t addr,TemHumi::Info_S info,void *userdata){
+void TemHumiCallback(uint8_t addr,TemHumi::Info_S info,void *userdata)
+{
     printf("TemHumiCallback tempture = %f,humidity = %f,dew = %f\n",info.tempture,info.humidity,info.dew);
+	REMOTE_CONTROL *pRCtrl=stuRemote_Ctrl;	//遥控寄存器结构体
+
+	pRCtrl->TempHumTimeStamp=GetTickCount();
+	
+	memcpy(&TemHumiInfo,&info,sizeof(info));
 }
 
 /* IO设备回调函数 */
-void IODevCallback(IODev::DevType_EN type,bool sta,void *userdata){
-    printf("type = %d , sta = %d\n",type,sta);
+void IODevCallback(IODev::DevType_EN type,bool sta,void *userdata)
+{
+    printf("IODevCallback type = %d , sta = %d\n",type,sta);
+	CabinetClient *pCab=pCabinetClient[0];
+	switch(type)
+	{
+		case 0:		//IODev::DevType_EN:Dev_SomkeSensor:
+			pCab->HUAWEIDevAlarm.hwSmokeAlarmTraps=sta;
+			break;
+		case 1:		//IODev::DevType_EN:Dev_ImmersionSensor:
+			pCab->HUAWEIDevAlarm.hwWaterAlarmTraps=sta;
+			break;
+		case 2:		//IODev::DevType_EN:Dev_GateMagnetism:
+			pCab->HUAWEIDevAlarm.hwDoorAlarmTraps=sta;
+			break;
+	}
 }
 
+void RsuCallback(void *data, void *userdata) 
+{
+	printf("RsuCallback\r\n");
+
+    if(data == NULL)
+        return;
+
+    printf("callback\n");
+
+#if 0
+    Artc *pRSU = (RSU *)userdata ;
+
+    uint16_t i,j;
+
+    /* 心跳信息 */
+    switch (type) {
+    case Artc::heartbeat: {
+        Artc::RsuControler_S *ctrler = (Artc::RsuControler_S *)data;
+        Artc::CtrlerSta_S *sta = ctrler->ctrlSta;
+
+        printf("HeartBeat: timestamp = %ld\n",ctrler->timestamp);
+        for (i = 0; i < RSU_CONTROLER_NUM; i++) {
+            printf("ctrl.sta[%d]  sta = %X psamNum = %d  ", i, sta[i].state, sta[i].psamNum);
+            printf("psamSta :{ ");
+            for (j = 0; j < 12; j++)
+                printf(" [%X %X %X] ", sta[i].psamSta[j].channel, sta[i].psamSta[j].status, sta[i].psamSta[j].auth);
+            printf(" }\n");
+        }
+
+        printf("ant = %d   workAnt = %d  ", ctrler->totalAnt, ctrler->workingAnt);
+        printf("antInfo :{ ");
+        for (j = 0; j < RSU_CTRL_ANT_NUM; j++)
+            printf(" [%X %X %X %X] ", ctrler->antInfo[j].id, ctrler->antInfo[j].sta, ctrler->antInfo[j].channel, ctrler->antInfo[j].power);
+        printf(" }\n");
+
+    } break;
+    /* 状态信息 */
+    case Artc::stateInfo: {
+        Artc::RsuInfo_S *info = (Artc::RsuInfo_S *)data;
+        uint8_t *id;
+
+        printf("StateInfo : state = %X  psma num = %d ",info->state,info->PsamNum);
+        printf("psamInfo :{ ");
+        for (j = 0; j < RSU_PSMA_TERMINAL_NUM; j++){
+            id = info->psamInfo[j].id;
+            printf(" [%X %X %X %X%X%X%X%X%X] \n", info->psamInfo[j].channel,info->psamInfo[j].version,info->psamInfo[j].auth,id[0],id[1],id[2],id[3],id[4],id[5]);
+        }
+        printf(" }\n");
+        printf("algId: %X  manuID: %X \n",info->algId,info->manuID);
+        printf("RSU:id: %X%X%X  ver: %X%X \n",info->id[0],info->id[1],info->id[2],info->ver[0],info->ver[1]);
+        printf("workSta: %X flagId: %X%X%X \n",info->workSta,info->flagId[0],info->flagId[1],info->flagId[2]);
+        printf("reserved: %X %X %X %X \n",info->reserved[0],info->reserved[1],info->reserved[2],info->reserved[3]);
+
+    } break;
+    /* 复位信息 */
+    case Artc::rstInfo: {
+        Artc::RsuRst_S *reset = (Artc::RsuRst_S *)data;
+
+
+    } break;
+    }
+#endif
+}
+
+void IPCamCallback(string staCode,string msg,IPCam::State_S state,void *userdata)
+{
+    IPCam *pIPCam = (IPCam *)userdata ;
+    printf("staCode = %s\n",staCode.c_str());
+    printf("message = %s\n",msg.c_str());
+    printf("linked = %s\n",state.linked ? "true" : "false");
+    printf("timestamp = %ld\n",state.timestamp);
+    
+    printf("ip = %s\n",state.ip.c_str());
+    printf("factoryid = %s\n",state.factoryid.c_str());
+    printf("errcode = %s\n",state.errcode.c_str());
+    printf("devicemodel = %s\n",state.devicemodel.c_str());
+    printf("softversion = %s\n",state.softversion.c_str());
+    printf("statustime = %s\n",state.statustime.c_str());
+    printf("filllight = %s\n",state.filllight.c_str());
+    printf("temperature = %s\n",state.temperature.c_str());
+    printf("picstateid = %s\n",state.picstateid.c_str());
+    printf("gantryid = %s\n",state.gantryid.c_str());
+    printf("statetime = %s\n",state.statetime.c_str());
+    printf("overstockImageJourCount = %s\n",state.overstockImageJourCount.c_str());
+    printf("overstockImageCount = %s\n",state.overstockImageCount.c_str());
+    printf("cameranum = %s\n",state.cameranum.c_str());
+    printf("lanenum = %s\n",state.lanenum.c_str());
+    printf("connectstatus = %s\n",state.connectstatus.c_str());
+    printf("workstatus = %s\n",state.workstatus.c_str());
+    printf("lightworkstatus = %s\n",state.lightworkstatus.c_str());
+    printf("recognitionrate = %s\n",state.recognitionrate.c_str());
+    printf("hardwareversion = %s\n",state.hardwareversion.c_str());
+    printf("softwareversion = %s\n",state.softwareversion.c_str());
+    printf("runningtime = %s\n",state.runningtime.c_str());
+    printf("brand = %s\n",state.brand.c_str());
+    printf("devicetype = %s\n",state.devicetype.c_str());
+    printf("statuscode = %s\n",state.statuscode.c_str());
+    printf("statusmsg = %s\n",state.statusmsg.c_str());
+}
+
+// p指针需要传进this,否则无法处理node中的数据
+void canNodeCallback(void *p,void *data,int len)
+{
+	CANNode *pcan = (CANNode *)p;
+	can_frame *c_data = (can_frame *)data;
+	uint16_t amp =0, volt = 0;
+	uint8_t temp = 0, flag = 0, oa_alarm = 0, version = 0;
+	uint16_t seq = 0;
+	uint16_t *pointer = &volt;
+	uint8_t *buf = &c_data->data[0];
+
+	//预留36路
+	if (c_data->can_id > 0)
+	{
+//		DEBUG_PRINTF("init: %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x\r\n",c_data->data[0],c_data->data[1],\
+//			c_data->data[2],c_data->data[3],c_data->data[4],c_data->data[5],c_data->data[6],c_data->data[7]);
+		
+		seq = c_data->can_id-1;
+		flag = c_data->data[0];
+		temp = c_data->data[1];
+		pointer = &volt;
+		char_to_int(buf+2, pointer);
+
+		pointer = &amp;
+		char_to_int(buf+4, pointer);
+
+		oa_alarm = c_data->data[6];
+		version = c_data->data[7];
+
+		// 下标检查，防止泄露
+		if (seq < PHASE_MAX_NUM)
+		{
+			// 协议转换
+			pcan->canNode[seq].address = seq+1;
+			pcan->canNode[seq].TimeStamp = timestamp_get();
+			pcan->canNode[seq].isConnect = true;
+
+			pcan->canNode[seq].phase.flag = flag;
+			pcan->canNode[seq].phase.temp = (int8_t)temp;
+			pcan->canNode[seq].phase.vln = (float)volt/100;
+			pcan->canNode[seq].phase.amp = (float)amp/1000;
+			pcan->canNode[seq].phase.alarm_threshold = oa_alarm*50;
+			pcan->canNode[seq].phase.version = pcan->int8_to_string(version);
+		}
+
+//		DEBUG_PRINTF("recv: addr=%d, flag=%02x, temp=%d, volt=%f, amp=%f, oa=%d, version=%s\r\n",pcan->canNode[seq].address,pcan->canNode[seq].phase.flag,\
+//			pcan->canNode[seq].phase.temp,pcan->canNode[seq].phase.vln,pcan->canNode[seq].phase.amp,pcan->canNode[seq].phase.alarm_threshold,pcan->canNode[seq].phase.version.c_str());
+	}
+	//return 0;
+}
+
+/* 工控机监控接口 */
+void MoninterCallback(Moninterface::State_S state,void *userdata){
+    printf("Cpu usage rate = %s\n",state.cpuUsageRate.c_str());
+
+    printf("Memery total size = %s\n", state.memTotalSize.c_str());
+    printf("Memery free size = %s\n", state.memFreeSize.c_str());
+    printf("Memery usage = %s\n", state.memUsage.c_str());
+    printf("Memery usage rate = %s\n", state.memUsageRate.c_str());
+    printf("Disk total size = %s\n", state.diskTotalSize.c_str());
+    printf("Disk free size = %s\n", state.diskFreeSize.c_str());
+    printf("Disk usage = %s\n", state.diskUsage.c_str());
+    printf("Disk usage rate = %s\n", state.diskUsageRate.c_str());
+
+    uint8_t i;
+    Moninterface::EthAdapter_S *eth;
+    for(i = 0;i < state.ethAdapterNum;i++){
+        eth = &state.ethAdapters[i];
+        printf("eth:\"%s\": ip:%s netmask:%s\n",eth->name.c_str(),eth->ip.c_str(),eth->mask.c_str());
+    }
+}
 
 
 

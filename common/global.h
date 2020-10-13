@@ -7,20 +7,10 @@
 #include "CfirewallClient.h"
 #include "CswitchClient.h"
 #include "tsPanel.h"
-#include "ipcam.h"
-#include "CsshClient.h"
-#include "comport.h"
 #include "canNode.h"
-#include "server.h"
-#include "SpdClient.h"
+#include "ipcam.h"
 #include "rsu.h"
-#include "lock.h"
-#include "tem_humi.h"
-#include "camera.h"
-#include "air_condition.h"
-#include "io_dev.h"
-#include "uart.h"
-#include "http.h"
+#include "CsshClient.h"
 
 using namespace std;//引入整个名空间
 
@@ -82,6 +72,7 @@ void VAgetFromDevice(uint8_t seq, string& volt, string& amp);
 
 uint16_t DoorStatusFromLocker(void);
 extern unsigned long GetTickCount(); //返回秒
+
 
 
 #endif

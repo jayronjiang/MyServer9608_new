@@ -19,7 +19,6 @@
 #include <map>
 #include <semaphore.h>
 
-using namespace std;
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
@@ -58,7 +57,7 @@ public:
     typedef struct {
         char *data;
         uint32_t size;
-        map<string,string> head;
+        std::map<std::string,std::string> head;
         union {
             long code;
             RequestType_EN type;
@@ -72,7 +71,7 @@ protected:
     pthread_t tid;
     sem_t psem;
     bool cbing;
-    string url,ip,port,content;
+    std::string url,ip,port,content;
     
     Callback callback;
     void *userdata;
@@ -85,9 +84,9 @@ public:
     virtual bool perform(void);
     virtual bool response(Value_S *value);
     virtual void config(ConfigType_S cfg, uint16_t u16Val);
-    virtual void config(ConfigType_S cfg, const string strVal);
-    virtual void config(ConfigType_S cfg, const string strValF,const string strValS);
-    virtual void config(ConfigType_S cfg, uint16_t u16Val, const string strVal);
+    virtual void config(ConfigType_S cfg, const std::string strVal);
+    virtual void config(ConfigType_S cfg, const std::string strValF,const std::string strValS);
+    virtual void config(ConfigType_S cfg, uint16_t u16Val, const std::string strVal);
     virtual void config(ConfigType_S cfg, uint16_t u16Val, uint32_t u32Val);
 
     void setCallback(Callback cb, void *userdata);
@@ -106,15 +105,15 @@ private:
     static void *PerformThread(void *arg);
 
 public:
-    HttpClient(RequestType_EN type, const string url);
+    HttpClient(RequestType_EN type, const std::string url);
     ~HttpClient();
 
     bool perform(void);
     bool response(Value_S *value);
     void config(ConfigType_S cfg, uint16_t u16Val);
-    void config(ConfigType_S cfg, const string strVal);
-    void config(ConfigType_S cfg, const string strValF,const string strValS);
-    void config(ConfigType_S cfg, uint16_t u16Val, const string strVal);
+    void config(ConfigType_S cfg, const std::string strVal);
+    void config(ConfigType_S cfg, const std::string strValF,const std::string strValS);
+    void config(ConfigType_S cfg, uint16_t u16Val, const std::string strVal);
     void config(ConfigType_S cfg, uint16_t u16Val, uint32_t u32Val);
 };
 
@@ -124,7 +123,7 @@ class HttpServ : public Http {
 private:
     void *evBase,*evHttp,*evbuf;
     long code;
-    map<string,string> *header;
+    std::map<std::string,std::string> *header;
     
 private:
     static void *PerformThread(void *arg);
@@ -132,13 +131,13 @@ private:
     static void GenerCallback(struct evhttp_request *req, void *arg);
 
 public:
-    HttpServ(const string ip, const string port);
+    HttpServ(const std::string ip, const std::string port);
     ~HttpServ();
 
     bool perform(void);
     bool response(Value_S *value);
-    void config(ConfigType_S cfg, const string strValF,const string strValS);
-    void config(ConfigType_S cfg, const string strVal);
+    void config(ConfigType_S cfg, const std::string strValF,const std::string strValS);
+    void config(ConfigType_S cfg, const std::string strVal);
 };
 
 } // namespace Klib

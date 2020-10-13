@@ -62,11 +62,12 @@ public:
 
     typedef struct{
         uint16_t status;
-        Event_EN reason;		// 开锁原因
+        uint16_t reason;		// 开锁原因
         uint16_t upload_cnt;	// 上报计数
 		uint16_t ID_len;		// ID长度
         uint8_t cardId[16];		// ID号，最长16个字节
         uint32_t card_read;		// 前4个字节ID号
+        uint16_t last_cnt;
     }Info_S;
 
     /* 回调函数 */
@@ -76,7 +77,6 @@ public:
 
 private:
     uint8_t addr;
-	uint16_t last_cnt;
 
     Callback callback;
     void *userdata;

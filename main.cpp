@@ -36,10 +36,18 @@ tsPanel *pCPanel = NULL;	//液晶屏对象
 CsshClient *pCsshClient[ATLAS_NUM] = {NULL,NULL};			//ATLAS对象
 CANNode *pCOsCan = NULL;		//Can对象
 SpdClient *pCSpdClent = NULL;		//SPD防雷器
-Lock *pCLock[LOCK_NUM] = {NULL,NULL,NULL,NULL};					//门锁对象
+Lock *pCLock[LOCK_NUM] = {NULL,NULL,NULL,NULL};					//生久门锁对象
+HWLock *pHWCLock[LOCK_NUM] = {NULL,NULL,NULL,NULL};				//华为门锁对象
 TemHumi *pCTemHumi;//[TEMHUMI_NUM];// = {NULL,NULL};;					//温湿度对象
 AirCondition *pCAirCondition;//[AIRCON_NUM]= {NULL};;			//空调
 IODev *pCIOdev = NULL;				//IO
+Moninterface *Moninter;						//工控机监控
+AirCondition::AirInfo_S AirCondInfo;		//直流空调结构体
+TemHumi::Info_S TemHumiInfo;				//温湿度结构体
+Lock::Info_S LockInfo[LOCK_NUM];			//电子锁结构体
+
+//#define CARD_NUM		5	// 暂时为5张卡
+//Lock *pCLock[LOCKER_MAX_NUM] = {NULL,NULL,NULL,NULL};
 
 
 void WriteLog(char* str);
@@ -69,153 +77,6 @@ void WatchDogInit(void)
 
 }
 
-
-void RsuCallback(void *data, void *userdata) 
-{
-	printf("RsuCallback\r\n");
-
-    if(data == NULL)
-        return;
-
-    printf("callback\n");
-
-#if 0
-    Artc *pRSU = (RSU *)userdata ;
-
-    uint16_t i,j;
-
-    /* 心跳信息 */
-    switch (type) {
-    case Artc::heartbeat: {
-        Artc::RsuControler_S *ctrler = (Artc::RsuControler_S *)data;
-        Artc::CtrlerSta_S *sta = ctrler->ctrlSta;
-
-        printf("HeartBeat: timestamp = %ld\n",ctrler->timestamp);
-        for (i = 0; i < RSU_CONTROLER_NUM; i++) {
-            printf("ctrl.sta[%d]  sta = %X psamNum = %d  ", i, sta[i].state, sta[i].psamNum);
-            printf("psamSta :{ ");
-            for (j = 0; j < 12; j++)
-                printf(" [%X %X %X] ", sta[i].psamSta[j].channel, sta[i].psamSta[j].status, sta[i].psamSta[j].auth);
-            printf(" }\n");
-        }
-
-        printf("ant = %d   workAnt = %d  ", ctrler->totalAnt, ctrler->workingAnt);
-        printf("antInfo :{ ");
-        for (j = 0; j < RSU_CTRL_ANT_NUM; j++)
-            printf(" [%X %X %X %X] ", ctrler->antInfo[j].id, ctrler->antInfo[j].sta, ctrler->antInfo[j].channel, ctrler->antInfo[j].power);
-        printf(" }\n");
-
-    } break;
-    /* 状态信息 */
-    case Artc::stateInfo: {
-        Artc::RsuInfo_S *info = (Artc::RsuInfo_S *)data;
-        uint8_t *id;
-
-        printf("StateInfo : state = %X  psma num = %d ",info->state,info->PsamNum);
-        printf("psamInfo :{ ");
-        for (j = 0; j < RSU_PSMA_TERMINAL_NUM; j++){
-            id = info->psamInfo[j].id;
-            printf(" [%X %X %X %X%X%X%X%X%X] \n", info->psamInfo[j].channel,info->psamInfo[j].version,info->psamInfo[j].auth,id[0],id[1],id[2],id[3],id[4],id[5]);
-        }
-        printf(" }\n");
-        printf("algId: %X  manuID: %X \n",info->algId,info->manuID);
-        printf("RSU:id: %X%X%X  ver: %X%X \n",info->id[0],info->id[1],info->id[2],info->ver[0],info->ver[1]);
-        printf("workSta: %X flagId: %X%X%X \n",info->workSta,info->flagId[0],info->flagId[1],info->flagId[2]);
-        printf("reserved: %X %X %X %X \n",info->reserved[0],info->reserved[1],info->reserved[2],info->reserved[3]);
-
-    } break;
-    /* 复位信息 */
-    case Artc::rstInfo: {
-        Artc::RsuRst_S *reset = (Artc::RsuRst_S *)data;
-
-
-    } break;
-    }
-#endif
-}
-
-void IPCamCallback(string staCode,string msg,IPCam::State_S state,void *userdata)
-{
-    IPCam *pIPCam = (IPCam *)userdata ;
-    printf("staCode = %s\n",staCode.c_str());
-    printf("message = %s\n",msg.c_str());
-    printf("linked = %s\n",state.linked ? "true" : "false");
-    printf("timestamp = %ld\n",state.timestamp);
-    
-    printf("ip = %s\n",state.ip.c_str());
-    printf("factoryid = %s\n",state.factoryid.c_str());
-    printf("errcode = %s\n",state.errcode.c_str());
-    printf("devicemodel = %s\n",state.devicemodel.c_str());
-    printf("softversion = %s\n",state.softversion.c_str());
-    printf("statustime = %s\n",state.statustime.c_str());
-    printf("filllight = %s\n",state.filllight.c_str());
-    printf("temperature = %s\n",state.temperature.c_str());
-    printf("picstateid = %s\n",state.picstateid.c_str());
-    printf("gantryid = %s\n",state.gantryid.c_str());
-    printf("statetime = %s\n",state.statetime.c_str());
-    printf("overstockImageJourCount = %s\n",state.overstockImageJourCount.c_str());
-    printf("overstockImageCount = %s\n",state.overstockImageCount.c_str());
-    printf("cameranum = %s\n",state.cameranum.c_str());
-    printf("lanenum = %s\n",state.lanenum.c_str());
-    printf("connectstatus = %s\n",state.connectstatus.c_str());
-    printf("workstatus = %s\n",state.workstatus.c_str());
-    printf("lightworkstatus = %s\n",state.lightworkstatus.c_str());
-    printf("recognitionrate = %s\n",state.recognitionrate.c_str());
-    printf("hardwareversion = %s\n",state.hardwareversion.c_str());
-    printf("softwareversion = %s\n",state.softwareversion.c_str());
-    printf("runningtime = %s\n",state.runningtime.c_str());
-    printf("brand = %s\n",state.brand.c_str());
-    printf("devicetype = %s\n",state.devicetype.c_str());
-    printf("statuscode = %s\n",state.statuscode.c_str());
-    printf("statusmsg = %s\n",state.statusmsg.c_str());
-}
-
-// p指针需要传进this,否则无法处理node中的数据
-void canNodeCallback(void *p,void *data,int len)
-{
-	CANNode *pcan = (CANNode *)p;
-	can_frame *c_data = (can_frame *)data;
-	uint16_t amp =0, volt = 0;
-	uint8_t temp = 0, flag = 0, oa_alarm = 0, version = 0;
-	uint16_t seq = 0;
-	uint16_t *pointer = &volt;
-	uint8_t *buf = &c_data->data[0];
-
-	//预留36路
-	if (c_data->can_id > 0)
-	{
-//		DEBUG_PRINTF("init: %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x\r\n",c_data->data[0],c_data->data[1],\
-//			c_data->data[2],c_data->data[3],c_data->data[4],c_data->data[5],c_data->data[6],c_data->data[7]);
-		
-		seq = c_data->can_id-1;
-		flag = c_data->data[0];
-		temp = c_data->data[1];
-		pointer = &volt;
-		char_to_int(buf+2, pointer);
-
-		pointer = &amp;
-		char_to_int(buf+4, pointer);
-
-		oa_alarm = c_data->data[6];
-		version = c_data->data[7];
-
-		// 协议转换
-		pcan->canNode[seq].address = seq+1;
-		pcan->canNode[seq].TimeStamp = timestamp_get();
-		pcan->canNode[seq].isConnect = true;
-
-		pcan->canNode[seq].phase.flag = flag;
-		pcan->canNode[seq].phase.temp = (int8_t)temp;
-		pcan->canNode[seq].phase.vln = (float)volt/100;
-		pcan->canNode[seq].phase.amp = (float)amp/1000;
-		pcan->canNode[seq].phase.alarm_threshold = oa_alarm*50;
-		pcan->canNode[seq].phase.version = pcan->int8_to_string(version);
-
-//		DEBUG_PRINTF("recv: addr=%d, flag=%02x, temp=%d, volt=%f, amp=%f, oa=%d, version=%s\r\n",pcan->canNode[seq].address,pcan->canNode[seq].phase.flag,\
-//			pcan->canNode[seq].phase.temp,pcan->canNode[seq].phase.vln,pcan->canNode[seq].phase.amp,pcan->canNode[seq].phase.alarm_threshold,pcan->canNode[seq].phase.version.c_str());
-	}
-	//return 0;
-}
 
 
 
@@ -270,11 +131,11 @@ int main(void)
 
 	if(pConf->StrCabinetType=="13") //利通机柜
 	{
-/*		//温湿度：传参为485地址 
-		for(i=0;i<TEMHUMI_NUM;i++)
+		//温湿度：传参为485地址 
+/*		for(i=0;i<TEMHUMI_NUM;i++)
 		{
-//			uint8_t addr=(i==0?TEMHUMI_ADDRESS_1:TEMHUMI_ADDRESS_2);
-			pCTemHumi[i] = new TemHumi(0x01);
+			uint8_t addr=(i==0?TEMHUMI_ADDRESS_1:TEMHUMI_ADDRESS_2);
+			pCTemHumi[i] = new TemHumi(addr);
 			pCTemHumi[i]->setCallback(TemHumiCallback, pCTemHumi[i]);
 		}*/
 		pCTemHumi = new TemHumi(0x1);
@@ -295,9 +156,24 @@ int main(void)
 	    pCIOdev = IODev::getInstance();
 	    pCIOdev->setCallback(IODevCallback,NULL);
 		
-		//电子锁对象
-		for(i=0;i<LOCK_NUM;i++)
+		/* 工控机监控:传参为目标设备IP地址 */
+		Moninter = new Moninterface(pConf->StrAtlasIP[0].c_str());	// ("128.8.82.160");
+		Moninter->setCallback(MoninterCallback,NULL);
+		
+	}
+
+	for(i=0;i<LOCK_NUM;i++)
+	{
+		if(pConf->StrLockType=="1")
 		{
+			//华为电子锁对象
+printf("aaaa %s\n",pConf->StrAdrrLock[i].c_str());
+			pHWCLock[i] = new HWLock(atoi(pConf->StrAdrrLock[i].c_str()));
+			pHWCLock[i]->setCallback(HWLockCallback, pHWCLock[i]);
+		}
+		else if(pConf->StrLockType=="2")
+		{
+			//生久电子锁对象
 			pCLock[i] = new Lock(atoi(pConf->StrAdrrLock[i].c_str()));
 			pCLock[i]->setCallback(LockCallback, pCLock[i]);
 		}

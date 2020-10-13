@@ -22,6 +22,7 @@
 #include "CsshClient.h"
 #include "HttpServer.h"
 #include "lock.h"
+#include "hw_locker.h"
 #include "tem_humi.h"
 #include "camera.h"
 #include "air_condition.h"
@@ -29,7 +30,8 @@
 #include "uart.h"
 #include "http.h"
 #include "initmodule.h"
-
+#include "hw_locker.h"
+#include "moninterface.h"
 
 using namespace std; 
 

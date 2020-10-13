@@ -63,12 +63,16 @@ extern unsigned short GetCrc(unsigned char *buf,int len);
 extern int WritepUpdata(unsigned char *pDateBuf,int pDateLen);
 extern int WritezImagedata(unsigned char *pDateBuf,int pDateLen);
 extern int WriteZipdata(unsigned char *pDateBuf,int pDateLen);
+extern void SetIPinfo();
+extern void SetIPinfo2();
 
 extern REMOTE_CONTROL *stuRemote_Ctrl;	//遥控寄存器结构体
 extern CabinetClient *pCabinetClient[HWSERVER_NUM];//华为机柜状态
 extern VMCONTROL_CONFIG VMCtl_Config;	//控制器配置信息结构体
 extern CANNode *pCOsCan;		//Can对象
 extern SpdClient *pCSpdClent;		//SPD防雷器
+extern Lock *pCLock[LOCK_NUM];					//生久门锁对象
+extern HWLock *pHWCLock[LOCK_NUM];				//华为门锁对象
 
 extern string zteLockDevID[4];
 extern int openatslock(void);
@@ -79,9 +83,6 @@ extern bool jsonstrRCtrlReader(char* jsonstr, int len, UINT8 *pstuRCtrl);
 extern bool jsonComputerReader(char* jsonstr, int len);
 extern UINT16 SendCom3Test(char *buf,int len);
 extern unsigned long GetTickCount();
-extern void SetIPinfo();
-extern void SetIPinfo2();
-
 
 pthread_mutex_t PostGetMutex ;
 pthread_mutex_t litdataMutex ;
@@ -90,7 +91,6 @@ extern pthread_mutex_t uprebootMutex ;
 extern pthread_mutex_t httprebootMutex ;
 extern int WDTfd ;
 extern int HttpReboot;
-
 
 
 void init_TCPServer()
@@ -796,7 +796,6 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 
  void RemoteControl(UINT8* pRCtrl)
  {
-printf("cccc\rn");  
 	int i,j;
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;  //控制器配置信息结构体
 	REMOTE_CONTROL *pstuRCtrl=(REMOTE_CONTROL *)pRCtrl;
@@ -843,105 +842,63 @@ printf("cccc\rn");
 
 	 if(pstuRCtrl->FrontDoorCtrl==ACT_UNLOCK)					 //开锁
 	 {
-	 	printf("设备柜前门 开锁\r\n");
-#if 0
-		 // 如果是华为机柜
-	#if (CABINETTYPE == 1)
-		 //if (CabinetTypeGet() <= CABIN_HUAWEI_1_1)
-		 {
-//			locker_ctrl_flag |= LBIT(LOCKER_1_CTRL_UNLOCK);
-		 }
-		 //else if (CabinetTypeGet == CABIN_ZTE)
-	#elif ((CABINETTYPE == 5)  || (CABINETTYPE == 6) )
-		 {
-		 	if (zteLockDevID[0] != "")
-		 	{
-				memset(byteSend,0,BASE64_HEX_LEN);
-				// 开锁
-			   	zte_jsa_locker_process(0,DOOR_OPEN_CMD,byteSend,mStrUser,mStrkey);
-		 	}
-		 }
-	#elif (CABINETTYPE == 7)
-		openatslock();
-	#elif (CABINETTYPE == 9)
-		GsyjLockerContrl_Func(DEV_DOOR_IC,true);
-	#endif
-#endif
-		 usleep(2000);
+		printf("设备柜前门 开锁\r\n");
+		if(pConf->StrLockType=="1")
+		{
+			// 如果是华为电子锁
+			pHWCLock[0]->open();
+		}
+		else if(pConf->StrLockType=="1")
+		{
+			// 如果是生久电子锁
+			pCLock[0]->open();
+		}
+		usleep(2000);
 	 }
 	 if(pstuRCtrl->BackDoorCtrl==ACT_UNLOCK)				 //开锁
 	 {
-		 printf("设备柜后门 开锁\r\n");
-#if 0
-		 // 如果是华为机柜
-		 #if(CABINETTYPE == 1) //华为
-		 {
-		 	locker_ctrl_flag |= LBIT(LOCKER_2_CTRL_UNLOCK);
-		 }
-		 //else if (CabinetTypeGet == CABIN_ZTE)
-		 #elif ((CABINETTYPE == 5)  || (CABINETTYPE == 6) )
-		 {
-		 	if (zteLockDevID[1] != "")
-		 	{
-				memset(byteSend,0,BASE64_HEX_LEN);
-				// 开锁
-			   	zte_jsa_locker_process(1,DOOR_OPEN_CMD,byteSend,mStrUser,mStrkey);
-		 	}
-		 }
-		 #elif (CABINETTYPE == 7)
-			 openatslock();
-		 #endif
-#endif
-		 usleep(2000);
+		printf("设备柜后门 开锁\r\n");
+		if(pConf->StrLockType=="1")
+		{
+			// 如果是华为电子锁
+			pHWCLock[1]->open();
+		}
+		else if(pConf->StrLockType=="1")
+		{
+			// 如果是生久电子锁
+			pCLock[1]->open();
+		}
+		usleep(2000);
 	 }
-	 if(pstuRCtrl->SideDoorCtrl==ACT_UNLOCK)				 //开锁
+	 if(pstuRCtrl->SideDoorCtrl==ACT_UNLOCK && pConf->StrLockNum>="3")	 //开锁
 	 {
-		 printf("电池柜前门 开锁\r\n");
-#if 0
-	     //CABINETTYPE  1：华为（包括华为单门 双门等） 5：中兴; 6：金晟安; 7：爱特斯 StrVersionNo
-   	#if(CABINETTYPE == 1) //华为
-		 // 如果是华为机柜
-		 {
-		 	locker_ctrl_flag |= LBIT(LOCKER_3_CTRL_UNLOCK);
-		 }
-	#elif ((CABINETTYPE == 5)  || (CABINETTYPE == 6) )
-		 //else if (CabinetTypeGet == CABIN_ZTE)
-		// else
-		 {
-		 	if (zteLockDevID[2] != "")
-		 	{
-				memset(byteSend,0,BASE64_HEX_LEN);
-				// 开锁
-			   	zte_jsa_locker_process(2,DOOR_OPEN_CMD,byteSend,mStrUser,mStrkey);
-		 	}
-		 }
-	#elif (CABINETTYPE == 9)
-		GsyjLockerContrl_Func(DEV_DOOR_IC_POWER,true);
-	#endif
-#endif
-		 usleep(2000);
+		printf("电池柜前门 开锁\r\n");
+		if(pConf->StrLockType=="1")
+		{
+			// 如果是华为电子锁
+			pHWCLock[2]->open();
+		}
+		else if(pConf->StrLockType=="1")
+		{
+			// 如果是生久电子锁
+			pCLock[2]->open();
+		}
+		usleep(2000);
 	 }
-	 if(pstuRCtrl->RightSideDoorCtrl==ACT_UNLOCK)				 //开锁
+	 if(pstuRCtrl->RightSideDoorCtrl==ACT_UNLOCK && pConf->StrLockNum>="4")	 //开锁
 	 {
-		 printf("电池柜后门 开锁\r\n");
-#if 0
-		 // 如果是华为机柜
-		 #if (CABINETTYPE == 1)
-		 {
-		 	locker_ctrl_flag |= LBIT(LOCKER_4_CTRL_UNLOCK);
-		 }
-		 #elif ((CABINETTYPE == 5)  || (CABINETTYPE == 6) )
-		 {
-		 	if (zteLockDevID[3] != "")
-		 	{
-				memset(byteSend,0,BASE64_HEX_LEN);
-				// 开锁
-			   	zte_jsa_locker_process(3,DOOR_OPEN_CMD,byteSend,mStrUser,mStrkey);
-		 	}
-		 }
-		 #endif
-#endif
-		 usleep(2000);
+		printf("电池柜后门 开锁\r\n");
+		if(pConf->StrLockType=="1")
+		{
+			// 如果是华为电子锁
+			pHWCLock[3]->open();
+		}
+		else if(pConf->StrLockType=="1")
+		{
+			// 如果是生久电子锁
+			pCLock[3]->open();
+		}
+		usleep(2000);
 	 }
 
 	 if(pHWDev->hwLinked && GetTickCount()-pHWDev->hwTimeStamp>5*60) //超过5分钟没更新，认为没有连接)

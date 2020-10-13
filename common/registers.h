@@ -376,6 +376,8 @@ typedef struct vmctl_config_struct
 	UINT8 HZ_reset_flag[SPD_NUM+RES_NUM] = {false,};
 	UINT8 HZ_reset_pre[SPD_NUM+RES_NUM] = {false,}; // 对HZ_reset_flag预先处理
     
+    string StrLockType;       //门锁类型
+    string StrLockNum;       //门锁数量
     string StrAdrrLock[LOCK_NUM];         //门锁地址	最多4把锁
     string StrAdrrVAMeter[VA_METER_BD_NUM];     //电能表地址 最多6个表 每层2个
     string StrAdrrPower[POWER_BD_NUM];       //电源板地址 最多3层
@@ -464,6 +466,9 @@ typedef struct Remote_Control_struct	//
 	//接地电阻
 	UINT16 spdres_id;				// 更改id地址	// 0x12
 	UINT16 spdres_alarm_value;		// 报警值修改	// 0x13
+	//时间戳
+	unsigned long AirConTimeStamp; 		//空调状态获取时间戳
+	unsigned long TempHumTimeStamp; 		//温湿度状态获取时间戳
 }REMOTE_CONTROL;
 
 /*寄存器操作*/
