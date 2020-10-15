@@ -18,6 +18,8 @@
 #include <cstring>
 #include <sstream>
 #include "global.h"
+#include "lock.h"
+
 
 extern CabinetClient *pCabinetClient[HWSERVER_NUM];//华为机柜状态
 extern VMCONTROL_CONFIG VMCtl_Config;	//控制器配置信息结构体
@@ -29,6 +31,8 @@ extern Huawei *pCHWRSU[RSUCTL_NUM];;					//RSU对象
 extern IPCam *pCVehplate[VEHPLATE_NUM];
 extern IPCam *pCVehplate900[VEHPLATE900_NUM];
 extern CsshClient *pCsshClient[ATLAS_NUM];			//ATLAS对象
+extern Lock::Info_S LockInfo[LOCK_NUM];			//电子锁结构体
+
 
 void SetIPinfo()
 {
@@ -585,26 +589,22 @@ void VAgetFromDevice(uint8_t seq, string& volt, string& amp)
 // 这个函数是电子锁那边的，需要重写
 uint16_t DoorStatusFromLocker(void)
 {
-	return LOCKER_CLOSED;
-	#if 0
 	uint16_t reval = LOCKER_CLOSED;
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
 
-	//华为的电子锁参数配置
-	for (int i = 0; i < LOCKER_MAX_NUM; i++)
+	for(int i=0;i<LOCK_NUM;i++)
 	{
-		/*如果此锁有配置地址,读它的锁的开关状态*/
 		if (pConf->StrAdrrLock[i].length() != 0)
 		{
 			// 任何一把锁为打开,就是打开状态，屏幕要亮
-			if (pCLock[i]->info.status == LOCKER_OPEN)
+			if (LockInfo[i].isOpen == LOCKER_OPEN)
 			{
 				reval = LOCKER_OPEN;
 				break;
 			}
 		}
-	}
-	#endif
+	}	
+	return reval;
 }
 
 

@@ -9,6 +9,7 @@
 using namespace std; 
 
 
+#pragma pack(push, 1)
 class CabinetClient
 {
 public:
@@ -104,7 +105,7 @@ private:
 	   void *snmptrapd_add_session(void *t);
 	   
 };
-
+#pragma pack(pop)
 
 
 

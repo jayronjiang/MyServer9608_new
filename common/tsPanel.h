@@ -42,14 +42,14 @@ public:
 	}SREEN_SET_LIST;
 
 public:
-	tsPanel(CabinetClient *pCab,VMCONTROL_CONFIG *pConfig);
+	tsPanel(CabinetClient **pCab,VMCONTROL_CONFIG *pConfig);
 	~tsPanel(void);
 
 	typedef void (*Callback)(void *userdata,int len);
 	void setCallback(Callback cb,void *userdata);
 	void ScreenFlagSet(SREEN_SET_LIST sFlag);
 	void disconnctProcess(void);
-	void CabClientSet(CabinetClient *pCab);
+	void CabClientSet(CabinetClient **pCab);
 	void VM_ConfigSet(VMCONTROL_CONFIG *pConfig);
 	void Box_Config(uint16_t dev_name, uint16_t bat_name);
 	

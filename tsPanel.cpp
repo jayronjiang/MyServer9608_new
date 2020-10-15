@@ -128,7 +128,7 @@ const string Dev_list[MAX_CHANNEL] =
 
 /**************************    类函数      ******************************/
 // 打开串口1
-tsPanel::tsPanel(CabinetClient *pCab,VMCONTROL_CONFIG *pConfig)
+tsPanel::tsPanel(CabinetClient **pCab,VMCONTROL_CONFIG *pConfig)
 {
 	// 默认2s钟发送一次页面刷新
 	time_interval = WAIT_SECOND_2;
@@ -174,17 +174,19 @@ void tsPanel::ScreenFlagSet(SREEN_SET_LIST sFlag)
 }
 
 
-void tsPanel::CabClientSet(CabinetClient *pCab)
+void tsPanel::CabClientSet(CabinetClient **pCab)
 {
 	for(int i=0; i<HWSERVER_NUM;i++)
 	{
-		tsCabClient[i] = (pCab+i);
+		tsCabClient[i] = *(pCab+i);
+		printf("tsCabClientaddr=%d\r\n",tsCabClient[i]);
 	}
 }
 
 void tsPanel::VM_ConfigSet(VMCONTROL_CONFIG *pConfig)
 {
 	tsVM_Config = pConfig;
+	printf("tsVM_Config=%d\r\n",tsVM_Config);
 }
 
 
@@ -696,6 +698,8 @@ uint8_t tsPanel::tsPanelBoxValuePack(uint8_t *pbuf,uint16_t addr)
 	}
 	// 主程序版本号,版本号只使用12个字节长度
 	str_name = pConf->StrVersionNo;
+	printf("StrVersionNo= %s\r\n",str_name.c_str());
+	printf("pConf->StrVersionNo= %s\r\n",pConf->StrVersionNo.c_str());
 	// 实际会返回12的长度
 	len += Get_AsciiString((char*)(pbuf+len),str_name,12);
 

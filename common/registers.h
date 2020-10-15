@@ -211,6 +211,8 @@ typedef unsigned long long  UINT64;
 #define	ACT_LOCK		1           //关锁
 #define	ACT_UNLOCK		2           //开锁
 
+
+#pragma pack(push, 1)
 typedef enum BAUDRATE
 {
     BAUDRATE_1200      = 0,			//1200
@@ -402,7 +404,7 @@ typedef struct vmctl_config_struct
     string StrMemAlarmValue; 		//内存使用率报警阈值
     string StrsecSoftVersion[3]; 		//副版本号，支持最多3个电源板
 }VMCONTROL_CONFIG;
-
+	
 //电源控制设备的配置
 typedef struct Control_CONFIG_struct	//
 {
@@ -470,6 +472,8 @@ typedef struct Remote_Control_struct	//
 	unsigned long AirConTimeStamp; 		//空调状态获取时间戳
 	unsigned long TempHumTimeStamp; 		//温湿度状态获取时间戳
 }REMOTE_CONTROL;
+#pragma pack(pop)
+
 
 /*寄存器操作*/
 UINT8 Read_Register(UINT16 nStartRegNo, UINT16 nRegNum, UINT8 *pdatabuf, UINT8 *perr);

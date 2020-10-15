@@ -167,7 +167,7 @@ int main(void)
 		if(pConf->StrLockType=="1")
 		{
 			//华为电子锁对象
-printf("aaaa %s\n",pConf->StrAdrrLock[i].c_str());
+			printf("aaaa %s\n",pConf->StrAdrrLock[i].c_str());
 			pHWCLock[i] = new HWLock(atoi(pConf->StrAdrrLock[i].c_str()));
 			pHWCLock[i]->setCallback(HWLockCallback, pHWCLock[i]);
 		}
@@ -255,7 +255,7 @@ printf("start rsu %s\r\n",pConf->StrIP.c_str());
 	pCOsCan->setCallback(canNodeCallback,NULL);
 
 	//初始化液晶屏
-	pCPanel =new tsPanel(pCabinetClient[0],&VMCtl_Config);
+	pCPanel =new tsPanel(&pCabinetClient[0],&VMCtl_Config);
 	// 配置动环和机柜的数量逻辑，如果是1个动环，1/2个机柜，则配置为Box_Config(0,0)
 	// 如果是2个动环，则配置为Box_Config(0,1)
 	pCPanel->Box_Config(0,0);
