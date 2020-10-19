@@ -30,10 +30,13 @@ extern Huawei *pCHWRSU[RSUCTL_NUM];;					//RSU对象
 extern IPCam *pCVehplate[VEHPLATE_NUM];
 extern IPCam *pCVehplate900[VEHPLATE900_NUM];
 extern CsshClient *pCsshClient[ATLAS_NUM];			//ATLAS对象
+extern Camera *pCCam[CAM_NUM];						//机柜监控摄像头
 extern AirCondition::AirInfo_S AirCondInfo;		//直流空调结构体
 extern TemHumi::Info_S TemHumiInfo;				//温湿度结构体
 extern Lock::Info_S LockInfo[LOCK_NUM];			//电子锁结构体
 extern unsigned long GetTickCount();
+extern CallBackTimeStamp CBTimeStamp;				//外设采集回调时间戳
+void myprintf(char* str);
 
 
 //初始化机柜结构体
@@ -592,6 +595,68 @@ void Init_DO(VMCONTROL_CONFIG *pConf)
 
 }
 
+void initAirConditionInfo(AirCondition::AirInfo_S *Info)
+{
+	Info->version="";
+	Info->runSta.interFan="2147483647";	/* 内风机 */
+	Info->runSta.exterFan="2147483647";	/* 外风机 */
+	Info->runSta.compressor="2147483647";	/* 压缩机 */
+	Info->runSta.heating="2147483647";	/* 电加热 */
+	Info->runSta.urgFan="2147483647";		/* 应急风机 */
+	
+	Info->sensorSta.coilTemp="2147483647";	/* 盘管温度 */
+	Info->sensorSta.outdoorTemp="2147483647";	/* 室外温度 */
+	Info->sensorSta.condTemp="2147483647";	/* 冷凝温度 */
+	Info->sensorSta.indoorTemp="2147483647";	/* 室内温度 */
+	Info->sensorSta.airOutTemp="2147483647";		/* 排气温度 */
+	Info->sensorSta.humity="2147483647";	/* 湿度 */
+	Info->sensorSta.current="2147483647";	/* 电流 */
+	Info->sensorSta.acVoltage="2147483647";		/* 交流电压 */
+	Info->sensorSta.dcVoltage="2147483647";	/* 直流电压 */
+	
+	Info->warnings.highTemp="0";	/* 高温告警 */
+	Info->warnings.lowTemp="0";	/* 低温告警 */
+	Info->warnings.highHumi="0";	/* 高湿告警 */
+	Info->warnings.lowHumi="0";	/* 低湿告警 */
+	Info->warnings.coilFreeze="0";	/* 盘管防冻 */
+	Info->warnings.airOutHiTemp="0";	/* 排气高温 */
+	Info->warnings.coilSensInval="0";	/* 盘管温感失效 */
+	Info->warnings.outSensInval="0";	/* 室外温感失效 */
+	Info->warnings.condSensInval="0";	/* 冷凝温感失效 */
+	Info->warnings.inSensInval="0";	/* 内温感失效 */
+	Info->warnings.airSensInval="0";	/* 排气温感失效 */
+	Info->warnings.humiSensInval="0";	/* 湿感失效 */
+	Info->warnings.inFanFault="0";	/* 内风机故障 */
+	Info->warnings.exFanFault="0";	/* 外风机故障 */
+	Info->warnings.compresFault="0";	/* 压缩机故障 */
+	Info->warnings.heatFault="0";	/* 电加热故障 */
+	Info->warnings.urgFanFault="0";	/* 应急风机故障 */
+	Info->warnings.highPressure="0";	/* 高压告警 */
+	Info->warnings.lowPressure="0";	/* 低压告警 */
+	Info->warnings.immersion="0";	/* 水浸告警 */
+	Info->warnings.smoke="0";	/* 烟感告警 */
+	Info->warnings.accessCtrl="0";	/* 门禁告警 */
+	Info->warnings.highPresLock="0";	/* 高压锁定 */
+	Info->warnings.lowPresLock="0";	/* 低压锁定 */
+	Info->warnings.airOutLock="0";	/* 排气锁定 */
+	Info->warnings.acOverVol="0";	/* 交流过压 */
+	Info->warnings.acUnderVol="0";	/* 交流欠压 */
+	Info->warnings.acOff="0";	/* 交流掉电 */
+	Info->warnings.phaseLoss="0";	/* 缺相 */
+	Info->warnings.freqErr="0";	/* 频率异常 */
+	Info->warnings.phaseInverse="0";	/* 逆相 */
+	Info->warnings.dcOverVol="0";	/* 直流过压 */
+	Info->warnings.dcUnderVol="0";	/* 直流欠压 */
+	
+	Info->sysVal.refrigeratTemp="2147483647";	/* 制冷点 */
+	Info->sysVal.refriRetDiff="2147483647";	/* 制冷回差 */
+	Info->sysVal.heatTemp="2147483647";	/* 加热点 */
+	Info->sysVal.heatRetDiff="2147483647";	/* 加热回差 */
+	Info->sysVal.highTemp="2147483647";	/* 高温点 */
+	Info->sysVal.lowTemp="2147483647";	/* 低温点 */
+	Info->sysVal.highHumi="2147483647";	/* 高湿点 */
+}
+
 int TrapCallBack(string Stroid,int AlarmID,int mgetIndex,unsigned int mRetID)
 {
     int mnew = 0;
@@ -657,12 +722,8 @@ void AirConditionCallback(AirCondition::AirInfo_S info, void *userdata)
     // printf("Air condition callback\n");
     int i;
     
-	REMOTE_CONTROL *pRCtrl=stuRemote_Ctrl;	//遥控寄存器结构体
-	
-	pRCtrl->AirConTimeStamp=GetTickCount();
-	
-	memcpy(&AirCondInfo,&info,sizeof(info));
-	
+	CBTimeStamp.AirConTimeStamp=GetTickCount();
+
     printf("Air condition callback!! ver:%s\n",info.version.c_str());
 
     printf("Run state:\n");
@@ -684,16 +745,18 @@ void AirConditionCallback(AirCondition::AirInfo_S info, void *userdata)
     for (i = 0; i < sizeof(AirCondition::SysVal_S) / sizeof(string); i++) {
         printf("  %s\n",((string *)&info.sysVal)[i].c_str());
     }
+
+	memcpy(&AirCondInfo,&info,sizeof(info));
+
 }
 
 /* 温湿度回调函数 */
 void TemHumiCallback(uint8_t addr,TemHumi::Info_S info,void *userdata)
 {
     printf("TemHumiCallback tempture = %f,humidity = %f,dew = %f\n",info.tempture,info.humidity,info.dew);
-	REMOTE_CONTROL *pRCtrl=stuRemote_Ctrl;	//遥控寄存器结构体
 
-	pRCtrl->TempHumTimeStamp=GetTickCount();
-	
+	CBTimeStamp.TempHumTimeStamp=GetTickCount();
+
 	memcpy(&TemHumiInfo,&info,sizeof(info));
 }
 
@@ -702,16 +765,28 @@ void IODevCallback(IODev::DevType_EN type,bool sta,void *userdata)
 {
     printf("IODevCallback type = %d , sta = %d\n",type,sta);
 	CabinetClient *pCab=pCabinetClient[0];
+	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
+	char status[10];
+	sprintf(status,"%d",sta);
 	switch(type)
 	{
 		case 0:		//IODev::DevType_EN:Dev_SomkeSensor:
-			pCab->HUAWEIDevAlarm.hwSmokeAlarmTraps=sta;
+			pCab->HUAWEIDevAlarm.hwSmokeAlarmTraps=status;
 			break;
 		case 1:		//IODev::DevType_EN:Dev_ImmersionSensor:
-			pCab->HUAWEIDevAlarm.hwWaterAlarmTraps=sta;
+			pCab->HUAWEIDevAlarm.hwWaterAlarmTraps=status;
 			break;
 		case 2:		//IODev::DevType_EN:Dev_GateMagnetism:
-			pCab->HUAWEIDevAlarm.hwDoorAlarmTraps=sta;
+			if(pCab->HUAWEIDevAlarm.hwDoorAlarmTraps=="0" && sta==1)	//开门
+			{
+				for(int i=0;i<atoi(pConf->StrCAMCount.c_str());i++)
+				{
+					printf("门磁触发摄像头(%d)抓拍 \r\n",i);
+					if(pCCam[i]!=NULL)
+						pCCam[i]->capture(3,2);
+				}
+			}
+			pCab->HUAWEIDevAlarm.hwDoorAlarmTraps=status;
 			break;
 	}
 }
@@ -783,6 +858,8 @@ void RsuCallback(void *data, void *userdata)
 void IPCamCallback(string staCode,string msg,IPCam::State_S state,void *userdata)
 {
     IPCam *pIPCam = (IPCam *)userdata ;
+	myprintf("IPCamCallback\r\n");
+	
     printf("staCode = %s\n",staCode.c_str());
     printf("message = %s\n",msg.c_str());
     printf("linked = %s\n",state.linked ? "true" : "false");
@@ -887,6 +964,25 @@ void MoninterCallback(Moninterface::State_S state,void *userdata){
         printf("eth:\"%s\": ip:%s netmask:%s\n",eth->name.c_str(),eth->ip.c_str(),eth->mask.c_str());
     }
 }
+
+void CameraCallback(Camera::MsgType_EN msg,const char *jpgName,void *userdata){
+    if(msg == Camera::Msg_CaptureSuccess)
+        printf("capture success file = \"%s\"\n",jpgName);
+	else if(msg == Camera::Msg_CaptureFail)
+		printf("capture fail\n");
+    else if(msg == Camera::Msg_IsCapturing)
+        printf("capture IsCapturing\n");
+}
+
+/* HTTP回调 
+void HttpCallback(Http *http, Http::Value_S value, void *userdata){
+    if(value == Camera::Msg_CaptureSuccess)
+        printf("capture success file = \"%s\"\n",jpgName);
+	else if(msg == Camera::Msg_CaptureFail)
+		printf("capture fail\n");
+    else if(msg == Camera::Msg_IsCapturing)
+        printf("capture IsCapturing\n");
+}*/
 
 
 

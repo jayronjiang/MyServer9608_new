@@ -26,9 +26,9 @@ LIBS          =  $(SUBLIBS)  ./alib/CsshClient.a \
 							 ./alib/libxml.a \
 							 ./alib/libhttp.a \
 							 ./alib/CJsonObject.a \
-							 ./solib/libssl.so.1.1 \
-							 ./solib/libcrypto.so.1.1 \
-							 ./solib/libssh2.so.1.0.1 \
+							 ./solib/libssl.so \
+							 ./solib/libcrypto.so \
+							 ./solib/libssh2.so.1 \
 							 ./solib/libcurl.so.4.5.0  \
 							 ./solib/libevent-2.1.so.6.0.4 \
 							 ./alib/SpdClient.a \

@@ -32,6 +32,7 @@
 #include "initmodule.h"
 #include "hw_locker.h"
 #include "moninterface.h"
+#include "camera.h"
 
 using namespace std; 
 

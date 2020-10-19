@@ -74,7 +74,7 @@ int GetConfig(void)
 	//CABINETTYPE  1：华为（包括华为单门 双门等） 5：中兴; 6：金晟安; 7：爱特斯; 8:诺龙; 9：容尊堡; 
 				//10:亚邦; 11：艾特网能；12：华软
     #if(CABINETTYPE == 1) //华为
-	   pConf->StrVersionNo ="V2.01.01" ;//当前版本号
+	   pConf->StrVersionNo ="V99.01.02" ;//当前版本号
 	   pConf->StrSoftDate="2020-03-31" ;	//当前版本日期
     #elif (CABINETTYPE == 5) //飞达中兴
        pConf->StrVersionNo ="V1.05.25b" ;
@@ -694,7 +694,8 @@ int GetConfig(void)
 	}
 
     Strkey = "DO_Count=";
-    pConf->StrDoCount = getstring(StrConfig,Strkey) ;//DO数量
+//    pConf->StrDoCount = getstring(StrConfig,Strkey) ;//DO数量
+    pConf->StrDoCount = "16" ;//DO数量
 	if(atoi(pConf->StrDoCount.c_str())>SWITCH_COUNT)
 	{
 		sprintf(value,"%d", SWITCH_COUNT) ;

@@ -20,7 +20,6 @@
 #include "global.h"
 #include "lock.h"
 
-
 extern CabinetClient *pCabinetClient[HWSERVER_NUM];//华为机柜状态
 extern VMCONTROL_CONFIG VMCtl_Config;	//控制器配置信息结构体
 extern CANNode *pCOsCan;		//Can对象
@@ -32,7 +31,6 @@ extern IPCam *pCVehplate[VEHPLATE_NUM];
 extern IPCam *pCVehplate900[VEHPLATE900_NUM];
 extern CsshClient *pCsshClient[ATLAS_NUM];			//ATLAS对象
 extern Lock::Info_S LockInfo[LOCK_NUM];			//电子锁结构体
-
 
 void SetIPinfo()
 {
@@ -606,6 +604,7 @@ uint16_t DoorStatusFromLocker(void)
 	}	
 	return reval;
 }
+
 
 
 

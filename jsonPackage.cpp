@@ -23,6 +23,7 @@ extern unsigned long GetTickCount();
 extern void WriteLog(char* str);
 extern void SetIPinfo();
 extern void SetIPinfo2();
+void myprintf(char* str);
 
 //extern TIPcamState mTIPcamState[VEHPLATE_NUM];
 //extern TIPcamState mTIPcam900State[VEHPLATE900_NUM];
@@ -37,6 +38,7 @@ extern CsshClient *pCsshClient[ATLAS_NUM];			//ATLAS对象
 extern AirCondition::AirInfo_S AirCondInfo;		//直流空调结构体
 extern TemHumi::Info_S TemHumiInfo;				//温湿度结构体
 extern Lock::Info_S LockInfo[LOCK_NUM];			//电子锁结构体
+extern CallBackTimeStamp CBTimeStamp;				//外设采集回调时间戳
 
 bool isIPAddressValid(const char* pszIPAddr)
 {
@@ -4445,6 +4447,8 @@ bool jsonStrVehPlateWriter(int messagetype, string &mstrjson)
 		if(pCVP!=NULL)
 		{
 			State = pCVP->getState();
+sprintf(str,"GetVehPlate(%d) 连接状态=%d 上次回调间隔=%d\r\n",i,State.linked,GetTickCount()-State.timestamp);
+myprintf(str);
 			if(State.linked && GetTickCount()-State.timestamp<5*60)//5分钟没更新，恢复默认
 			{
 				sprintf(str,"\"isonline\":\"%d\",\n",State.linked); strJson = strJson + str;//连接状态
@@ -4778,6 +4782,7 @@ bool jsonStrSwitchStatusWriter(int messagetype, string &mstrjson)
 		for(i=0;i<docount;i++) //开关数量
 		{
 			sprintf(str,"\"do%d_isconnect\":%d,\n",i+1,pCan->canNode[i].isConnect); strJson = strJson + str;//连接状态
+			sprintf(str,"\"do%d_canversion\":\"%s\",\n",i+1,pCan->canNode[i].phase.version.c_str()); strJson = strJson + str;//can动力板版本号
 			if(pCan->canNode[i].phase.vln<24.0)
 				sprintf(str,"\"do%d_status\":0,\n",i+1); //断电
 			else 
@@ -4846,6 +4851,7 @@ bool jsonStrSwitchStatusWriterXY(int messagetype, string &mstrjson)
 		if(pCan!=NULL)
 		{
 			sprintf(str,"\"isconnect\":%d,\n",pCan->canNode[i].isConnect); strJson = strJson + str;//连接状态
+			sprintf(str,"\"canversion\":\"%s\",\n",i+1,pCan->canNode[i].phase.version.c_str()); strJson = strJson + str;//can动力板版本号
 			if(pCan->canNode[i].phase.vln<24.0)
 				sprintf(str,"\"status\":0,\n"); //断电
 			else 
@@ -4874,7 +4880,7 @@ bool jsonStrSwitchStatusWriterXY(int messagetype, string &mstrjson)
 
 bool jsonStrHWCabinetWriter(int messagetype,char *pstPam, string &mstrjson)
 {
-	char str[100],sDateTime[30];
+	char str[100],sDateTime[30],value[10];
 	int i,j,status; 
 	static int recordno=0;
 	CabinetClient *pCab=(CabinetClient *)pstPam;//华为机柜状态
@@ -5061,10 +5067,10 @@ bool jsonStrHWCabinetWriter(int messagetype,char *pstPam, string &mstrjson)
 	else if(atoi(pConf->StrCabinetType.c_str())==13)	//利通机柜
 	{
 		//设备信息 
+		strJson = strJson + "\"hwmonequipsoftwareversion\": \"" + pConf->StrVersionNo + "\",\n";	//软件版本
 		strJson = strJson + "\"hwmonequipmanufacturer\": \"利通\",\n";	//设备生产商
 		sprintf(str,"\"isonline\":\"1\",\n"); strJson = strJson + str;//连接状态
-		
-		if(GetTickCount()-pRCtrl->TempHumTimeStamp>1*60)//超过1分钟没更新，认为没有连接
+		if(GetTickCount()-CBTimeStamp.TempHumTimeStamp>1*60)//超过1分钟没更新，认为没有连接
 		{
 			sprintf(str,"\"temhumonline\":\"0\",\n"); strJson = strJson + str;//温湿度传感器是否在线（设备柜）
 		}
@@ -5074,45 +5080,51 @@ bool jsonStrHWCabinetWriter(int messagetype,char *pstPam, string &mstrjson)
 			sprintf(str,"\"hwenvtemperature\":\"%.1f\",\n", pTemHumi->tempture); strJson = strJson + str;//环境温度值 228
 			sprintf(str,"\"hwenvhumidity\":\"%.1f\",\n", pTemHumi->humidity); strJson = strJson + str;//环境湿度值 229
 		}
-		if(GetTickCount()-pRCtrl->AirConTimeStamp>1*60)//超过1分钟没更新，认为没有连接
+		if(GetTickCount()-CBTimeStamp.AirConTimeStamp>5*60)//超过1分钟没更新，认为没有连接
 		{
 			sprintf(str,"\"dcaironline\":\"0\",\n"); strJson = strJson + str;//直流空调是否在线（设备柜）
 		}
 		else
 		{
 			sprintf(str,"\"dcaironline\":\"1\",\n"); strJson = strJson + str;//直流空调是否在线（设备柜）
-			strJson = strJson + "\"hwdcairrunstatus\": " + ACInfo->runSta.interFan.c_str() + ",\n"; //空调运行状态 231
-			strJson = strJson + "\"hwdcaircompressorrunstatus\": " + ACInfo->runSta.compressor.c_str() + ",\n"; //空调压缩机运行状态 232
-			strJson = strJson + "\"hwdcairenterchanneltemp\": " + ACInfo->sensorSta.indoorTemp.c_str() + ",\n";	//空调回风口温度 236
-			strJson = strJson + "\"hwair_cond_infan_alarm\": " + ACInfo->warnings.inFanFault.c_str() + ",\n";	//空调内风机故障 245
-			strJson = strJson + "\"hwair_cond_outfan_alarm\": " + ACInfo->warnings.exFanFault.c_str() + ",\n"; //空调外风机故障 246
-			strJson = strJson + "\"hwair_cond_comp_alarm\": " + ACInfo->warnings.compresFault.c_str() + ",\n"; //空调压缩机故障 247
-			strJson = strJson + "\"hwair_cond_return_port_sensor_alarm\": " + ACInfo->warnings.inSensInval.c_str() + ",\n"; //空调回风口传感器故障 248
-			strJson = strJson + "\"hwair_cond_freq_high_press_alarm\": " + ACInfo->warnings.highPressure.c_str() + ",\n";	//空调频繁高压力 250
-			strJson = strJson + "\"hwsetenvtempupperlimit\": " + ACInfo->sysVal.highTemp.c_str() + ",\n"; //环境温度告警上限
-			strJson = strJson + "\"hwsetenvtemplowerlimit\": " + ACInfo->sysVal.lowTemp.c_str() + ",\n"; //环境温度告警下限
-			strJson = strJson + "\"hwsetenvhumidityupperlimit\": " + ACInfo->sysVal.highHumi.c_str() + ",\n"; //环境湿度告警上限
-			strJson = strJson + "\"hwsetenvhumiditylowerlimit\": " + ACInfo->sysVal.highHumi.c_str() + ",\n"; //环境湿度告警下限
-			strJson = strJson + "\"in_fanstate\": " + ACInfo->runSta.interFan.c_str() + ",\n"; //内风机状态
-			strJson = strJson + "\"out_fanstate\": " + ACInfo->runSta.exterFan.c_str() + ",\n"; //外风机状态
-			strJson = strJson + "\"heaterstate\": " + ACInfo->runSta.heating.c_str() + ",\n"; //加热器状态
-			strJson = strJson + "\"urgfanstate\": " + ACInfo->runSta.urgFan.c_str() + ",\n"; //应急风机状态
-			strJson = strJson + "\"coiltemp\": " + ACInfo->sensorSta.coilTemp.c_str() + ",\n"; //盘管温度
-			strJson = strJson + "\"outdoortemp\": " + ACInfo->sensorSta.outdoorTemp.c_str() + ",\n"; //室外温度
-			strJson = strJson + "\"condtemp\": " + ACInfo->sensorSta.condTemp.c_str() + ",\n"; //冷凝温度
-			strJson = strJson + "\"indoortemp\": " + ACInfo->sensorSta.indoorTemp.c_str() + ",\n"; //室内温度
-			strJson = strJson + "\"airouttemp\": " + ACInfo->sensorSta.airOutTemp.c_str() + ",\n"; //排气温度
-			strJson = strJson + "\"humity\": " + ACInfo->sensorSta.humity.c_str() + ",\n"; //室内湿度
-			strJson = strJson + "\"current\": " + ACInfo->sensorSta.current.c_str() + ",\n"; //电流
-			strJson = strJson + "\"acvoltage\": " + ACInfo->sensorSta.acVoltage.c_str() + ",\n"; //交流电压
-			strJson = strJson + "\"dcvoltage\": " + ACInfo->sensorSta.dcVoltage.c_str() + ",\n"; //直流电压
-			strJson = strJson + "\"hwenvtempalarmtraps\": " + ACInfo->warnings.highTemp.c_str() + ",\n"; //设备柜环境温度告警 239
-			strJson = strJson + "\"hwenvhumialarmresumetraps\": " + ACInfo->warnings.highHumi.c_str() + ",\n";	//设备柜环境湿度告警 240
-		}
+			if(ACInfo->runSta.interFan=="0")
+				strJson = strJson + "\"hwdcairrunstatus\": 2,\n"; //空调运行状态 231
+			else
+				strJson = strJson + "\"hwdcairrunstatus\": "+ ACInfo->runSta.interFan +",\n"; //空调运行状态 231
+			if(ACInfo->runSta.compressor=="0")
+				strJson = strJson + "\"hwdcaircompressorrunstatus\": 2,\n"; //空调压缩机运行状态 232
+			else
+				strJson = strJson + "\"hwdcaircompressorrunstatus\": " + ACInfo->runSta.compressor + ",\n"; //空调压缩机运行状态 232
+			strJson = strJson + "\"hwdcairenterchanneltemp\": " + ACInfo->sensorSta.indoorTemp + ",\n";	//空调回风口温度 236
+			strJson = strJson + "\"hwair_cond_infan_alarm\": " + ACInfo->warnings.inFanFault + ",\n";	//空调内风机故障 245
+			strJson = strJson + "\"hwair_cond_outfan_alarm\": " + ACInfo->warnings.exFanFault + ",\n"; //空调外风机故障 246
+			strJson = strJson + "\"hwair_cond_comp_alarm\": " + ACInfo->warnings.compresFault + ",\n"; //空调压缩机故障 247
+			strJson = strJson + "\"hwair_cond_return_port_sensor_alarm\": " + ACInfo->warnings.inSensInval + ",\n"; //空调回风口传感器故障 248
+			strJson = strJson + "\"hwair_cond_freq_high_press_alarm\": " + ACInfo->warnings.highPressure + ",\n";	//空调频繁高压力 250
+			strJson = strJson + "\"hwsetenvtempupperlimit\": " + ACInfo->sysVal.highTemp + ",\n"; //环境温度告警上限
+			strJson = strJson + "\"hwsetenvtemplowerlimit\": " + ACInfo->sysVal.lowTemp + ",\n"; //环境温度告警下限
+			strJson = strJson + "\"hwsetenvhumidityupperlimit\": " + ACInfo->sysVal.highHumi + ",\n"; //环境湿度告警上限
+			strJson = strJson + "\"hwsetenvhumiditylowerlimit\": " + ACInfo->sysVal.highHumi + ",\n"; //环境湿度告警下限
+			strJson = strJson + "\"in_fanstate\": " + ACInfo->runSta.interFan + ",\n"; //内风机状态
+			strJson = strJson + "\"out_fanstate\": " + ACInfo->runSta.exterFan + ",\n"; //外风机状态
+			strJson = strJson + "\"heaterstate\": " + ACInfo->runSta.heating + ",\n"; //加热器状态
+			strJson = strJson + "\"urgfanstate\": " + ACInfo->runSta.urgFan + ",\n"; //应急风机状态
+			strJson = strJson + "\"coiltemp\": " + ACInfo->sensorSta.coilTemp + ",\n"; //盘管温度
+			strJson = strJson + "\"outdoortemp\": " + ACInfo->sensorSta.outdoorTemp + ",\n"; //室外温度
+			strJson = strJson + "\"condtemp\": " + ACInfo->sensorSta.condTemp + ",\n"; //冷凝温度
+			strJson = strJson + "\"indoortemp\": " + ACInfo->sensorSta.indoorTemp + ",\n"; //室内温度
+			strJson = strJson + "\"airouttemp\": " + ACInfo->sensorSta.airOutTemp + ",\n"; //排气温度
+			strJson = strJson + "\"humity\": " + ACInfo->sensorSta.humity + ",\n"; //室内湿度
+			strJson = strJson + "\"current\": " + ACInfo->sensorSta.current + ",\n"; //电流
+			strJson = strJson + "\"acvoltage\": " + ACInfo->sensorSta.acVoltage + ",\n"; //交流电压
+			strJson = strJson + "\"dcvoltage\": " + ACInfo->sensorSta.dcVoltage + ",\n"; //直流电压
+			strJson = strJson + "\"hwenvtempalarmtraps\": " + ACInfo->warnings.highTemp + ",\n"; //设备柜环境温度告警 239
+			strJson = strJson + "\"hwenvhumialarmresumetraps\": " + ACInfo->warnings.highHumi + ",\n";	//设备柜环境湿度告警 240	
+		} 
 	
-		strJson = strJson + "\"hwdooralarmtraps\": " + pCab->HUAWEIDevAlarm.hwDoorAlarmTraps.c_str() + ",\n";	//门禁告警(设备柜) 241
-		strJson = strJson + "\"hwwateralarmtraps\": " + pCab->HUAWEIDevAlarm.hwWaterAlarmTraps.c_str() + ",\n"; //水浸告警 242
-		strJson = strJson + "\"hwsmokealarmtraps\": " + pCab->HUAWEIDevAlarm.hwSmokeAlarmTraps.c_str() + ",\n"; //烟雾告警 243
+		strJson = strJson + "\"hwdooralarmtraps\": " + pCab->HUAWEIDevAlarm.hwDoorAlarmTraps + ",\n";	//门禁告警(设备柜) 241
+		strJson = strJson + "\"hwwateralarmtraps\": " + pCab->HUAWEIDevAlarm.hwWaterAlarmTraps + ",\n"; //水浸告警 242
+		strJson = strJson + "\"hwsmokealarmtraps\": " + pCab->HUAWEIDevAlarm.hwSmokeAlarmTraps + ",\n"; //烟雾告警 243
 		//2019-11-19新增4个门锁状态
 		status=LockInfo[0].isOpen;	sprintf(str,"\"hwequcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜前门锁状态
 		status=LockInfo[1].isOpen;	sprintf(str,"\"hwequcabbackdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜后门锁状态
@@ -5182,8 +5194,15 @@ void SetjsonIPSwitchStatusStr(int messagetype,string &mstrjson)
 				sprintf(str,"\"isonline\":\"%d\",\n",pCIPS->HUAWEIDevValue.hwswitchEntityLinked); strJson = strJson + str;//连接状态
 				sprintf(str,"\"cpuusage\":\"%s\",\n",pCIPS->HUAWEIDevValue.strhwswitchEntityCpuUsage.c_str()); strJson = strJson + str;//CPU使用率
 				sprintf(str,"\"memusage\":\"%s\",\n",pCIPS->HUAWEIDevValue.strhwswitchEntityMemUsage.c_str()); strJson = strJson + str;//内存使用率
-				sprintf(str,"\"temperature\":\"%s\",\n",pCIPS->HUAWEIDevValue.strhwswitchEntityTemperature.c_str()); strJson = strJson + str;//温度
-				strJson = strJson + pCIPS->strswitchjson;								//交换机网络数据
+				if(pCIPS->strswitchjson!="")
+				{
+					sprintf(str,"\"temperature\":\"%s\",\n",pCIPS->HUAWEIDevValue.strhwswitchEntityTemperature.c_str()); strJson = strJson + str;//温度
+					strJson = strJson + pCIPS->strswitchjson;								//交换机网络数据
+				}
+				else
+				{
+					sprintf(str,"\"temperature\":\"%s\"\n",pCIPS->HUAWEIDevValue.strhwswitchEntityTemperature.c_str()); strJson = strJson + str;//温度
+				}
 			}
 			strJson +=	"}\n";
 			if(i!=ipswitchcnt-1)
@@ -5262,8 +5281,15 @@ void SetjsonFireWallStatusStr(int messagetype,string &mstrjson)
 				sprintf(str,"\"isonline\":\"%d\",\n",pCfw->HUAWEIDevValue.hwEntityLinked); strJson = strJson + str;//连接状态
 				sprintf(str,"\"cpuusage\":\"%s\",\n",pCfw->HUAWEIDevValue.strhwEntityCpuUsage.c_str()); strJson = strJson + str;//CPU使用率
 				sprintf(str,"\"memusage\":\"%s\",\n",pCfw->HUAWEIDevValue.strhwEntityMemUsage.c_str()); strJson = strJson + str;//内存使用率
-				sprintf(str,"\"temperature\":\"%s\",\n",pCfw->HUAWEIDevValue.strhwEntityTemperature.c_str()); strJson = strJson + str;//温度
-				strJson = strJson + pCfw->strfirewalljson;								//网络数据
+				if(pCfw->strfirewalljson!="")
+				{
+					sprintf(str,"\"temperature\":\"%s\",\n",pCfw->HUAWEIDevValue.strhwEntityTemperature.c_str()); strJson = strJson + str;//温度
+					strJson = strJson + pCfw->strfirewalljson;								//网络数据
+				}
+				else
+				{
+					sprintf(str,"\"temperature\":\"%s\"\n",pCfw->HUAWEIDevValue.strhwEntityTemperature.c_str()); strJson = strJson + str;//温度
+				}
 			}
 			strJson +=	"}\n";
 			if(i!=firewarecnt-1)
@@ -5751,67 +5777,22 @@ bool jsonstrSPDReader(char* jsonstr, int len, UINT8 *pstuRCtrl)
             if(jsonitem != NULL)
             {
             	//雷击计数清零
-				sprintf(key,"clearcounter");
-                jsonkey=cJSON_GetObjectItem(jsonitem,key);
+                jsonkey=cJSON_GetObjectItem(jsonitem,"clearcounter");
                 if(jsonkey != NULL)
                 {
-					sprintf(value,"%s",jsonkey->valuestring);
-					printf("%s %s\n",key,value);
-					pRCtrl->DO_spdcnt_clear[i]=atoi(value); 
+                	if(jsonkey->type==cJSON_String)
+						pRCtrl->DO_spdcnt_clear[i]=atoi(jsonkey->valuestring); 
+					else if(jsonkey->type==cJSON_Int)
+						pRCtrl->DO_spdcnt_clear[i]=jsonkey->valueint; 
                 }
             	//总雷击计数清0
-				sprintf(key,"cleartotalcounter");
-                jsonkey=cJSON_GetObjectItem(jsonitem,key);
+                jsonkey=cJSON_GetObjectItem(jsonitem,"cleartotalcounter");
                 if(jsonkey != NULL)
                 {
-					sprintf(value,"%s",jsonkey->valuestring);
-					printf("%s %s\n",key,value);
-					pRCtrl->DO_totalspdcnt_clear[i]=atoi(value); 
-                }
-            	//雷击时间清0
-				sprintf(key,"strucktimerecclear");
-                jsonkey=cJSON_GetObjectItem(jsonitem,key);
-                if(jsonkey != NULL)
-                {
-					sprintf(value,"%s",jsonkey->valuestring);
-					printf("%s %s\n",key,value);
-					pRCtrl->DO_psdtime_clear[i]=atoi(value); 
-                }
-            	//在线时间清0
-				sprintf(key,"onlinetimeclear");
-                jsonkey=cJSON_GetObjectItem(jsonitem,key);
-                if(jsonkey != NULL)
-                {
-					sprintf(value,"%s",jsonkey->valuestring);
-					printf("%s %s\n",key,value);
-					pRCtrl->DO_daytime_clear[i]=atoi(value); 
-                }
-            	//漏电流报警阈值
-				sprintf(key,"leak_alarm_threshold");
-                jsonkey=cJSON_GetObjectItem(jsonitem,key);
-                if(jsonkey != NULL)
-                {
-					sprintf(value,"%s",jsonkey->valuestring);
-					printf("%s %s\n",key,value);
-					pRCtrl->spdleak_alarm_threshold[i]=atof(value); 
-                }
-            	//外接漏电流控制
-				sprintf(key,"extleakcurrctrl");
-                jsonkey=cJSON_GetObjectItem(jsonitem,key);
-                if(jsonkey != NULL)
-                {
-					sprintf(value,"%s",jsonkey->valuestring);
-					printf("%s %s\n",key,value);
-					pRCtrl->DO_leak_type[i]=atoi(value); 
-                }
-            	//防雷器设备地址
-				sprintf(key,"modbus_addr");
-                jsonkey=cJSON_GetObjectItem(jsonitem,key);
-                if(jsonkey != NULL)
-                {
-					sprintf(value,"%s",jsonkey->valuestring);
-					printf("%s %s\n",key,value);
-					pRCtrl->spd_modbus_addr[i]=atoi(value); 
+                	if(jsonkey->type==cJSON_String)
+						pRCtrl->DO_totalspdcnt_clear[i]=atoi(jsonkey->valuestring); 
+					else if(jsonkey->type==cJSON_Int)
+						pRCtrl->DO_totalspdcnt_clear[i]=jsonkey->valueint; 
                 }
             }
         }

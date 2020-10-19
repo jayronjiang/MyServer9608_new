@@ -25,15 +25,36 @@
  ******************************************************************************/
 
 class Camera {
+public:
+    typedef enum{
+        Msg_CaptureSuccess,
+        Msg_CaptureFail,
+        Msg_IsCapturing,
+    }MsgType_EN;
+
+    typedef void (*Callback)(MsgType_EN msg,const char *jpgName,void *userdata);
 
 private:
-    std::string ip,dir;
+    bool capturing;
+    uint8_t time;
+    uint16_t interval;
+    std::string url,path;
+
     void *http;
 
+    Callback callback;
+    void *userdata;
+
+    static void *CaptureTask(void *arg);
+
 public:
-    Camera(std::string ip,std::string dirName);
+    Camera(std::string url,std::string dirName);
     ~Camera();
+
     void capture(void);
+    void capture(uint8_t time,uint8_t interval);
+    void setCallback(Callback callback,void *userdata);
+    void cleanUp(uint8_t fileNum);
 };
 
 

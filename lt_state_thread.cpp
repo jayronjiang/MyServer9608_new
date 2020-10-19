@@ -150,7 +150,7 @@ WriteLog(infobuf);
     {
         pSta->strhostname = pSta->strhostname.substr(0,(pSta->strhostname.size()-1)) ;
     }
-	pSta->strhostname="XY-TMC-001";
+	pSta->strhostname="LTXY-INT-301";
 sprintf(strmsg,"系统名称:%s\n",pSta->strhostname.c_str());
 WriteLog(strmsg);
     printf("系统名称:%s\r\n",pSta->strhostname.c_str());
@@ -240,7 +240,7 @@ WriteLog(strmsg);
 
 
     //查询CPU占用率
-    system("top -bn1 | grep Cpu > ./ltinfo");
+    system("top -bn1 | grep CPU: > ./ltinfo");
     memset(infobuf,0x00,1024*5+1) ;
     ReadLTInfo(infobuf);
 WriteLog(infobuf);
@@ -254,8 +254,8 @@ WriteLog(infobuf);
     {
        pSta->strcpuRate = pSta->strcpuRate.substr(0,pSta->strcpuRate.size() - 4) ;
     }*/
-	int poscpuid=strinfo.find("%id");
-	int poscpuni=strinfo.find("%ni,");
+	int poscpuid=strinfo.find("% idle");
+	int poscpuni=strinfo.find("nic ");
 	if(poscpuid>0 && poscpuni>0)
 	{
 		pSta->strcpuRate = strinfo.substr(poscpuni+4,poscpuid-(poscpuni+4));
@@ -392,7 +392,7 @@ void *LT_Statusthread(void *param)
 	 {
 		 getallstate();
 //		 sleep(300);
-  	 	 sleep(60);
+  	 	 sleep(20);
 	 }
 
 	 return 0 ;

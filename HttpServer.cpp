@@ -74,18 +74,18 @@ int WritepUpdata(unsigned char *pDateBuf,int pDateLen)
 
 int WriteZipdata(unsigned char *pDateBuf,int pDateLen)
 {
-	if(access("/opt/autorun.sh",0)==0)
+	if(access("/tmp/autorun.sh",0)==0)
 	{
-		printf("/opt/autorun.sh 存在，删除 /opt/autorun.sh\r\n");
-		system("rm /opt/autorun.sh") ;
+		printf("/tmp/autorun.sh 存在，删除 /tmp/autorun.sh\r\n");
+		system("rm /tmp/autorun.sh") ;
 	}
-	if(access("/opt/upgrade.zip",0)==0)
+	if(access("/tmp/upgrade.zip",0)==0)
 	{
-		printf("/opt/upgrade.zip 存在，删除 /opt/upgrade.zip\r\n");
-		system("rm /opt/upgrade.zip") ;
+		printf("/tmp/upgrade.zip 存在，删除 /tmp/upgrade.zip\r\n");
+		system("rm /tmp/upgrade.zip") ;
 	}
 	FILE* fdd ;
-	fdd = fopen("/opt/upgrade.zip", "wb");
+	fdd = fopen("/tmp/upgrade.zip", "wb");
 	if(fdd == NULL)
 	{
 	   return 1 ;

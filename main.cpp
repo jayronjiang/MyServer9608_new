@@ -32,6 +32,7 @@ Artc *pCArtRSU[RSUCTL_NUM] = {NULL,NULL};;					//RSU对象
 Huawei *pCHWRSU[RSUCTL_NUM] = {NULL,NULL};;					//RSU对象
 IPCam *pCVehplate[VEHPLATE_NUM];			//300万车牌识别仪对象
 IPCam *pCVehplate900[VEHPLATE900_NUM] = {NULL,NULL,NULL};		//900万全景摄像机对象
+Camera *pCCam[CAM_NUM]= {NULL,NULL,NULL,NULL}	;						//机柜监控摄像头
 tsPanel *pCPanel = NULL;	//液晶屏对象
 CsshClient *pCsshClient[ATLAS_NUM] = {NULL,NULL};			//ATLAS对象
 CANNode *pCOsCan = NULL;		//Can对象
@@ -45,6 +46,7 @@ Moninterface *Moninter;						//工控机监控
 AirCondition::AirInfo_S AirCondInfo;		//直流空调结构体
 TemHumi::Info_S TemHumiInfo;				//温湿度结构体
 Lock::Info_S LockInfo[LOCK_NUM];			//电子锁结构体
+CallBackTimeStamp CBTimeStamp;				//外设采集回调时间戳
 
 //#define CARD_NUM		5	// 暂时为5张卡
 //Lock *pCLock[LOCKER_MAX_NUM] = {NULL,NULL,NULL,NULL};
@@ -85,7 +87,7 @@ int main(void)
 	int i,j;
 	unsigned int pos_cnt = 0;
 	unsigned int temp = 0;
-	char str[256];
+	char str[256],dir[20];
 	string ip;
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
 	
@@ -95,18 +97,12 @@ int main(void)
 	WriteLog("now start program!\n");
 	//读设置文件
 	GetConfig();
-//	lockerDataInit(true);
 
 	//遥控设备结构体
 	stuRemote_Ctrl = (REMOTE_CONTROL*)malloc(sizeof(REMOTE_CONTROL));
 	
-	//初始化Can
-    //pCOsCan =  new CANNode((char *)"can0",CAN_500K,0,0x000,0xF00,0);
-	//pCOsCan->setCallback(canNodeCallback,NULL);
-		
 	Init_DO(pConf);
 	WalksnmpInit();
-
 	//CABINETTYPE  1：华为（包括华为单门 双门等） 5：中兴; 6：金晟安; 7：爱特斯; 8:诺龙; 9：容尊堡; 
 				//10:亚邦; 11：艾特网能；12：华软；13：利通
 	//机柜
@@ -138,7 +134,7 @@ int main(void)
 			pCTemHumi[i] = new TemHumi(addr);
 			pCTemHumi[i]->setCallback(TemHumiCallback, pCTemHumi[i]);
 		}*/
-		pCTemHumi = new TemHumi(0x1);
+		pCTemHumi = new TemHumi(0x7);
 		pCTemHumi->setCallback(TemHumiCallback, pCTemHumi);
 
 		/* 空调：传参为485地址 */
@@ -151,15 +147,25 @@ int main(void)
 	    pCAirCondition=new AirCondition(0x6); 
 	    pCAirCondition->setCallback(AirConditionCallback,NULL);
 	    pCAirCondition->config(AirCondition::Cfg_Refrigeration,20);
+		initAirConditionInfo(&AirCondInfo);
 
+		/* 工控机监控:传参为目标设备IP地址 */
+//		Moninter = new Moninterface(pConf->StrAtlasIP[0].c_str());	// ("128.8.82.160");
+//		Moninter->setCallback(MoninterCallback,NULL);
+
+		/* 摄像头，传参为摄像头IP地址以及 IMA_SAVE_PATH_ROOT 下图片文件夹名 */
+		for(i=0;i<CAM_NUM;i++)
+		{
+			sprintf(dir,"%d",i); 
+			string url="http://"+pConf->StrCAMIP[i]+"/onvif-http/snapshot?Profile_1";
+			pCCam[i]=new Camera(url,dir);
+			pCCam[i]->setCallback(CameraCallback, pCCam[i]);
+		}
+
+		sleep(2);
 		//IO
 	    pCIOdev = IODev::getInstance();
 	    pCIOdev->setCallback(IODevCallback,NULL);
-		
-		/* 工控机监控:传参为目标设备IP地址 */
-		Moninter = new Moninterface(pConf->StrAtlasIP[0].c_str());	// ("128.8.82.160");
-		Moninter->setCallback(MoninterCallback,NULL);
-		
 	}
 
 	for(i=0;i<LOCK_NUM;i++)
@@ -167,7 +173,6 @@ int main(void)
 		if(pConf->StrLockType=="1")
 		{
 			//华为电子锁对象
-			printf("aaaa %s\n",pConf->StrAdrrLock[i].c_str());
 			pHWCLock[i] = new HWLock(atoi(pConf->StrAdrrLock[i].c_str()));
 			pHWCLock[i]->setCallback(HWLockCallback, pHWCLock[i]);
 		}
@@ -209,7 +214,7 @@ int main(void)
 	}
 
    	//RSU
-   	for(i=0;i<atoi(pConf->StrRSUCount.c_str());i++)
+   	for(i=0;i<RSUCTL_NUM;i++)
    	{
    		if(pConf->StrRSUType=="1")	//门架通用型RSU
    		{
@@ -225,17 +230,23 @@ printf("start rsu %s\r\n",pConf->StrIP.c_str());
    	} 
 
 	//车牌识别仪
-   	for(i=0;i<atoi(pConf->StrVehPlateCount.c_str());i++)
+   	for(i=0;i<VEHPLATE_NUM;i++)
    	{
-		ip=pConf->StrVehPlateIP[i].substr(7,pConf->StrVehPlateIP[i].size()-7);//去掉"http://"
+   		if(pConf->StrVehPlateIP[i].size()>=7)
+			ip=pConf->StrVehPlateIP[i].substr(7,pConf->StrVehPlateIP[i].size()-7);//去掉"http://"
+		else 
+			ip=pConf->StrVehPlateIP[i];
 	    pCVehplate[i] = new IPCam(ip,pConf->StrVehPlatePort[i],pConf->StrVehPlateKey[i]);
 	    pCVehplate[i]->setCallback(IPCamCallback,pCVehplate[i]);
    	}
 
 	//900万全景车牌识别仪
-   	for(i=0;i<atoi(pConf->StrVehPlate900Count.c_str());i++)
+   	for(i=0;i<VEHPLATE900_NUM;i++)
    	{
-		ip=pConf->StrVehPlate900IP[i].substr(7,pConf->StrVehPlate900IP[i].size()-7);//去掉"http://"
+   		if(pConf->StrVehPlate900IP[i].size()>=7)
+			ip=pConf->StrVehPlate900IP[i].substr(7,pConf->StrVehPlate900IP[i].size()-7);//去掉"http://"
+		else 
+			ip=pConf->StrVehPlate900IP[i];
 	    pCVehplate900[i] = new IPCam(ip,pConf->StrVehPlate900Port[i],pConf->StrVehPlate900Key[i]);
 	    pCVehplate900[i]->setCallback(IPCamCallback,pCVehplate900[i]);
    	}
@@ -279,13 +290,14 @@ printf("start rsu %s\r\n",pConf->StrIP.c_str());
 
 	//处理重启
 	init_DealDoReset();
-	
 	//初始化http服务端
 	Init_HttpServer();
 	
 	//初始化服务器线程
 	init_TCPServer();
-	
+
+	//初始化利通后台推送服务
+	init_LTKJ_DataPost();
 	while(1)
 	{
 		sleep(5);

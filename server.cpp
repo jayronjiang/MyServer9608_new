@@ -30,6 +30,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <string.h>
+#include "tsPanel.h"
 #include "MyCritical.h"
 #include <string>
 #include <semaphore.h>
@@ -73,6 +74,8 @@ extern CANNode *pCOsCan;		//Can对象
 extern SpdClient *pCSpdClent;		//SPD防雷器
 extern Lock *pCLock[LOCK_NUM];					//生久门锁对象
 extern HWLock *pHWCLock[LOCK_NUM];				//华为门锁对象
+extern tsPanel *pCPanel;
+
 
 extern string zteLockDevID[4];
 extern int openatslock(void);
@@ -803,6 +806,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 	THUAWEIGantry *pHWDev=&(pCab->HUAWEIDevValue);//华为机柜状态
 	CANNode *pCan=pCOsCan;								//Can对象
 	SpdClient *pSpd=pCSpdClent;		//SPD防雷器
+	tsPanel * ptspanel = pCPanel;
 
 	int seq = 0;
 	UINT16 seq_temp = 0;
@@ -838,6 +842,10 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		printf("setSystemTimer %s",strcmd.c_str());		//IoT 9100
 		system(strcmd.c_str());	  //设置日期时间
 		system("hwclock -u -w"); 	  //写入硬时钟 
+		if (ptspanel != NULL)
+		{
+			ptspanel->ScreenFlagSet(tsPanel::SCREEN_TIME_SET);
+		}
 	}
 
 	 if(pstuRCtrl->FrontDoorCtrl==ACT_UNLOCK)					 //开锁
@@ -848,7 +856,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 			// 如果是华为电子锁
 			pHWCLock[0]->open();
 		}
-		else if(pConf->StrLockType=="1")
+		else if(pConf->StrLockType=="2")
 		{
 			// 如果是生久电子锁
 			pCLock[0]->open();
@@ -863,7 +871,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 			// 如果是华为电子锁
 			pHWCLock[1]->open();
 		}
-		else if(pConf->StrLockType=="1")
+		else if(pConf->StrLockType=="2")
 		{
 			// 如果是生久电子锁
 			pCLock[1]->open();
@@ -1258,25 +1266,26 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 
 		if(WriteZipdata(pbuf,size) == 0)	//写文件成功
 		{
-			system("mv tranter tranter1") ;
-			printf("unzip -o upgrade.zip\r\n");
-			system("unzip -o upgrade.zip") ;
+			//system("mv tranter tranter1") ;
+			//printf("unzip -o upgrade.zip\r\n");
+			system("unzip -o /tmp/upgrade.zip -d /tmp") ;
 			system("sync") ;
 
-			sleep(2);
-			if(access("autorun.sh",0)==0)
+			sleep(3);
+			if(access("/tmp/autorun.sh",0)==0)
 			{
 				printf("autorun.sh 存在，运行autorun.sh\r\n");
-				system("chmod 777 autorun.sh") ;
-				system("chmod 777 tranter") ;
-				system("./autorun.sh") ;
+				system("chmod 777 /tmp/autorun.sh") ;
+				//system("chmod 777 tranter") ;
+				system("/tmp/autorun.sh") ;
 			}
 			else
 			{
 				printf("autorun.sh 不存在，自动重启\r\n");
 				system("chmod 777 tranter") ;
 			}
-			sleep(1);
+			system("sync") ;
+			sleep(8);
 
 			strjsonback = strjsonback + "{\n";
 			strjsonback = strjsonback + "\"result\":\"升级成功！\",\n";
@@ -1379,48 +1388,49 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 	 }
  }
 
-  void *LTKJ_DataPostthread(void *param)
-  {
-	  string mStrdata;
-	  string mstrkey = ""; //没有用户名和密码：则为“”；
-	  int ret = 0 ;
-	  while(1)
-	  {
-/*		 if(StrServerURL1.length()>0)
-		 {
-			 mStrdata = "";
-			 //原20 /(新部标准2.3)机柜状态数据
-			 SetjsonCabinetStatus("CABINETINFOUPLOAD", mStrdata);
-			 //printf("LTKJ_DataPostthread CABINETINFOUPLOAD=\n%s\n",mStrdata.c_str());
-			 if(StrServerURL1!="")
-			 {
-                ret = HttpPostParm(StrServerURL1,mStrdata,mstrkey,HTTPPOST);
-				 if(ret == 1)
-				 {
-					 pthread_mutex_lock(&litdataMutex);
-					 litdataTime = 0;
-					 pthread_mutex_unlock(&litdataMutex);
-				 }
-			 }
-			 mStrdata = "";
-			 //原17/(新部标准2.1) 门架关键设备状态数据
-			 SetjsongantryRunStatus("gantryRunStatus", mStrdata);
-			 //printf("LTKJ_DataPostthread gantryRunStatus=\n%s\n",mStrdata.c_str());
-             ret = HttpPostParm(StrServerURL1+"batch",mStrdata,mstrkey,HTTPPOST);
-			 if(ret == 1)
-			 {
-				 pthread_mutex_lock(&litdataMutex);
-				 litdataTime = 0;
-				 pthread_mutex_unlock(&litdataMutex);
-			 }
+void *LTKJ_DataPostthread(void *param)
+{
+#if 0
+	VMCONTROL_CONFIG *pConf=&VMCtl_Config;  //控制器配置信息结构体
+	HttpClient *http = new HttpClient(Http::Type_Get, url);
+	 
+	// 设置账号密码 
+//	http->config(Http::Cfg_SetDigestAuth, "admin", "ltyjy123");
 
-		 }*/
-	 	 sleep(60*3);
- //		 sleep(10);
-	  }
+	// 设置请求报文头 
+	http->config(Http::Cfg_AppendHead, "Connection", "keep-alive");
+	http->config(Http::Cfg_AppendHead, "Accept", "text/html, application/xhtml+xml, image/jxr, */*");
 
-	  return 0 ;
-  }
+	// 设置请求超市时间 
+	http->config(Http::Cfg_SetConnTimeout, 5);
+	http->config(Http::Cfg_SetTimeout, 5);
+
+	// 设置回调 
+	http->setCallback(HttpCallback,NULL);
+	 
+	int ret = 0 ;
+	string mStrdata;
+	while(1)
+	{
+		if(StrServerURL1.length()>0)
+		{
+			mStrdata = "";
+			jsonStrHWCabinetWriter(NETCMD_HWCABINET_STATUS,(char*)pCabinetClient[0],mStrdata);
+			printf("LTKJ_DataPostthread 20=\n%s\n",mStrdata.c_str());
+			if(pConf->StrServerURL1!="")
+			{
+				/* 设置报文内容 */
+				http->config(Http::Cfg_AddContent,mStrdata);
+				
+				/* 执行请求 */
+				http->perform();
+			}
+//		sleep(60*3);
+		//		 sleep(10);
+	}
+#endif
+  return 0 ;
+}
 
  void init_LTKJ_DataPost()
  {

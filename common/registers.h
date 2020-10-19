@@ -404,13 +404,20 @@ typedef struct vmctl_config_struct
     string StrMemAlarmValue; 		//内存使用率报警阈值
     string StrsecSoftVersion[3]; 		//副版本号，支持最多3个电源板
 }VMCONTROL_CONFIG;
-	
+
 //电源控制设备的配置
 typedef struct Control_CONFIG_struct	//
 {
 	UINT16 vehplate;	// 设备名称
 	UINT16 do_seq;		// 对应的DO
 }CONTROL_CONFIG;
+
+//外设采集回调时间戳
+typedef struct CallBackTimeStamp_struct	//
+{
+	unsigned long AirConTimeStamp; 		//空调状态获取时间戳
+	unsigned long TempHumTimeStamp; 		//温湿度状态获取时间戳
+}CallBackTimeStamp;
 
 //遥控寄存器
 typedef struct Remote_Control_struct	//
@@ -468,13 +475,9 @@ typedef struct Remote_Control_struct	//
 	//接地电阻
 	UINT16 spdres_id;				// 更改id地址	// 0x12
 	UINT16 spdres_alarm_value;		// 报警值修改	// 0x13
-	//时间戳
-	unsigned long AirConTimeStamp; 		//空调状态获取时间戳
-	unsigned long TempHumTimeStamp; 		//温湿度状态获取时间戳
 }REMOTE_CONTROL;
-#pragma pack(pop)
 
-
+#pragma pack(pop)
 /*寄存器操作*/
 UINT8 Read_Register(UINT16 nStartRegNo, UINT16 nRegNum, UINT8 *pdatabuf, UINT8 *perr);
 UINT8 Write_Register(UINT16 nStartRegNo, INT16 nRegNum, const UINT8 *pdatabuf, UINT8 datalen, UINT8 *perr);
