@@ -146,7 +146,7 @@ uint16_t linkStGetFromDevice(uint8_t seq)
 		{
 			linkSt=2;
 		}
-		DEBUG_PRINTF("rsu %s %d\r\n",strDeviceName.c_str(),linkSt);
+		DEBUG_PRINTF("rsu %s linkSt=%d\r\n",strDeviceName.c_str(),linkSt);
 	}
 	else if(strDeviceName.find("vehplate900")==0)
 	{
@@ -154,11 +154,9 @@ uint16_t linkStGetFromDevice(uint8_t seq)
 		
 		num=atoi(strDeviceName.substr(11,_pos-11).c_str());
 		State = pCVehplate900[num-1]->getState();
-		if(State.linked==0)		//离线代码转换
-		{
-			linkSt=2;
-		}
-		DEBUG_PRINTF("vehplate900 %s %d\r\n",strDeviceName.c_str(),linkSt);
+		linkSt=((State.linked==0)?2:State.linked);	//离线代码转换
+		
+		DEBUG_PRINTF("vehplate900 %s linkSt=%d\r\n",strDeviceName.c_str(),linkSt);
 	}
 	else if(strDeviceName.find("vehplate")==0)
 	{
@@ -166,11 +164,9 @@ uint16_t linkStGetFromDevice(uint8_t seq)
 		
 		num=atoi(strDeviceName.substr(8,_pos-8).c_str());
 		State = pCVehplate[num-1]->getState();
-		if(State.linked==0)		//离线代码转换
-		{
-			linkSt=2;
-		}
-		DEBUG_PRINTF("vehplate %s %d\r\n",strDeviceName.c_str(),linkSt);
+		linkSt=((State.linked==0)?2:State.linked);	//离线代码转换
+		
+		DEBUG_PRINTF("vehplate %s linkSt=%d\r\n",strDeviceName.c_str(),linkSt);
 	}
 	else if(strDeviceName.find("cam")==0)
 	{
@@ -178,7 +174,7 @@ uint16_t linkStGetFromDevice(uint8_t seq)
 		
 		num=atoi(strDeviceName.substr(3,_pos-3).c_str());
 		linkSt=2;
-		DEBUG_PRINTF("cam %s %d\r\n",strDeviceName.c_str(),linkSt);
+		DEBUG_PRINTF("cam %s linkSt=%d\r\n",strDeviceName.c_str(),linkSt);
 	}
 	else if(strDeviceName.find("ipswitch")==0)
 	{
@@ -186,11 +182,8 @@ uint16_t linkStGetFromDevice(uint8_t seq)
 		
 		num=atoi(strDeviceName.substr(8,_pos-8).c_str());
 		linkSt=pCswitchClient[num-1]->HUAWEIDevValue.hwswitchEntityLinked;
-		if(linkSt==0)		//离线代码转换
-		{
-			linkSt=2;
-		}
-		DEBUG_PRINTF("ipswitch %s %d\r\n",strDeviceName.c_str(),linkSt);
+		linkSt=((linkSt==0)?2:linkSt);	//离线代码转换
+		DEBUG_PRINTF("ipswitch %s linkSt=%d\r\n",strDeviceName.c_str(),linkSt);
 	}
 	else if(strDeviceName.find("fireware")==0)
 	{
@@ -198,11 +191,8 @@ uint16_t linkStGetFromDevice(uint8_t seq)
 		
 		num=atoi(strDeviceName.substr(8,_pos-8).c_str());
 		linkSt=pCfirewallClient[num-1]->HUAWEIDevValue.hwEntityLinked;
-		if(linkSt==0)		//离线代码转换
-		{
-			linkSt=2;
-		}
-		DEBUG_PRINTF("fireware %s %d\r\n",strDeviceName.c_str(),linkSt);
+		linkSt=((linkSt==0)?2:linkSt);	//离线代码转换
+		DEBUG_PRINTF("fireware %s linkSt=%d\r\n",strDeviceName.c_str(),linkSt);
 	}
 	else if(strDeviceName.find("atlas")==0)
 	{
@@ -210,11 +200,8 @@ uint16_t linkStGetFromDevice(uint8_t seq)
 		
 		num=atoi(strDeviceName.substr(5,_pos-5).c_str());
 		linkSt=pCsshClient[num-1]->stuAtlasState.Linked;
-		if(linkSt==0)		//离线代码转换
-		{
-			linkSt=2;
-		}
-		DEBUG_PRINTF("atlas %s %d\r\n",strDeviceName.c_str(),linkSt);
+		linkSt=((linkSt==0)?2:linkSt);	//离线代码转换
+		DEBUG_PRINTF("atlas %s linkSt=%d\r\n",strDeviceName.c_str(),linkSt);
 	}
 	/* 未配置,不显示
 	else
