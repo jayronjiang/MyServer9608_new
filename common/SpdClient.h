@@ -2,7 +2,6 @@
 #define __SPDCLIENT_H__
 
 #include <string>
-#include "modbus.h"
 #include "registers.h"
 
 using namespace std; 
@@ -17,8 +16,10 @@ using namespace std;
 #define TYPE_ZPTA		4	// 中普同安
 #define TYPE_ZPZH		5	// 中普众合
 #define TYPE_KY0M		6	// 宽永0M型号,广西路段
+#define TYPE_TY			7	// 图粤
 
-#define TYPE_MAX_NUM	7	// 支持的数量
+
+#define TYPE_MAX_NUM	8	// 支持的数量
 
 
 #define SPD_DEFALT_ADDR			0xF0	// 默认设备地址， 不配置就是1
@@ -116,6 +117,31 @@ using namespace std;
 
 #define KY_SHIELD_INTERVAL			20		// 宽永的电阻测试需要2s以上才有回复，10不能再次测试，为了保险，设为20s
 #define KY_CLEAR_ADDR				0x0407
+
+
+/**********************************************/
+// 图粤检测器的定义
+#define TY_RES_READ_CMD				0x03
+#define TY_RES_WRITE_CMD			0x06
+#define TY_RES_ADD					0x01	// 地阻数据
+#define TY_RES_NUM					3
+
+#define TY_RES_VALUE_ADDR			0x01	// 1：接地电阻值,2:设备地址 3：报警值 
+#define TY_RES_ID_ADDR				0x02
+#define TY_RES_ALARM_ADDR			0x03
+
+
+#define TY_RUN_READ_CMD		0x04
+#define TY_RUN_ADDR			0x01
+#define TY_RUN_NUM			27		// 运行数据从01H开始,27个
+
+#define TY_DI_READ_CMD		0x02
+#define TY_DI_ADDR			0x00	// 遥信数据从00H开始，1个
+#define TY_DI_NUM			8		// 8位
+
+#define TY_HIS_READ_CMD		0x02
+#define TY_HIS_ADDR			0x00	// 历史数据，还是DI值
+#define TY_HIS_NUM			1
 
 
 /**********************************************/
@@ -291,6 +317,42 @@ typedef struct spd_ky_struct
 	UINT16 struck_sec;
 	UINT16 his_num;
 }SPD_KY_PARAMS;
+
+
+// 宽永的协议参数
+typedef struct spd_ty_struct
+{
+	UINT16 DI_alarm;		// DI报警
+	UINT16 online_day;
+	UINT16 online_hour;
+	UINT16 online_min;		// 在线时长
+	UINT16 reserved1;			//4
+	UINT16 reserved2;
+	UINT16 reserved3;
+	UINT16 envi_temp;
+	UINT16 spd_tem1;
+	UINT16 spd_tem2;
+	UINT16 reserved4;			//10
+	UINT16 reserved5;
+	UINT16 life_time;		//12生命值
+	UINT16 reserved6;			//13
+	UINT16 struck_cnt;					// 雷击计数
+	UINT16 struck_cnt_total;				// 总计数
+	UINT16 reserved7;			//16
+	UINT16 reserved8;
+	UINT16 reserved9;
+
+	// 报警值
+	UINT16 temp_alarm_total;	// 温度报警次数
+	UINT16 C1_alarm_total;			// 遥信报警次数
+	UINT16 line_alarm_total;		// 线路报警次数
+	UINT16 reserved10;					//22
+	UINT16 leak_alarm_total;		// 漏电流报警次数
+	UINT16 struck_current_total;		// 雷击电流次数
+	UINT16 reserved11;			// 25
+	UINT16 leak_amp;		// 漏电流zhi
+	UINT16 volt_A;			// 27电压
+}SPD_TY_PARAMS;
 
 
 // 中普同安的协议参数
@@ -487,6 +549,9 @@ typedef struct spd_struct
 	// 宽永有2个防雷
 	SPD_KY_PARAMS dSPD_KY[SPD_NUM];
 
+	// 图粤有1个防雷
+	SPD_TY_PARAMS dSPD_TY[SPD_NUM];
+
 	// 中普同安有2个防雷
 	SPD_ZPTA_PARAMS dSPD_ZPTA[SPD_NUM];
 
@@ -576,6 +641,21 @@ public:
 	     // 接地电阻值
 	     {KY_READ_CMD,KY_RES_VALUE_ADDR,KY_RES_NUM},
        };
+
+	   SPD_FunctionArray_Struct g_SPD_TY_Fun_Array[SPD_DATA_NUM] = 
+       {
+	     {0,0,0},
+	     {0,0,0},
+	     {0,0,0},
+	     // 这项对应的是华咨的,但是华咨不是MODBUS格式，所以没用
+	     {0,0,0},
+	     // 图粤,使用宽永的位置,类型上进行区分
+	     {TY_RUN_READ_CMD,TY_RUN_ADDR,TY_RUN_NUM},
+	     {TY_DI_READ_CMD,TY_DI_ADDR,TY_DI_NUM},
+	     {TY_DI_READ_CMD,TY_DI_ADDR,TY_DI_NUM},
+	     // 接地电阻值
+	     {TY_RES_READ_CMD,TY_RES_ADD,TY_RES_NUM},
+       };
    
 	   
 	   NETWORK_PTHREAD network_thread_SPD_HZ[SPD_NUM] = 
@@ -658,6 +738,8 @@ private:
 	   void DealHZResMsg(int seq,unsigned char *buf,unsigned short int len);
 	   void DealKYResMsg(unsigned char *buf,unsigned short int len);
 	   void DealKYSPDMsg(int seq,unsigned char *buf,unsigned short int len);
+	   void DealTYResMsg(unsigned char *buf,unsigned short int len);
+	   void DealTYSPDMsg(int seq,unsigned char *buf,unsigned short int len);
 	   void DealZPTASPDMsg(int seq,unsigned char *buf,unsigned short int len);
 	   void DealZPTAResMsg(unsigned char *buf,unsigned short int len);
 	   int DealZPZHSPDMsg(int seq,unsigned char *buf,unsigned short int len);

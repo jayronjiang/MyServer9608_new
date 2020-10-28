@@ -2906,7 +2906,7 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
 				addr_ref = RES_ALARM_ADDR;
 			}
 			// 广西宽永KY0M其实没有接地电阻，但也保留
-			else if ((pConf->SPD_Type == TYPE_KY) ||(pConf->SPD_Type == TYPE_KY0M))
+			else if ((pConf->SPD_Type == TYPE_KY) ||(pConf->SPD_Type == TYPE_KY0M)||(pConf->SPD_Type == TYPE_TY))
 			{
 				addr_ref = KY_RES_ALARM_ADDR;
 			}
