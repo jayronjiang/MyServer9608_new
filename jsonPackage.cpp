@@ -6,7 +6,6 @@
 extern REMOTE_CONTROL *stuRemote_Ctrl;	//遥控寄存器结构体
 extern CabinetClient *pCabinetClient[HWSERVER_NUM];//华为机柜状态
 extern VMCONTROL_STATE VMCtl_State;	//控制器运行状态结构体
-//extern ATLAS_STATE stuAtlasState[ATLAS_NUM]; //Atlas状态
 extern VMCONTROL_CONFIG VMCtl_Config;	//控制器配置信息结构体
 extern CANNode *pCOsCan;		//Can对象
 extern SpdClient *pCSpdClent;		//SPD防雷器
@@ -25,9 +24,6 @@ extern void SetIPinfo();
 extern void SetIPinfo2();
 void myprintf(char* str);
 
-//extern TIPcamState mTIPcamState[VEHPLATE_NUM];
-//extern TIPcamState mTIPcam900State[VEHPLATE900_NUM];
-
 extern CfirewallClient *pCfirewallClient[FIREWARE_NUM];
 extern CswitchClient *pCswitchClient[IPSWITCH_NUM];
 extern Artc *pCArtRSU[RSUCTL_NUM];;					//RSU对象
@@ -35,6 +31,8 @@ extern Huawei *pCHWRSU[RSUCTL_NUM];;					//RSU对象
 extern IPCam *pCVehplate[VEHPLATE_NUM];
 extern IPCam *pCVehplate900[VEHPLATE900_NUM];
 extern CsshClient *pCsshClient[ATLAS_NUM];			//ATLAS对象
+extern CsshDev *pCits800[ATLAS_NUM];					//its800
+extern CsshDev *pCcpci[ATLAS_NUM];					//cpci
 extern AirCondition::AirInfo_S AirCondInfo;		//直流空调结构体
 extern TemHumi::Info_S TemHumiInfo;				//温湿度结构体
 extern Lock::Info_S LockInfo[LOCK_NUM];			//电子锁结构体
@@ -283,6 +281,7 @@ bool jsonstrRCtrlReader(char* jsonstr, int len, UINT8 *pstuRCtrl)
 	CabinetClient *hwDev=pCabinetClient[0];//华为机柜状态
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
 	SpdClient *pSpd=pCSpdClent;		//SPD防雷器
+	AirCondition::AirInfo_S *ACInfo=&AirCondInfo;		//直流空调结构体
 	int i;
 	int valueint,arraysize;
 	char key[50],value[128];
@@ -303,6 +302,10 @@ bool jsonstrRCtrlReader(char* jsonstr, int len, UINT8 *pstuRCtrl)
 	pRCtrl->hwdcairpowerontemppoint[1]=ACT_HOLD_FF;		//空调开机温度点 255:保持； -20-80（有效）；45(缺省值)
 	pRCtrl->hwdcairpowerofftemppoint[0]=ACT_HOLD_FF;		//空调关机温度点  		  255:保持； -20-80（有效）；37(缺省值)
 	pRCtrl->hwdcairpowerofftemppoint[1]=ACT_HOLD_FF;		//空调关机温度点  		  255:保持； -20-80（有效）；37(缺省值)
+	pRCtrl->refrigeratTemp=ACT_HOLD_FF;		//制冷点 255:保持；15-50（有效）；
+	pRCtrl->refriRetDiff=ACT_HOLD_FF;		//制冷回差 255:保持；255:保持；1-10（有效）；
+	pRCtrl->heatTemp=ACT_HOLD_FF;		//加热点	 255:保持； 255:保持；-15-15（有效）；
+	pRCtrl->heatRetDiff=ACT_HOLD_FF;		//加热回差 255:保持；1-10（有效）；
 	sprintf(pRCtrl->systemtime,"");						//设置控制器时间
 
 	jsonkey = cJSON_GetObjectItem(json, "sysreset");	//系统重启
@@ -316,7 +319,7 @@ bool jsonstrRCtrlReader(char* jsonstr, int len, UINT8 *pstuRCtrl)
 	jsonkey = cJSON_GetObjectItem(json, "hwctrlmonequipreset");
 	if(jsonkey!=0)	
 	{
-		if(jsonkey->type==cJSON_String)
+		if(jsonkey->type==cJSON_String && strcmp(jsonkey->valuestring,"")!=0)
 			pRCtrl->hwctrlmonequipreset=atoi(jsonkey->valuestring);
 		else if(jsonkey->type==cJSON_Int)
 			pRCtrl->hwctrlmonequipreset=jsonkey->valueint;
@@ -325,7 +328,7 @@ bool jsonstrRCtrlReader(char* jsonstr, int len, UINT8 *pstuRCtrl)
 	jsonkey = cJSON_GetObjectItem(json, "hwsetacsuppervoltlimit");
 	if(jsonkey!=0)
 	{
-		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwSetAcsUpperVoltLimit) 
+		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwSetAcsUpperVoltLimit && strcmp(jsonkey->valuestring,"")!=0) 
 			pRCtrl->hwsetacsuppervoltlimit=atoi(jsonkey->valuestring);	
 		else if(jsonkey->type==cJSON_Int && jsonkey->valueint!=atoi(hwDev->HUAWEIDevValue.strhwSetAcsUpperVoltLimit.c_str()))
 			pRCtrl->hwsetacsuppervoltlimit=jsonkey->valueint;	
@@ -334,7 +337,7 @@ bool jsonstrRCtrlReader(char* jsonstr, int len, UINT8 *pstuRCtrl)
 	jsonkey = cJSON_GetObjectItem(json, "hwsetacslowervoltlimit");
 	if(jsonkey!=0)
 	{
-		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwSetAcsLowerVoltLimit) 
+		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwSetAcsLowerVoltLimit && strcmp(jsonkey->valuestring,"")!=0) 
 			pRCtrl->hwsetacslowervoltlimit=atoi(jsonkey->valuestring);	
 		else if(jsonkey->type==cJSON_Int && jsonkey->valueint!=atoi(hwDev->HUAWEIDevValue.strhwSetAcsLowerVoltLimit.c_str()))
 			pRCtrl->hwsetacslowervoltlimit=jsonkey->valueint;	
@@ -343,7 +346,7 @@ bool jsonstrRCtrlReader(char* jsonstr, int len, UINT8 *pstuRCtrl)
 	jsonkey = cJSON_GetObjectItem(json, "hwsetdcsuppervoltlimit");
 	if(jsonkey!=0)
 	{
-		if(jsonkey->type==cJSON_String && atoi(jsonkey->valuestring)!=atoi(hwDev->HUAWEIDevValue.strhwSetDcsUpperVoltLimit.c_str()))
+		if(jsonkey->type==cJSON_String && atoi(jsonkey->valuestring)!=atoi(hwDev->HUAWEIDevValue.strhwSetDcsUpperVoltLimit.c_str()) && strcmp(jsonkey->valuestring,"")!=0)
 			pRCtrl->hwsetdcsuppervoltlimit=atoi(jsonkey->valuestring);	
 		else if(jsonkey->type==cJSON_Int && jsonkey->valueint!=atoi(hwDev->HUAWEIDevValue.strhwSetDcsUpperVoltLimit.c_str())) 
 			pRCtrl->hwsetdcsuppervoltlimit=jsonkey->valueint;	
@@ -352,7 +355,7 @@ bool jsonstrRCtrlReader(char* jsonstr, int len, UINT8 *pstuRCtrl)
 	jsonkey = cJSON_GetObjectItem(json, "hwsetdcslowervoltlimit");
 	if(jsonkey!=0)
 	{
-		if(jsonkey->type==cJSON_String && atoi(jsonkey->valuestring)!=atoi(hwDev->HUAWEIDevValue.strhwSetDcsLowerVoltLimit.c_str()))
+		if(jsonkey->type==cJSON_String && atoi(jsonkey->valuestring)!=atoi(hwDev->HUAWEIDevValue.strhwSetDcsLowerVoltLimit.c_str()) && strcmp(jsonkey->valuestring,"")!=0)
 			pRCtrl->hwsetdcslowervoltlimit=atoi(jsonkey->valuestring);	
 		else if(jsonkey->type==cJSON_Int && jsonkey->valueint!=atoi(hwDev->HUAWEIDevValue.strhwSetDcsLowerVoltLimit.c_str())) 
 			pRCtrl->hwsetdcslowervoltlimit=jsonkey->valueint;	
@@ -361,7 +364,7 @@ bool jsonstrRCtrlReader(char* jsonstr, int len, UINT8 *pstuRCtrl)
 	jsonkey = cJSON_GetObjectItem(json, "hwsetenvtempupperlimit");
 	if(jsonkey!=0)
 	{
-		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwSetEnvTempUpperLimit[0]) 
+		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwSetEnvTempUpperLimit[0] && strcmp(jsonkey->valuestring,"")!=0) 
 			pRCtrl->hwsetenvtempupperlimit[0]=atoi(jsonkey->valuestring);	
 		else if(jsonkey->type==cJSON_Int && jsonkey->valueint!=atoi(hwDev->HUAWEIDevValue.strhwSetEnvTempUpperLimit[0].c_str())) 
 			pRCtrl->hwsetenvtempupperlimit[0]=jsonkey->valueint;	
@@ -370,7 +373,7 @@ bool jsonstrRCtrlReader(char* jsonstr, int len, UINT8 *pstuRCtrl)
 	jsonkey = cJSON_GetObjectItem(json, "hwsetenvtempupperlimit2");
 	if(jsonkey!=0)
 	{
-		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwSetEnvTempUpperLimit[1]) 
+		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwSetEnvTempUpperLimit[1] && strcmp(jsonkey->valuestring,"")!=0) 
 			pRCtrl->hwsetenvtempupperlimit[1]=atoi(jsonkey->valuestring);	
 		else if(jsonkey->type==cJSON_Int && jsonkey->valueint!=atoi(hwDev->HUAWEIDevValue.strhwSetEnvTempUpperLimit[1].c_str())) 
 			pRCtrl->hwsetenvtempupperlimit[1]=jsonkey->valueint;	
@@ -379,16 +382,22 @@ bool jsonstrRCtrlReader(char* jsonstr, int len, UINT8 *pstuRCtrl)
 	jsonkey = cJSON_GetObjectItem(json, "hwsetenvtemplowerlimit");
 	if(jsonkey!=0)
 	{
-		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwSetEnvTempLowerLimit[0]) 
+		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwSetEnvTempLowerLimit[0] && strcmp(jsonkey->valuestring,"")!=0)
+{
+printf("aaa _%s_\r\n",jsonkey->valuestring);
 			pRCtrl->hwsetenvtemplowerlimit[0]=atoi(jsonkey->valuestring);	
+}
 		else if(jsonkey->type==cJSON_Int && jsonkey->valueint!=atoi(hwDev->HUAWEIDevValue.strhwSetEnvTempLowerLimit[0].c_str())) 
+{
+printf("bbb _%d_\r\n",jsonkey->valueint);
 			pRCtrl->hwsetenvtemplowerlimit[0]=jsonkey->valueint;	
+}
 	}
 	//环境温度告警下限255:保持；-20-20（有效）；-20（缺省值）
 	jsonkey = cJSON_GetObjectItem(json, "hwsetenvtemplowerlimit2");
 	if(jsonkey!=0)
 	{
-		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwSetEnvTempLowerLimit[1]) 
+		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwSetEnvTempLowerLimit[1] && strcmp(jsonkey->valuestring,"")!=0) 
 			pRCtrl->hwsetenvtemplowerlimit[1]=atoi(jsonkey->valuestring);	
 		else if(jsonkey->type==cJSON_Int && jsonkey->valueint!=atoi(hwDev->HUAWEIDevValue.strhwSetEnvTempLowerLimit[1].c_str())) 
 			pRCtrl->hwsetenvtemplowerlimit[1]=jsonkey->valueint;	
@@ -397,7 +406,7 @@ bool jsonstrRCtrlReader(char* jsonstr, int len, UINT8 *pstuRCtrl)
 	jsonkey = cJSON_GetObjectItem(json, "hwsetenvhumidityupperlimit");
 	if(jsonkey!=0)
 	{
-		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwSetEnvHumidityUpperLimit[0]) 
+		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwSetEnvHumidityUpperLimit[0] && strcmp(jsonkey->valuestring,"")!=0) 
 			pRCtrl->hwsetenvhumidityupperlimit[0]=atoi(jsonkey->valuestring);	
 		else if(jsonkey->type==cJSON_Int && jsonkey->valueint!=atoi(hwDev->HUAWEIDevValue.strhwSetEnvHumidityUpperLimit[0].c_str())) 
 			pRCtrl->hwsetenvhumidityupperlimit[0]=jsonkey->valueint;	
@@ -406,7 +415,7 @@ bool jsonstrRCtrlReader(char* jsonstr, int len, UINT8 *pstuRCtrl)
 	jsonkey = cJSON_GetObjectItem(json, "hwsetenvhumidityupperlimit2");
 	if(jsonkey!=0)
 	{
-		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwSetEnvHumidityUpperLimit[1]) 
+		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwSetEnvHumidityUpperLimit[1] && strcmp(jsonkey->valuestring,"")!=0) 
 			pRCtrl->hwsetenvhumidityupperlimit[1]=atoi(jsonkey->valuestring);	
 		else if(jsonkey->type==cJSON_Int && jsonkey->valueint!=atoi(hwDev->HUAWEIDevValue.strhwSetEnvHumidityUpperLimit[1].c_str())) 
 			pRCtrl->hwsetenvhumidityupperlimit[1]=jsonkey->valueint;	
@@ -415,7 +424,7 @@ bool jsonstrRCtrlReader(char* jsonstr, int len, UINT8 *pstuRCtrl)
 	jsonkey = cJSON_GetObjectItem(json, "hwsetenvhumiditylowerlimit");
 	if(jsonkey!=0)
 	{
-		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwSetEnvHumidityLowerLimit[0]) 
+		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwSetEnvHumidityLowerLimit[0] && strcmp(jsonkey->valuestring,"")!=0) 
 			pRCtrl->hwsetenvhumiditylowerlimit[0]=atoi(jsonkey->valuestring);	
 		else if(jsonkey->type==cJSON_Int && jsonkey->valueint!=atoi(hwDev->HUAWEIDevValue.strhwSetEnvHumidityLowerLimit[0].c_str())) 
 			pRCtrl->hwsetenvhumiditylowerlimit[0]=jsonkey->valueint;	
@@ -424,7 +433,7 @@ bool jsonstrRCtrlReader(char* jsonstr, int len, UINT8 *pstuRCtrl)
 	jsonkey = cJSON_GetObjectItem(json, "hwsetenvhumiditylowerlimit2");
 	if(jsonkey!=0)
 	{
-		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwSetEnvHumidityLowerLimit[1]) 
+		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwSetEnvHumidityLowerLimit[1] && strcmp(jsonkey->valuestring,"")!=0) 
 			pRCtrl->hwsetenvhumiditylowerlimit[1]=atoi(jsonkey->valuestring);	
 		else if(jsonkey->type==cJSON_Int && jsonkey->valueint!=atoi(hwDev->HUAWEIDevValue.strhwSetEnvHumidityLowerLimit[1].c_str())) 
 			pRCtrl->hwsetenvhumiditylowerlimit[1]=jsonkey->valueint;	
@@ -433,7 +442,7 @@ bool jsonstrRCtrlReader(char* jsonstr, int len, UINT8 *pstuRCtrl)
 	jsonkey = cJSON_GetObjectItem(json, "hwcoolingdevicesmode");
 	if(jsonkey!=0)
 	{
-		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwCoolingDevicesMode) 
+		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwCoolingDevicesMode && strcmp(jsonkey->valuestring,"")!=0) 
 			pRCtrl->hwcoolingdevicesmode=atoi(jsonkey->valuestring);	
 		else if(jsonkey->type==cJSON_Int && jsonkey->valueint!=atoi(hwDev->HUAWEIDevValue.strhwCoolingDevicesMode.c_str())) 
 			pRCtrl->hwcoolingdevicesmode=jsonkey->valueint;	
@@ -442,7 +451,7 @@ bool jsonstrRCtrlReader(char* jsonstr, int len, UINT8 *pstuRCtrl)
 	jsonkey = cJSON_GetObjectItem(json, "hwdcairpowerontemppoint");
 	if(jsonkey!=0)
 	{
-		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwDcAirPowerOnTempPoint[0]) 
+		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwDcAirPowerOnTempPoint[0] && strcmp(jsonkey->valuestring,"")!=0) 
 			pRCtrl->hwdcairpowerontemppoint[0]=atoi(jsonkey->valuestring);	
 		else if(jsonkey->type==cJSON_Int && jsonkey->valueint!=atoi(hwDev->HUAWEIDevValue.strhwDcAirPowerOnTempPoint[0].c_str())) 
 			pRCtrl->hwdcairpowerontemppoint[0]=jsonkey->valueint;	
@@ -452,7 +461,7 @@ bool jsonstrRCtrlReader(char* jsonstr, int len, UINT8 *pstuRCtrl)
 	jsonkey = cJSON_GetObjectItem(json, "hwdcairpowerontemppoint2");
 	if(jsonkey!=0)
 	{
-		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwDcAirPowerOnTempPoint[1]) 
+		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwDcAirPowerOnTempPoint[1] && strcmp(jsonkey->valuestring,"")!=0) 
 			pRCtrl->hwdcairpowerontemppoint[1]=atoi(jsonkey->valuestring);	
 		else if(jsonkey->type==cJSON_Int && jsonkey->valueint!=atoi(hwDev->HUAWEIDevValue.strhwDcAirPowerOnTempPoint[1].c_str())) 
 			pRCtrl->hwdcairpowerontemppoint[1]=jsonkey->valueint;	
@@ -461,7 +470,7 @@ bool jsonstrRCtrlReader(char* jsonstr, int len, UINT8 *pstuRCtrl)
 	jsonkey = cJSON_GetObjectItem(json, "hwdcairpowerofftemppoint");
 	if(jsonkey!=0)
 	{
-		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwDcAirPowerOffTempPoint[0]) 
+		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwDcAirPowerOffTempPoint[0] && strcmp(jsonkey->valuestring,"")!=0) 
 			pRCtrl->hwdcairpowerofftemppoint[0]=atoi(jsonkey->valuestring);	
 		else if(jsonkey->type==cJSON_Int && jsonkey->valueint!=atoi(hwDev->HUAWEIDevValue.strhwDcAirPowerOffTempPoint[0].c_str())) 
 			pRCtrl->hwdcairpowerofftemppoint[0]=jsonkey->valueint;	
@@ -470,7 +479,7 @@ bool jsonstrRCtrlReader(char* jsonstr, int len, UINT8 *pstuRCtrl)
 	jsonkey = cJSON_GetObjectItem(json, "hwdcairpowerofftemppoint2");
 	if(jsonkey!=0)
 	{
-		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwDcAirPowerOffTempPoint[1]) 
+		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=hwDev->HUAWEIDevValue.strhwDcAirPowerOffTempPoint[1] && strcmp(jsonkey->valuestring,"")!=0) 
 			pRCtrl->hwdcairpowerofftemppoint[1]=atoi(jsonkey->valuestring);	
 		else if(jsonkey->type==cJSON_Int && jsonkey->valueint!=atoi(hwDev->HUAWEIDevValue.strhwDcAirPowerOffTempPoint[1].c_str())) 
 			pRCtrl->hwdcairpowerofftemppoint[1]=jsonkey->valueint;	
@@ -485,6 +494,43 @@ bool jsonstrRCtrlReader(char* jsonstr, int len, UINT8 *pstuRCtrl)
 	if(jsonkey!=0) 
 		pRCtrl->hwctrlsmokereset[1] = (jsonkey->type==cJSON_String?atoi(jsonkey->valuestring):jsonkey->valueint);
 
+	//制冷点 255:保持；15-50（有效）；
+	jsonkey = cJSON_GetObjectItem(json, "refrigerattemp");
+	if(jsonkey!=0)
+	{
+		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=ACInfo->sysVal.refrigeratTemp && strcmp(jsonkey->valuestring,"")!=0) 
+			pRCtrl->refrigeratTemp=atoi(jsonkey->valuestring);	
+		else if(jsonkey->type==cJSON_Int && jsonkey->valueint!=atoi(ACInfo->sysVal.refrigeratTemp.c_str())) 
+			pRCtrl->refrigeratTemp=jsonkey->valueint;	
+	}
+	//制冷回差 255:保持；255:保持；1-10（有效）；
+	jsonkey = cJSON_GetObjectItem(json, "refriretdiff");
+	if(jsonkey!=0)
+	{
+		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=ACInfo->sysVal.refriRetDiff && strcmp(jsonkey->valuestring,"")!=0) 
+			pRCtrl->refriRetDiff=atoi(jsonkey->valuestring);	
+		else if(jsonkey->type==cJSON_Int && jsonkey->valueint!=atoi(ACInfo->sysVal.refriRetDiff.c_str())) 
+			pRCtrl->refriRetDiff=jsonkey->valueint;	
+	}
+	//加热点	 255:保持； 255:保持；-15-15（有效）；
+	jsonkey = cJSON_GetObjectItem(json, "heattemp");
+	if(jsonkey!=0)
+	{
+		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=ACInfo->sysVal.heatTemp && strcmp(jsonkey->valuestring,"")!=0) 
+			pRCtrl->heatTemp=atoi(jsonkey->valuestring);	
+		else if(jsonkey->type==cJSON_Int && jsonkey->valueint!=atoi(ACInfo->sysVal.heatTemp.c_str())) 
+			pRCtrl->heatTemp=jsonkey->valueint;	
+	}
+	//加热回差 255:保持；1-10（有效）；
+	jsonkey = cJSON_GetObjectItem(json, "heatretdiff");
+	if(jsonkey!=0)
+	{
+		if(jsonkey->type==cJSON_String && jsonkey->valuestring!=ACInfo->sysVal.heatRetDiff && strcmp(jsonkey->valuestring,"")!=0) 
+			pRCtrl->heatRetDiff=atoi(jsonkey->valuestring);	
+		else if(jsonkey->type==cJSON_Int && jsonkey->valueint!=atoi(ACInfo->sysVal.heatRetDiff.c_str())) 
+			pRCtrl->heatRetDiff=jsonkey->valueint;	
+	}
+	
 	//电子门锁id
 	jsonkey = cJSON_GetObjectItem(json, "cabineid");
 	if(jsonkey!=0) 
@@ -2750,6 +2796,14 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
                 if(jsonkey != NULL)
                 {
 					sprintf(value,"%s",jsonkey->valuestring);
+					if(strcmp(jsonkey->valuestring,"")==0 && pConf->StrAtlasType=="1")//atlas 如果是空值，恢复成默认值
+						sprintf(value,"admin:Huawei12#$:Huawei@SYS3");
+					else if(strcmp(jsonkey->valuestring,"")==0 && pConf->StrAtlasType=="2")	//研华
+						sprintf(value,"root:eiec2019:eiec2019");
+					else if(strcmp(jsonkey->valuestring,"")==0 && pConf->StrAtlasType=="3")	//its800
+						sprintf(value,"admin:ChangeMe12#$:ChangeMe56&*");
+					else if(strcmp(jsonkey->valuestring,"")==0 && pConf->StrAtlasType=="4")	//cpci
+						sprintf(value,"xroot:123456:");
 					if(value!=pConf->StrAtlasPasswd[i])
 					{
 						pConf->StrAtlasPasswd[i]=value;
@@ -3013,8 +3067,16 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
 				int pos=atoi(value);
 				pConf->StrDoSeq[pos-1]=value;
 				pConf->DoSeq[pos-1]=atoi(value);
+				
+				//先将原设备DO清除
+				string stmp=pConf->StrDeviceNameSeq[pos-1];
+				transform(stmp.begin(), stmp.end(), stmp.begin(), ::toupper);
+				stmp=stmp+"=";
+				Setconfig(stmp.c_str(),"");//DO映射
+
+				//设置新设备DO
 				pConf->StrDeviceNameSeq[pos-1]=keytmp;
-				string stmp=keytmp;
+				stmp=keytmp;
 				transform(stmp.begin(), stmp.end(), stmp.begin(), ::toupper);
 				stmp=stmp+"=";
 				Setconfig(stmp.c_str(),value);//DO映射
@@ -3053,7 +3115,7 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
 				{
 					pConf->StrVehPlateKey[no]=skey;
 					//sprintf(key,"VehPlate%dKey=",no+1);
-					//Setconfig(key,port.c_str());
+					//Setconfig(key,skey.c_str());
 				}
 			}
 			
@@ -3123,6 +3185,14 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
 				//Atlas密码
 				if(skey!=pConf->StrAtlasPasswd[no])
 				{
+					if(skey=="" && pConf->StrAtlasType=="1")//atlas 如果是空值，恢复成默认值
+						skey="admin:Huawei12#$:Huawei@SYS3";
+					else if(skey=="" && pConf->StrAtlasType=="2")	//研华
+						skey="root:eiec2019:eiec2019";
+					else if(skey=="" && pConf->StrAtlasType=="3")	//its800
+						skey="admin:ChangeMe12#$:ChangeMe56&*";
+					else if(skey=="" && pConf->StrAtlasType=="4")	//cpci
+						skey="xroot:123456:";
 					pConf->StrAtlasPasswd[no]=skey;
 					sprintf(key,"Atlas%dPasswd=",no+1);
 					Setconfig(key,skey.c_str());
@@ -3256,10 +3326,17 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
 			}
 			if(found==false)		//匹配不到该设备名，增加一个do
 			{
-				int pos=atoi(value);
+				int pos=atoi(value)-100;
 				pConf->StrUnWireDo[pos-1]=value;
 				pConf->StrUnWireDevName[pos-1]=keytmp;
-				string stmp=keytmp;
+				
+				//先将原设备DO清除
+				string stmp=pConf->StrUnWireDevName[pos-1];
+				transform(stmp.begin(), stmp.end(), stmp.begin(), ::toupper);
+				stmp=stmp+"=";
+				Setconfig(stmp.c_str(),"");//DO映射
+
+				stmp=keytmp;
 				transform(stmp.begin(), stmp.end(), stmp.begin(), ::toupper);
 				stmp=stmp+"=";
 				Setconfig(stmp.c_str(),value);//DO映射
@@ -3366,9 +3443,17 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
 					Setconfig(key,ip.c_str());
 				}
 				//Atlas密码
-				if(passwd!=pConf->StrAtlasPasswd[no])
+				if(skey!=pConf->StrAtlasPasswd[no])
 				{
-					pConf->StrAtlasPasswd[no]=passwd;
+					if(skey=="" && pConf->StrAtlasType=="1")//atlas 如果是空值，恢复成默认值
+						skey="admin:Huawei12#$:Huawei@SYS3";
+					else if(skey=="" && pConf->StrAtlasType=="2")	//研华
+						skey="root:eiec2019:eiec2019";
+					else if(skey=="" && pConf->StrAtlasType=="3")	//its800
+						skey="admin:ChangeMe12#$:ChangeMe56&*";
+					else if(skey=="" && pConf->StrAtlasType=="4")	//cpci
+						skey="xroot:123456:";
+					pConf->StrAtlasPasswd[no]=skey;
 					sprintf(key,"Atlas%dPasswd=",no+1);
 					Setconfig(key,passwd.c_str());
 				}
@@ -3843,7 +3928,7 @@ bool jsonStrVMCtlParamWriter(int messagetype,char *pstrVMCtl,string &mstrjson)
 	strJson = strJson + "\"memalarmvalue\":\""+ pConf->StrMemAlarmValue +"\",\n";	//内存使用率报警阈值
 	
 	strJson = strJson + "\"secsoftversion1\":\""+ getCanVersion(1) +"\",\n";	//CAN控制器版本号
-	strJson = strJson + "\"secsoftversion2\":\""+ pConf->StrsecSoftVersion[1] +"\",\n";	//副版本号
+	strJson = strJson + "\"secsoftversion2\":\""+ pConf->StrsecSoftVersion[1] +"\",\n";	//液晶屏版本号
 	strJson = strJson + "\"secsoftversion3\":\""+ pConf->StrsecSoftVersion[2] +"\",\n";	//副版本号
 	strJson = strJson + "\"softdate\":\""+ pConf->StrSoftDate +"\"\n";	//版本日期
 	
@@ -3943,7 +4028,13 @@ printf("jsonStrVMCtlParamWriterXY 开始\r\n");
 			strJson = strJson + "\"cabinetfactroy\":\"亚邦\",\n"; //机柜厂商
 			break;
 		case 11:
+			strJson = strJson + "\"cabinetfactroy\":\"艾特网\",\n"; //机柜厂商
+			break;
+		case 12:
 			strJson = strJson + "\"cabinetfactroy\":\"华软\",\n"; //机柜厂商
+			break;
+		case 13:
+			strJson = strJson + "\"cabinetfactroy\":\"利通\",\n"; //机柜厂商
 			break;
 	}
 	
@@ -4319,28 +4410,33 @@ bool jsonStrRsuWriterXY(int messagetype, string &mstrjson)
 				strJson = strJson + "},\n";
 		}
 		strJson = strJson + "],\n";
-		if(ArtcState.controler.totalAnt>0)
+		pRsu=pCArtRSU[0];
+		if(pRsu!=NULL)
 		{
-			sprintf(str,"\"antennacount\":%d,\n",ArtcState.controler.totalAnt);strJson = strJson + str; //天线数量
-			strJson = strJson + "\"antennalist\": [\n"; 	//天线头列表
-			for(j=0;j<ArtcState.controler.totalAnt;j++)
+			ArtcState=pRsu->getRsuInfo();
+			if(ArtcState.controler.linked && ArtcState.controler.totalAnt>0 && GetTickCount()-ArtcState.controler.timestamp<1*60)
 			{
-				strJson = strJson + "{\n";	
-				sprintf(str,"\"id\": \"%d\",\n", j+1);strJson += str;		//天线编号
-				sprintf(str,"\"name\": \"antenna%d\",\n", j+1);strJson += str;		//名称
-				sprintf(str,"\"status\": %d,\n", ArtcState.controler.antInfo[j].sta);strJson += str;		//38 天线i 控制状态
-				sprintf(str,"\"power\": %d,\n", ArtcState.controler.antInfo[j].power);strJson += str; //39 天线i 功率
-				sprintf(str,"\"channel\": %d\n", ArtcState.controler.antInfo[j].channel);strJson += str; //40 天线i 信道号
-				if(j==ArtcState.controler.totalAnt-1)
-					strJson = strJson + "}\n";
-				else
-					strJson = strJson + "},\n";
+				sprintf(str,"\"antennacount\":%d,\n",ArtcState.controler.totalAnt);strJson = strJson + str; //天线数量
+				strJson = strJson + "\"antennalist\": [\n"; 	//天线头列表
+				for(j=0;j<ArtcState.controler.totalAnt;j++)
+				{
+					strJson = strJson + "{\n";	
+					sprintf(str,"\"id\": \"%d\",\n", j+1);strJson += str;		//天线编号
+					sprintf(str,"\"name\": \"antenna%d\",\n", j+1);strJson += str;		//名称
+					sprintf(str,"\"status\": %d,\n", ArtcState.controler.antInfo[j].sta);strJson += str;		//38 天线i 控制状态
+					sprintf(str,"\"power\": %d,\n", ArtcState.controler.antInfo[j].power);strJson += str; //39 天线i 功率
+					sprintf(str,"\"channel\": %d\n", ArtcState.controler.antInfo[j].channel);strJson += str; //40 天线i 信道号
+					if(j==ArtcState.controler.totalAnt-1)
+						strJson = strJson + "}\n";
+					else
+						strJson = strJson + "},\n";
+				}
+				strJson = strJson + "]\n";
 			}
-			strJson = strJson + "]\n";
-		}
-		else
-		{
-			sprintf(str,"\"antennacount\":%d\n",ArtcState.controler.totalAnt);strJson = strJson + str;	//天线数量
+			else
+			{
+				sprintf(str,"\"antennacount\":%d\n",0);strJson = strJson + str;	//天线数量
+			}
 		}
 	}
 	else if(pConf->StrRSUType=="2")		//华为RSU
@@ -4851,7 +4947,7 @@ bool jsonStrSwitchStatusWriterXY(int messagetype, string &mstrjson)
 		if(pCan!=NULL)
 		{
 			sprintf(str,"\"isconnect\":%d,\n",pCan->canNode[i].isConnect); strJson = strJson + str;//连接状态
-			sprintf(str,"\"canversion\":\"%s\",\n",i+1,pCan->canNode[i].phase.version.c_str()); strJson = strJson + str;//can动力板版本号
+			sprintf(str,"\"canversion\":\"%s\",\n",pCan->canNode[i].phase.version.c_str()); strJson = strJson + str;//can动力板版本号
 			if(pCan->canNode[i].phase.vln<24.0)
 				sprintf(str,"\"status\":0,\n"); //断电
 			else 
@@ -5104,22 +5200,26 @@ bool jsonStrHWCabinetWriter(int messagetype,char *pstPam, string &mstrjson)
 			strJson = strJson + "\"hwsetenvtempupperlimit\": " + ACInfo->sysVal.highTemp + ",\n"; //环境温度告警上限
 			strJson = strJson + "\"hwsetenvtemplowerlimit\": " + ACInfo->sysVal.lowTemp + ",\n"; //环境温度告警下限
 			strJson = strJson + "\"hwsetenvhumidityupperlimit\": " + ACInfo->sysVal.highHumi + ",\n"; //环境湿度告警上限
-			strJson = strJson + "\"hwsetenvhumiditylowerlimit\": " + ACInfo->sysVal.highHumi + ",\n"; //环境湿度告警下限
+//			strJson = strJson + "\"hwsetenvhumiditylowerlimit\": " + ACInfo->sysVal.highHumi + ",\n"; //环境湿度告警下限
 			strJson = strJson + "\"in_fanstate\": " + ACInfo->runSta.interFan + ",\n"; //内风机状态
 			strJson = strJson + "\"out_fanstate\": " + ACInfo->runSta.exterFan + ",\n"; //外风机状态
 			strJson = strJson + "\"heaterstate\": " + ACInfo->runSta.heating + ",\n"; //加热器状态
 			strJson = strJson + "\"urgfanstate\": " + ACInfo->runSta.urgFan + ",\n"; //应急风机状态
 			strJson = strJson + "\"coiltemp\": " + ACInfo->sensorSta.coilTemp + ",\n"; //盘管温度
-			strJson = strJson + "\"outdoortemp\": " + ACInfo->sensorSta.outdoorTemp + ",\n"; //室外温度
+//			strJson = strJson + "\"outdoortemp\": " + ACInfo->sensorSta.outdoorTemp + ",\n"; //室外温度
 			strJson = strJson + "\"condtemp\": " + ACInfo->sensorSta.condTemp + ",\n"; //冷凝温度
-			strJson = strJson + "\"indoortemp\": " + ACInfo->sensorSta.indoorTemp + ",\n"; //室内温度
+//			strJson = strJson + "\"indoortemp\": " + ACInfo->sensorSta.indoorTemp + ",\n"; //室内温度
 			strJson = strJson + "\"airouttemp\": " + ACInfo->sensorSta.airOutTemp + ",\n"; //排气温度
-			strJson = strJson + "\"humity\": " + ACInfo->sensorSta.humity + ",\n"; //室内湿度
+//			strJson = strJson + "\"humity\": " + ACInfo->sensorSta.humity + ",\n"; //室内湿度
 			strJson = strJson + "\"current\": " + ACInfo->sensorSta.current + ",\n"; //电流
-			strJson = strJson + "\"acvoltage\": " + ACInfo->sensorSta.acVoltage + ",\n"; //交流电压
-			strJson = strJson + "\"dcvoltage\": " + ACInfo->sensorSta.dcVoltage + ",\n"; //直流电压
+//			strJson = strJson + "\"acvoltage\": " + ACInfo->sensorSta.acVoltage + ",\n"; //交流电压
+//			strJson = strJson + "\"dcvoltage\": " + ACInfo->sensorSta.dcVoltage + ",\n"; //直流电压
 			strJson = strJson + "\"hwenvtempalarmtraps\": " + ACInfo->warnings.highTemp + ",\n"; //设备柜环境温度告警 239
 			strJson = strJson + "\"hwenvhumialarmresumetraps\": " + ACInfo->warnings.highHumi + ",\n";	//设备柜环境湿度告警 240	
+			strJson = strJson + "\"refrigerattemp\": " + ACInfo->sysVal.refrigeratTemp + ",\n"; //制冷点
+			strJson = strJson + "\"refriretdiff\": " + ACInfo->sysVal.refriRetDiff + ",\n"; //制冷回差
+			strJson = strJson + "\"heattemp\": " + ACInfo->sysVal.heatTemp + ",\n"; //加热点
+			strJson = strJson + "\"heatretdiff\": " + ACInfo->sysVal.heatRetDiff + ",\n"; //加热回差
 		} 
 	
 		strJson = strJson + "\"hwdooralarmtraps\": " + pCab->HUAWEIDevAlarm.hwDoorAlarmTraps + ",\n";	//门禁告警(设备柜) 241
@@ -5181,6 +5281,10 @@ void SetjsonIPSwitchStatusStr(int messagetype,string &mstrjson)
 				{sprintf(str,"\"factoryname\":\"新华三\",\n"); strJson = strJson + str;}//生产商
 			else if(pConf->StrIPSwitchType == "2" && i==1 && pConf->StrCabinetType=="9")	//广深沿江第一个是新华三，第二个是华为
 				{sprintf(str,"\"factoryname\":\"华为\",\n"); strJson = strJson + str;}//生产商
+			else if(pConf->StrIPSwitchType == "2")	//新华三
+				{sprintf(str,"\"factoryname\":\"新华三\",\n"); strJson = strJson + str;}//生产商
+			else if(pConf->StrIPSwitchType == "3")	//三旺
+				{sprintf(str,"\"factoryname\":\"三旺\",\n"); strJson = strJson + str;}//生产商
 				
 			if(pCIPS->HUAWEIDevValue.hwswitchEntityLinked && GetTickCount()-pCIPS->HUAWEIDevValue.hwswitchEntityTimeStamp>10*60) //10分钟没有更新数据，恢复默认
 			{	
@@ -5321,6 +5425,7 @@ void SetjsonAtlasStatusStr(int messagetype,string &mstrjson)
 	static int recordno=0;
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
 	CsshClient *pCAtlas;
+	CsshDev *pCsshDev;
 		
     time_t nSeconds;
     struct tm * pTM;
@@ -5345,17 +5450,54 @@ void SetjsonAtlasStatusStr(int messagetype,string &mstrjson)
 	atlascnt=atoi(pConf->StrAtlasCount.c_str()); 
 	for(i=0;i<atlascnt;i++)
 	{
-		pCAtlas=pCsshClient[i];
-		if(pCAtlas!=NULL && pCAtlas->stuAtlasState.Linked && GetTickCount()-pCAtlas->stuAtlasState.TimeStamp>10*60) //10分钟不更新，恢复默认
-			init_atlas_struct(pCAtlas);
+   		switch(atoi(pConf->StrAtlasType.c_str()))
+		{
+			case 1:		//atlas500
+			case 2: 	//研华
+				pCAtlas=pCsshClient[i];
+				if(pCAtlas!=NULL && pCAtlas->stuAtlasState.Linked && GetTickCount()-pCAtlas->stuAtlasState.TimeStamp>10*60) //10分钟不更新，恢复默认
+					init_atlas_struct(pCAtlas);
+				break;
+			case 3: 	//its800
+				pCsshDev=pCits800[i];
+				if(pCsshDev!=NULL && pCsshDev->stuAtlasState.Linked && GetTickCount()-pCsshDev->stuAtlasState.TimeStamp>10*60) //10分钟不更新，恢复默认
+					init_sshdev_struct(pCsshDev);
+				break;
+			case 4: 	//cpci
+				pCsshDev=pCcpci[i];
+				if(pCsshDev!=NULL && pCsshDev->stuAtlasState.Linked && GetTickCount()-pCsshDev->stuAtlasState.TimeStamp>10*60) //10分钟不更新，恢复默认
+					init_sshdev_struct(pCsshDev);
+				break;
+   		}
+			
 	}	
 	for(i=0;i<atlascnt;i++)
 	{
-		pCAtlas=pCsshClient[i];
-		if(pCAtlas!=NULL)
-			strJson = strJson + pCAtlas->stuAtlasState.stratlasdata;	
-		if(i<atlascnt-1)
-			strJson = strJson + ",";	
+   		switch(atoi(pConf->StrAtlasType.c_str()))
+		{
+			case 1:		//atlas500
+			case 2: 	//研华
+				pCAtlas=pCsshClient[i];
+				if(pCAtlas!=NULL)
+					strJson = strJson + pCAtlas->stuAtlasState.stratlasdata;	
+				if(i<atlascnt-1)
+					strJson = strJson + ",";	
+				break;
+			case 3: 	//its800
+				pCsshDev=pCits800[i];
+				if(pCsshDev!=NULL)
+					strJson = strJson + pCsshDev->stuAtlasState.stratlasdata;	
+				if(i<atlascnt-1)
+					strJson = strJson + ",";	
+				break;
+			case 4: 	//cpci
+				pCsshDev=pCcpci[i];
+				if(pCsshDev!=NULL)
+					strJson = strJson + pCsshDev->stuAtlasState.stratlasdata;	
+				if(i<atlascnt-1)
+					strJson = strJson + ",";	
+				break;
+		}
 	}
 	strJson +=	"]\n";
 	strJson +=	"}\n";

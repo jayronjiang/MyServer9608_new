@@ -27,6 +27,7 @@
 #include "moninterface.h"
 #include "camera.h"
 #include "http.h"
+#include "CsshDev.h"
 
 using namespace std;//引入整个名空间
 
@@ -53,6 +54,7 @@ void canNodeCallback(void *p,void *data,int len);
 void MoninterCallback(Moninterface::State_S state,void *userdata);
 void initAirConditionInfo(AirCondition::AirInfo_S *Info);
 void CameraCallback(Camera::MsgType_EN msg,const char *jpgName,void *userdata);
+void init_sshdev_struct(CsshDev *psshdev);
 //void HttpCallback(Http *http, Http::Value_S value, void *userdata);
 
 #endif

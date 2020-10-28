@@ -35,6 +35,8 @@ IPCam *pCVehplate900[VEHPLATE900_NUM] = {NULL,NULL,NULL};		//900万全景摄像�
 Camera *pCCam[CAM_NUM]= {NULL,NULL,NULL,NULL}	;						//机柜监控摄像头
 tsPanel *pCPanel = NULL;	//液晶屏对象
 CsshClient *pCsshClient[ATLAS_NUM] = {NULL,NULL};			//ATLAS对象
+CsshDev *pCits800[ATLAS_NUM] = {NULL,NULL};					//its800
+CsshDev *pCcpci[ATLAS_NUM] = {NULL,NULL};					//cpci
 CANNode *pCOsCan = NULL;		//Can对象
 SpdClient *pCSpdClent = NULL;		//SPD防雷器
 Lock *pCLock[LOCK_NUM] = {NULL,NULL,NULL,NULL};					//生久门锁对象
@@ -128,39 +130,13 @@ int main(void)
 	if(pConf->StrCabinetType=="13") //利通机柜
 	{
 		//温湿度：传参为485地址 
-/*		for(i=0;i<TEMHUMI_NUM;i++)
-		{
-			uint8_t addr=(i==0?TEMHUMI_ADDRESS_1:TEMHUMI_ADDRESS_2);
-			pCTemHumi[i] = new TemHumi(addr);
-			pCTemHumi[i]->setCallback(TemHumiCallback, pCTemHumi[i]);
-		}*/
 		pCTemHumi = new TemHumi(0x7);
 		pCTemHumi->setCallback(TemHumiCallback, pCTemHumi);
 
 		/* 空调：传参为485地址 */
-/*		for(i=0;i<AIRCON_NUM;i++)
-		{
-		    pCAirCondition[i]=new AirCondition(0x6);
-		    pCAirCondition[i]->setCallback(AirConditionCallback,NULL);
-		    pCAirCondition[i]->config(AirCondition::Cfg_Refrigeration,20);
-		}*/
 	    pCAirCondition=new AirCondition(0x6); 
 	    pCAirCondition->setCallback(AirConditionCallback,NULL);
-	    pCAirCondition->config(AirCondition::Cfg_Refrigeration,20);
 		initAirConditionInfo(&AirCondInfo);
-
-		/* 工控机监控:传参为目标设备IP地址 */
-//		Moninter = new Moninterface(pConf->StrAtlasIP[0].c_str());	// ("128.8.82.160");
-//		Moninter->setCallback(MoninterCallback,NULL);
-
-		/* 摄像头，传参为摄像头IP地址以及 IMA_SAVE_PATH_ROOT 下图片文件夹名 */
-		for(i=0;i<CAM_NUM;i++)
-		{
-			sprintf(dir,"%d",i); 
-			string url="http://"+pConf->StrCAMIP[i]+"/onvif-http/snapshot?Profile_1";
-			pCCam[i]=new Camera(url,dir);
-			pCCam[i]->setCallback(CameraCallback, pCCam[i]);
-		}
 
 		sleep(2);
 		//IO
@@ -168,6 +144,15 @@ int main(void)
 	    pCIOdev->setCallback(IODevCallback,NULL);
 	}
 
+	/* 机柜监控摄像头，传参为摄像头IP地址以及 IMA_SAVE_PATH_ROOT 下图片文件夹名 */
+	for(i=0;i<CAM_NUM;i++)
+	{
+		sprintf(dir,"%d",i); 
+		string url="http://"+pConf->StrCAMIP[i]+"/onvif-http/snapshot?Profile_1";
+		pCCam[i]=new Camera(url,dir);
+		pCCam[i]->setCallback(CameraCallback, pCCam[i]);
+	}
+	
 	for(i=0;i<LOCK_NUM;i++)
 	{
 		if(pConf->StrLockType=="1")
@@ -204,7 +189,7 @@ int main(void)
    	{
 		pCswitchClient[i] = new CswitchClient();
 		initHUAWEIswitchEntity(pCswitchClient[i]);
-		pCswitchClient[i]->IntIPSwitchType = pConf->IntIPSwitchType;//交换机类型  1：华为,2：华三
+		pCswitchClient[i]->IntIPSwitchType = pConf->IntIPSwitchType;//交换机类型  1：华为,2：华三；3：三旺 128.8.82.232 public  
 		pCswitchClient[i]->StrIPSwitchCount = pConf->StrIPSwitchCount; //交换机数量
 		pCswitchClient[i]->StrIPSwitchIP[0] = pConf->StrIPSwitchIP[i];
 		pCswitchClient[i]->StrIPSwitchGetPasswd[0] = pConf->StrIPSwitchSetPasswd[i];
@@ -251,14 +236,47 @@ printf("start rsu %s\r\n",pConf->StrIP.c_str());
 	    pCVehplate900[i]->setCallback(IPCamCallback,pCVehplate900[i]);
    	}
 
+
+	/* 工控机监控:传参为目标设备IP地址 */
+//	Moninter = new Moninterface(pConf->StrAtlasIP[0].c_str());	// ("128.8.82.160");
+//	Moninter->setCallback(MoninterCallback,NULL);
 	//Atlas
    	for(i=0;i<ATLAS_NUM;i++)
    	{
+   		//先产生各种对象，避免访问空指针
 		pCsshClient[i] = new CsshClient();
-		pCsshClient[i]->mStrAtlasIP = pConf->StrAtlasIP[i];
+		pCsshClient[i]->mStrAtlasIP = pConf->StrAtlasIP[i]; 		//"128.8.82.225"
 		pCsshClient[i]->mStrAtlasPasswd = pConf->StrAtlasPasswd[i];
-		if(i<atoi(pConf->StrAtlasCount.c_str()))
-			pCsshClient[i]->Start();
+		pCsshClient[i]->mStrAtlasType = pConf->StrAtlasType ;
+		
+		pCits800[i] = new CsshDev();
+		pCits800[i]->mStrAtlasIP = pConf->StrAtlasIP[i];	//"128.8.82.30";
+		pCits800[i]->mStrAtlasPasswd = pConf->StrAtlasPasswd[i];	//"admin:ChangeMe12#$:ChangeMe56&*";
+		pCits800[i]->devType = SSH_DEV_ITS800;
+		
+		pCcpci[i] = new CsshDev();
+		pCcpci[i]->mStrAtlasIP = pConf->StrAtlasIP[i];		//"128.8.82.160";
+		pCcpci[i]->mStrAtlasPasswd = pConf->StrAtlasPasswd[i];	//"xroot:123456:";
+		pCcpci[i]->devType = SSH_DEV_CPCI;
+
+		//根据不同对象启动线程
+   		switch(atoi(pConf->StrAtlasType.c_str()))
+		{
+		case 1:		//atlas500
+		case 2: 	//研华
+			if(i<atoi(pConf->StrAtlasCount.c_str()))
+				pCsshClient[i]->Start();
+			break;
+		case 3:		//its800
+			if(i<atoi(pConf->StrAtlasCount.c_str()))
+				pCits800[i]->Start();
+			break;
+		case 4: 	//cpci
+			if(i<atoi(pConf->StrAtlasCount.c_str()))
+				pCcpci[i]->Start();
+			break;
+   		}
+
    	}
 
 	//初始化动力控制板

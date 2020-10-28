@@ -11,6 +11,7 @@
 #include "ipcam.h"
 #include "rsu.h"
 #include "CsshClient.h"
+#include "CsshDev.h"
 
 using namespace std;//引入整个名空间
 

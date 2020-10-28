@@ -43,6 +43,7 @@ LIBS          =  $(SUBLIBS)  ./alib/CsshClient.a \
 							 ./alib/libuart.a \
 							 ./alib/libmoninterface.a \
 							 ./alib/libtcp.a \
+							 ./alib/libcsshdev.a \
 							 ./libiconv/lib/*.a \
 							 -L./goahead/bin -lgo -ldl  -lrt -lpthread 
 

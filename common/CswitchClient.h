@@ -40,7 +40,7 @@ public:
 	   
 	   
 	   int IntFireWareType = 1; //防火墙类型 1：华为,2：迪普，3：深信服
-       int IntIPSwitchType = 1; //交换机类型  1：华为,2：华三
+       int IntIPSwitchType = 1; //交换机类型  1：华为,2：华三 3: 三旺(示范工程) 2020-10-22新增
        string StrFireWareCount;	//防火墙数量
        string StrFireWareIP[FIREWARE_NUM];         //防火墙IP
        string StrFireWareGetPasswd[FIREWARE_NUM];  //防火墙get密码

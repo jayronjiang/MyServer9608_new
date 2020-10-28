@@ -42,6 +42,7 @@ public:
 	   int init_atlas_struct(void);
 	   string mStrAtlasIP ;//AtlasIP
        string mStrAtlasPasswd ;//Atlas密码
+	   string mStrAtlasType; 
 	   int CHANNEL_READ_TIMEOUT ;
 	   ATLAS_STATE stuAtlasState; //Atlas状态
 //	   string mStrAtlasType ;//工控机类型 "1":Atlas;"2":研华工控机

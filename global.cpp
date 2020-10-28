@@ -25,6 +25,8 @@ extern VMCONTROL_CONFIG VMCtl_Config;	//控制器配置信息结构体
 extern CANNode *pCOsCan;		//Can对象
 extern CfirewallClient *pCfirewallClient[FIREWARE_NUM];
 extern CswitchClient *pCswitchClient[IPSWITCH_NUM];
+extern CsshDev *pCits800[ATLAS_NUM];					//its800
+extern CsshDev *pCcpci[ATLAS_NUM];					//cpci
 extern Artc *pCArtRSU[RSUCTL_NUM];;					//RSU对象
 extern Huawei *pCHWRSU[RSUCTL_NUM];;					//RSU对象
 extern IPCam *pCVehplate[VEHPLATE_NUM];
@@ -199,7 +201,19 @@ uint16_t linkStGetFromDevice(uint8_t seq)
 		_pos=strDeviceName.find("_");
 		
 		num=atoi(strDeviceName.substr(5,_pos-5).c_str());
-		linkSt=pCsshClient[num-1]->stuAtlasState.Linked;
+   		switch(atoi(pConf->StrAtlasType.c_str()))
+		{
+			case 1:		//atlas500
+			case 2: 	//研华
+				linkSt=pCsshClient[num-1]->stuAtlasState.Linked; 
+				break;
+			case 3:
+				linkSt=pCits800[num-1]->stuAtlasState.Linked; 
+				break;
+			case 4:
+				linkSt=pCcpci[num-1]->stuAtlasState.Linked; 
+				break;
+   		}
 		linkSt=((linkSt==0)?2:linkSt);	//离线代码转换
 		DEBUG_PRINTF("atlas %s linkSt=%d\r\n",strDeviceName.c_str(),linkSt);
 	}

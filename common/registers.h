@@ -473,6 +473,11 @@ typedef struct Remote_Control_struct	//
 	//接地电阻
 	UINT16 spdres_id;				// 更改id地址	// 0x12
 	UINT16 spdres_alarm_value;		// 报警值修改	// 0x13
+	//利通机柜空调
+	INT16 refrigeratTemp;		//制冷点	 255:保持；15-50（有效）；			
+	INT16 refriRetDiff;		//制冷回差		255:保持；1-10（有效）；		
+	INT16 heatTemp; 	//加热点			255:保持；-15-15（有效）；		
+	INT16 heatRetDiff;		//加热回差		255:保持；1-10（有效）；		
 }REMOTE_CONTROL;
 
 #pragma pack(pop)

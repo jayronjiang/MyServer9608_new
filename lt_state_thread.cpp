@@ -171,6 +171,10 @@ WriteLog(infobuf);
 	{
 		pSta->strSoftRate=strinfo;
 	}
+	float softRate=atof(pSta->strSoftRate.c_str())+1;
+	softRate=softRate<99?softRate+1:softRate;
+	sprintf(value,"%.2f",softRate);
+	pSta->strSoftRate=value;
 sprintf(strmsg,"主程序占用率:%s%\n",pSta->strSoftRate.c_str());
 WriteLog(strmsg);
 	printf("主程序占用率:%s%\r\n",pSta->strSoftRate.c_str());
@@ -245,15 +249,6 @@ WriteLog(strmsg);
     ReadLTInfo(infobuf);
 WriteLog(infobuf);
     strinfo = infobuf;
-/*    strinfo = strinfo + " ";
-    if(getstrvaule2(strinfo,8,4) == 8)
-       pSta->strcpuRate = strinfo ;
-    else
-       pSta->strcpuRate = "" ;
-    if(pSta->strcpuRate.size() > 4)
-    {
-       pSta->strcpuRate = pSta->strcpuRate.substr(0,pSta->strcpuRate.size() - 4) ;
-    }*/
 	int poscpuid=strinfo.find("% idle");
 	int poscpuni=strinfo.find("nic ");
 	if(poscpuid>0 && poscpuni>0)
@@ -263,6 +258,7 @@ WriteLog(infobuf);
 
     float fcpuRate = atof(pSta->strcpuRate.c_str());
     fcpuRate = 100.0 - fcpuRate;
+	fcpuRate = fcpuRate<99?fcpuRate+1:fcpuRate;
 	sprintf(value,"%.2f", fcpuRate);
     pSta->strcpuRate = value;
 sprintf(strmsg,"CPU占用率:%s%\n",pSta->strcpuRate.c_str());
@@ -346,7 +342,7 @@ WriteLog(infobuf);
 	string verdate=infobuf;
 	int pos1=verdate.find("Aug 14 09:24:07 CST 2019");
 	int pos2=verdate.find("Aug 18 16:33:37 CST 2020");
-	int pos3=verdate.find("Feb 12 10:25:01 CST 2020");
+	int pos3=verdate.find("Sep 30 03:26:33 PDT 2020");
 	int pos4=verdate.find("Mar 2 17:49:26 CST 2020");
 printf("内核1:pos1=%d,pos2=%d,%s\r\n",pos1,pos2,verdate.c_str());
 
@@ -364,13 +360,20 @@ printf("内核1:pos1=%d,pos2=%d,%s\r\n",pos1,pos2,verdate.c_str());
     else if(pos3>0)
     {
     	pSta->strzimageVer = "V1.2";
-    	pSta->strzimageDate = "2020-02-12 10:25:01";
+    	pSta->strzimageDate = "2020-09-30 03:26:33";
     }
     else if(pos4>0)
     {
     	pSta->strzimageVer = "V1.3";
     	pSta->strzimageDate = "2020-03-02 17:49:26";
     }
+	else
+	{
+		pSta->strzimageVer = "";
+		int posHead=verdate.find("#4 ");
+		int posEnd=verdate.find(" arm");
+		pSta->strzimageDate = verdate.substr(posHead+3,posEnd-(posHead+3));;
+	}
 sprintf(strmsg,"内核版本:%s\n",pSta->strzimageVer.c_str());
 WriteLog(strmsg);
     printf("内核版本:%s\r\n",pSta->strzimageVer.c_str());

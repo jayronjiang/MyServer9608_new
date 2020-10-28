@@ -518,6 +518,16 @@ void init_atlas_struct(CsshClient *pAtlas)
 }
 
 
+void init_sshdev_struct(CsshDev *psshdev)
+{
+	//初始化
+	psshdev->stuAtlasState.TimeStamp=timestamp_get();
+	psshdev->stuAtlasState.Linked=false;
+	
+	psshdev->stuAtlasState.stratlasdata = "{\"isonline\":\"0\"}";//连接状态
+}
+
+
 //初始化SPD
 void init_SPD(SpdClient *pSpd, VMCONTROL_CONFIG *pConf)
 {
@@ -721,10 +731,12 @@ void AirConditionCallback(AirCondition::AirInfo_S info, void *userdata)
 {
     // printf("Air condition callback\n");
     int i;
+	char str[128];
     
 	CBTimeStamp.AirConTimeStamp=GetTickCount();
 
-    printf("Air condition callback!! ver:%s\n",info.version.c_str());
+    sprintf(str,"Air condition callback!! ver:%s\n",info.version.c_str());
+	myprintf(str);
 
     printf("Run state:\n");
     for (i = 0; i < sizeof(AirCondition::Runsta_S) / sizeof(string); i++) {
@@ -798,10 +810,19 @@ void RsuCallback(void *data, void *userdata)
     if(data == NULL)
         return;
 
-    printf("callback\n");
+    Artc *pRSU = (Artc *)userdata ;
+    Artc::RsuInfo_S *info = (Artc::RsuInfo_S *)data;
 
 #if 0
-    Artc *pRSU = (RSU *)userdata ;
+    printf("cpuRate = %s\n", info->cpuRate.c_str());
+    printf("memRate = %s\n", info->memRate.c_str());
+    printf("status = %s\n", info->status.c_str());
+    printf("temperture = %s\n", info->temperture.c_str());
+    printf("softVer = %s\n", info->softVer.c_str());
+    printf("hardVer = %s\n", info->hardVer.c_str());
+    printf("seriNum = %s\n", info->seriNum.c_str());
+    printf("longitude = %s\n", info->longitude.c_str());
+    printf("latitude = %s\n", info->latitude.c_str());
 
     uint16_t i,j;
 

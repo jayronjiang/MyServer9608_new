@@ -33,6 +33,7 @@
 #include "hw_locker.h"
 #include "moninterface.h"
 #include "camera.h"
+#include "CsshDev.h"
 
 using namespace std; 
 

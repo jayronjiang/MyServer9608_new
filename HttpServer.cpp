@@ -52,7 +52,7 @@ int WritepUpdata(unsigned char *pDateBuf,int pDateLen)
     fflush(fdd);
     sleep(2);
     fclose(fdd);
-    printf("write tranter len=%d,ret=%d\r\n",pDateLen,ret);
+    printf("WritepUpdata tranter len=%d,ret=%d\r\n",pDateLen,ret);
 	system("sync") ;
 	
     fdd	= fopen("/opt/tranter", "rb");
@@ -95,7 +95,7 @@ int WriteZipdata(unsigned char *pDateBuf,int pDateLen)
 	fflush(fdd);
 	sleep(2);
 	fclose(fdd);
-	printf("write tranter len=%d,ret=%d\r\n",pDateBuf,ret);
+	printf("WriteZipdata tranter len=%d,ret=%d\r\n",pDateBuf,ret);
 	system("sync") ;
     if(ret == pDateLen)
        return 0 ;

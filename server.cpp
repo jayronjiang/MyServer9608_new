@@ -75,6 +75,9 @@ extern SpdClient *pCSpdClent;		//SPD防雷器
 extern Lock *pCLock[LOCK_NUM];					//生久门锁对象
 extern HWLock *pHWCLock[LOCK_NUM];				//华为门锁对象
 extern tsPanel *pCPanel;
+extern AirCondition *pCAirCondition;			//空调
+extern AirCondition::AirInfo_S AirCondInfo;		//直流空调结构体
+extern CallBackTimeStamp CBTimeStamp;				//外设采集回调时间戳
 
 
 extern string zteLockDevID[4];
@@ -807,6 +810,8 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 	CANNode *pCan=pCOsCan;								//Can对象
 	SpdClient *pSpd=pCSpdClent;		//SPD防雷器
 	tsPanel * ptspanel = pCPanel;
+	AirCondition::AirInfo_S *ACInfo=&AirCondInfo;		//直流空调结构体
+	AirCondition *pAirCon=pCAirCondition;			//空调
 
 	int seq = 0;
 	UINT16 seq_temp = 0;
@@ -816,7 +821,8 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 	UINT8 byteSend[BASE64_HEX_LEN]={0x00,};
 	string mStrUser = "admin";
 	string mStrkey = "admin";
-	  
+	char str[128];
+	
 	for (i = 0; i < SWITCH_COUNT; i++)
 	{
 		printf("i=%d do_seqx=0x%02x\r\n",i,pstuRCtrl->doseq[i]);
@@ -1047,6 +1053,58 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 			 pCab->SetIntervalTime(1);
 		 }
 	 }
+	 
+	 //利通机柜空调
+	 //制冷点  255:保持；15-50（有效）；
+     if(GetTickCount()-CBTimeStamp.AirConTimeStamp<5*60 && pstuRCtrl->refrigeratTemp!=ACT_HOLD_FF)
+	 {
+         sprintf(str,"RemoteControl 空调设置制冷点=%d\n",pstuRCtrl->refrigeratTemp);
+		 myprintf(str);
+		 pAirCon->config(AirCondition::Cfg_Refrigeration, pstuRCtrl->refrigeratTemp);
+	 }
+	 //制冷回差 	 255:保持；1-10（有效）；
+     if(GetTickCount()-CBTimeStamp.AirConTimeStamp<5*60 && pstuRCtrl->refriRetDiff!=ACT_HOLD_FF)
+	 {
+         sprintf(str,"RemoteControl 空调设置制冷回差=%d\n",pstuRCtrl->refriRetDiff);
+		 myprintf(str);
+		 pAirCon->config(AirCondition::Cfg_RefriRetDiff, pstuRCtrl->refriRetDiff);
+	 }
+	 //加热点		 255:保持；-15-15（有效）；
+     if(GetTickCount()-CBTimeStamp.AirConTimeStamp<5*60 && pstuRCtrl->heatTemp!=ACT_HOLD_FF)
+	 {
+         sprintf(str,"RemoteControl 空调设置加热点=%d\n",pstuRCtrl->heatTemp);
+		 myprintf(str);
+		 pAirCon->config(AirCondition::Cfg_Heating, (uint8_t)pstuRCtrl->heatTemp);
+	 }
+	 //加热回差 	 255:保持；1-10（有效）；
+     if(GetTickCount()-CBTimeStamp.AirConTimeStamp<5*60 && pstuRCtrl->heatRetDiff!=ACT_HOLD_FF)
+	 {
+         sprintf(str,"RemoteControl 空调设置加热点=%d\n",pstuRCtrl->heatRetDiff);
+		 myprintf(str);
+		 pAirCon->config(AirCondition::Cfg_HeatRetDiff, pstuRCtrl->heatRetDiff);
+	 }
+	 //环境温度告警上限 0:保持；25-80（有效）；55（缺省值）
+     if(GetTickCount()-CBTimeStamp.AirConTimeStamp<5*60 && pstuRCtrl->hwsetenvtempupperlimit[0]!=ACT_HOLD)
+	 {
+         sprintf(str,"RemoteControl 空调设置高温点=%d\n",pstuRCtrl->hwsetenvtempupperlimit[0]);
+		 myprintf(str);
+		 pAirCon->config(AirCondition::Cfg_HighTemp, pstuRCtrl->hwsetenvtempupperlimit[0]);
+	 }
+	 //环境温度告警下限255:保持；-20-20（有效）；-20（缺省值）
+     if(GetTickCount()-CBTimeStamp.AirConTimeStamp<5*60 && pstuRCtrl->hwsetenvtemplowerlimit[0]!=ACT_HOLD_FF)
+	 {
+         sprintf(str,"RemoteControl 空调设置低温点=%d\n",pstuRCtrl->hwsetenvtemplowerlimit[0]);
+		 myprintf(str);
+		 pAirCon->config(AirCondition::Cfg_LowTemp, (uint8_t)pstuRCtrl->hwsetenvtemplowerlimit[0]);
+	 }
+	 //环境湿度告警上限 255:保持；0-100（有效）；95（缺省值）
+     if(GetTickCount()-CBTimeStamp.AirConTimeStamp<5*60 && pstuRCtrl->hwsetenvhumidityupperlimit[0]!=ACT_HOLD_FF)
+	 {
+         sprintf(str,"RemoteControl 空调设置高湿点=%d\n",pstuRCtrl->hwsetenvhumidityupperlimit[0]);
+		 myprintf(str);
+		 pAirCon->config(AirCondition::Cfg_HighHumi, pstuRCtrl->hwsetenvhumidityupperlimit[0]);
+	 }
+	 
 	 //SPD控制
 	 for(i=0;i<SPD_NUM;i++)
 	 {
@@ -1181,7 +1239,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 				strjsonback = strjsonback + "\"result\":\"升级成功！\",\n";
 				strjsonback = strjsonback + "\"new version\":\""+ StrNewVersionNo +"\",\n";
 				strjsonback = strjsonback + "\"old version\":\""+ pConf->StrVersionNo +"\",\n";
-				strjsonback = strjsonback + "\"dec\":\"升级利通控制器成功！请不要关闭电源，10秒后设备自动重启！\"\n";
+				strjsonback = strjsonback + "\"dec\":\"智能网联节点终端升级成功！请不要关闭电源，10秒后设备自动重启！\"\n";
 				strjsonback = strjsonback + "}\n";
 				printf("strjsonback=%s\r\n",strjsonback.c_str());
 	 
@@ -1257,15 +1315,15 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 	 
 		}
 	 }
-	 else if(size>6 && pbuf[0] == 0x50 && pbuf[1] == 0x4b && pbuf[2] == 0x03 && pbuf[3] == 0x04 && pbuf[4] == 0x14 && pbuf[5] == 0x00
+	 else if(size>7 && pbuf[0] == 0x50 && pbuf[1] == 0x4b && pbuf[2] == 0x03 && pbuf[3] == 0x04	// && pbuf[4] == 0x14 && pbuf[5] == 0x00
 	 		&& pbuf[size-3] == 0x00 && pbuf[size-2] == 0x00 && pbuf[size-1] == 0x00) 
 	 {
 		printf("start updata\r\n");
-//		pthread_mutex_lock(&uprebootMutex);
 		write(WDTfd, "\0", 1);
 
 		if(WriteZipdata(pbuf,size) == 0)	//写文件成功
 		{
+			int updataret = 0;
 			//system("mv tranter tranter1") ;
 			//printf("unzip -o upgrade.zip\r\n");
 			system("unzip -o /tmp/upgrade.zip -d /tmp") ;
@@ -1277,19 +1335,82 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 				printf("autorun.sh 存在，运行autorun.sh\r\n");
 				system("chmod 777 /tmp/autorun.sh") ;
 				//system("chmod 777 tranter") ;
-				system("/tmp/autorun.sh") ;
+				updataret = system("/tmp/autorun.sh") ;
 			}
 			else
 			{
 				printf("autorun.sh 不存在，自动重启\r\n");
 				system("chmod 777 tranter") ;
+				updataret = 20*256;
 			}
 			system("sync") ;
 			sleep(8);
+			
+			string strupdataret = "\"dec\":\"智能网联节点终端升级成功！请不要关闭电源，10秒后设备自动重启！\"\n";
+			updataret = updataret/256;
+			switch(updataret)
+			{
+				case 0:
+				    strupdataret = "\"dec\":\"智能网联节点终端升级成功！请不要关闭电源，10秒后设备自动重启！\"\n";
+				    break;
+				case 1:
+				    strupdataret = "\"dec\":\"err:/tmp/MLO no exist！\"\n";
+				    break;
+				case 2:
+				    strupdataret = "\"dec\":\"err:/tmp/u-boot.img no exist！\"\n";
+				    break;
+				case 3:
+				    strupdataret = "\"dec\":\"err:/tmp/zyenv2015 no exist！\"\n";
+				    break;
+				case 4:
+				    strupdataret = "\"dec\":\"err:/tmp/uImage no exist！\"\n";
+				    break;
+				case 5:
+				    strupdataret = "\"dec\":\"/dev/mtd0 擦除失败！\"\n";
+				    break;
+				case 6:
+				case 7:
+				case 8:
+				case 9:
+				    strupdataret = "\"dec\":\"/tmp/MLO 写入失败！\"\n";
+				    break;
+				case 10:
+				    strupdataret = "\"dec\":\"/dev/mtd1 擦除失败！\"\n";
+				    break;
+				case 11:
+				case 12:
+				case 13:
+				    strupdataret = "\"dec\":\"/tmp/u-boot.img 写入失败！\"\n";
+				    break;
+				case 14:
+				case 15:
+				    strupdataret = "\"dec\":\"/tmp/zyenv2015 写入失败！\"\n";
+				    break;
+				case 16:
+				    strupdataret = "\"dec\":\"/dev/mtd2 擦除失败！\"\n";
+				    break;
+				case 17:
+				    strupdataret = "\"dec\":\"内核写入失败！\"\n";
+				    break;
+			    case 18:
+				    strupdataret = "\"dec\":\"/dev/mtd3 擦除失败！\"\n";
+				    break;
+				case 19:
+				    strupdataret = "\"dec\":\"内核写入失败！\"\n";
+				    break;	
+				case 20:
+				    strupdataret = "\"dec\":\"升级失败，脚本不存在！\"\n";
+				    break;	
+                default:
+				    strupdataret = "\"dec\":\"升级失败：其它！\"\n";
+                    break;				
+				      
+				
+			}
 
 			strjsonback = strjsonback + "{\n";
 			strjsonback = strjsonback + "\"result\":\"升级成功！\",\n";
-			strjsonback = strjsonback + "\"dec\":\"升级利通控制器成功！请不要关闭电源，10秒后设备自动重启！\"\n";
+			strjsonback = strjsonback + strupdataret;//"\"dec\":\"智能网联节点终端升级成功！请不要关闭电源，10秒后设备自动重启！\"\n";
 			strjsonback = strjsonback + "}\n";
 			printf("strjsonback=%s\r\n",strjsonback.c_str());
 			pthread_mutex_lock(&httprebootMutex);
@@ -1306,7 +1427,6 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		}
 		return 1 ;
 
-//		pthread_mutex_unlock(&uprebootMutex);
 	 }
 	 else
 	 {
