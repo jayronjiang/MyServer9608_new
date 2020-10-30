@@ -124,7 +124,7 @@ using namespace std;
 #define TY_RES_READ_CMD				0x03
 #define TY_RES_WRITE_CMD			0x06
 #define TY_RES_ADD					0x01	// 地阻数据
-#define TY_RES_NUM					3
+#define TY_RES_NUM					1
 
 #define TY_RES_VALUE_ADDR			0x01	// 1：接地电阻值,2:设备地址 3：报警值 
 #define TY_RES_ID_ADDR				0x02
