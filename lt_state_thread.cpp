@@ -343,7 +343,7 @@ WriteLog(infobuf);
 	int pos1=verdate.find("Aug 14 09:24:07 CST 2019");
 	int pos2=verdate.find("Aug 18 16:33:37 CST 2020");
 	int pos3=verdate.find("Sep 30 03:26:33 PDT 2020");
-	int pos4=verdate.find("Mar 2 17:49:26 CST 2020");
+	int pos4=verdate.find("Oct 26 02:52:36 PDT 2020");
 printf("内核1:pos1=%d,pos2=%d,%s\r\n",pos1,pos2,verdate.c_str());
 
     //处理最后回车的值
@@ -365,14 +365,15 @@ printf("内核1:pos1=%d,pos2=%d,%s\r\n",pos1,pos2,verdate.c_str());
     else if(pos4>0)
     {
     	pSta->strzimageVer = "V1.3";
-    	pSta->strzimageDate = "2020-03-02 17:49:26";
+    	pSta->strzimageDate = "2020-10-26 02:52:36";
     }
 	else
 	{
 		pSta->strzimageVer = "";
 		int posHead=verdate.find("#4 ");
 		int posEnd=verdate.find(" arm");
-		pSta->strzimageDate = verdate.substr(posHead+3,posEnd-(posHead+3));;
+		if(posHead>0 && posEnd>0 && posEnd>posHead)
+			pSta->strzimageDate = verdate.substr(posHead+3,posEnd-(posHead+3));;
 	}
 sprintf(strmsg,"内核版本:%s\n",pSta->strzimageVer.c_str());
 WriteLog(strmsg);
