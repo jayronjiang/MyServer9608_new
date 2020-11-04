@@ -17,9 +17,9 @@ using namespace std;
 #define TYPE_ZPZH		5	// 中普众合
 #define TYPE_KY0M		6	// 宽永0M型号,广西路段
 #define TYPE_TY			7	// 图粤
+#define TYPE_LT			8	// 利通，无防雷检测，直接DI连接
 
-
-#define TYPE_MAX_NUM	8	// 支持的数量
+#define TYPE_MAX_NUM	9	// 支持的数量
 
 
 #define SPD_DEFALT_ADDR			0xF0	// 默认设备地址， 不配置就是1
@@ -711,14 +711,14 @@ public:
        //UINT32 timestamp_get(void);
        //UINT32 timestamp_delta(UINT32 const timestamp);
 
-
+	   void SPD_vars_init(int seq);
+	   void SPD_data_init(void);
        void RealDataCopy(int seq,SPD_DATA_LIST msg_t);
 	   
 private:	  
 	   void HZ_char_to_int(UINT8* buffer,UINT16* value);
 	   void char_to_float(UINT8* buffer,FDATA* value);
 	   void SPD_timeStamp_update(int seq);
-	   void SPD_vars_init(int seq);
 	   void SPD_disconnct_process(void);
 	   int SPD_Read_Reg(int seq,UINT8 Addr, UINT8 Func, UINT16 REFS_ADDR, UINT16 REFS_COUNT);
        int SPD_HZ_Read_Reg(int seq,UINT8 Addr, UINT8 Func, UINT16 REFS_ADDR, UINT16 REFS_COUNT);
@@ -751,8 +751,6 @@ private:
 	   void SPD_HZ_Data_Get_Func(int seq);
 	   
 	   void DataGet_Thread_Create(UINT16 SPD_t);
-	   void SPD_data_init(void);
-
 
        static void *NetWork_DataGet_thread_SPD_HZ1(void*arg);
 	   void *NetWork_DataGet_thread_SPD_HZ1_run(void);

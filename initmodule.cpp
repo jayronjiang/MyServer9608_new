@@ -528,6 +528,86 @@ void init_sshdev_struct(CsshDev *psshdev)
 }
 
 
+typedef struct _mypara
+{
+	SpdClient *spdpt;//参数1
+	CANNode *canpt;//参数2
+}MY_SPD_PARA;
+static MY_SPD_PARA pspd_data;
+
+// 从cannode板取的防雷数据
+void SPD_get_from_cannode(uint16_t seq,MY_SPD_PARA *spd_p)
+{
+	static UINT8 DI_C1_status_last[PHASE_MAX_NUM] = {0,};
+	
+	if (seq < PHASE_MAX_NUM)
+	{
+		// BIT4是DI状态位，0:闭合（常闭接线正常），1:打开,报警(常闭接线)
+		spd_p->spdpt->stuSpd_Param->rSPD_data[seq].DI_C1_status = ((spd_p->canpt->canNode[seq].phase.flag)&BIT(4))?1:0;
+		if ((spd_p->spdpt->stuSpd_Param->rSPD_data[seq].DI_C1_status)&&(DI_C1_status_last[seq]==0))
+		{
+			spd_p->spdpt->stuSpd_Param->rSPD_data[seq].struck_cnt++;
+			spd_p->spdpt->stuSpd_Param->rSPD_data[seq].struck_total++;
+		}
+		spd_p->spdpt->stuSpd_Param->rSPD_data[seq].life_time = (spd_p->spdpt->stuSpd_Param->rSPD_data[seq].DI_C1_status)?0:100;
+		if (spd_p->spdpt->stuSpd_Param->rSPD_data[seq].life_time < 0)
+		{
+			spd_p->spdpt->stuSpd_Param->rSPD_data[seq].life_time = 0;
+		}
+		else if (spd_p->spdpt->stuSpd_Param->rSPD_data[seq].life_time > 100)
+		{
+			spd_p->spdpt->stuSpd_Param->rSPD_data[seq].life_time = 100;
+		}
+		DI_C1_status_last[seq] = spd_p->spdpt->stuSpd_Param->rSPD_data[seq].DI_C1_status;
+		spd_p->spdpt->stuSpd_Param->TimeStamp[seq] = spd_p->canpt->canNode[seq].TimeStamp;
+		spd_p->spdpt->stuSpd_Param->Linked[seq] = spd_p->canpt->canNode[seq].isConnect;
+	}
+}
+
+// 取数据线程
+void *DI_server_thread_SPD(void *arg)
+{
+	MY_SPD_PARA *pspd_para = (MY_SPD_PARA *)arg;
+	uint16_t i = 0;
+
+	// 参数先初始化
+	for (i=0;i<SPD_NUM+RES_NUM; i++)
+	{
+		pspd_para->spdpt->SPD_vars_init(i);
+	}
+	
+	while(1)
+	{
+		for (i=0;i<SPD_NUM;i++)
+		{
+			SPD_get_from_cannode(i,pspd_para);
+		}
+		usleep(1000);	// 周期1s，没有必要很快
+	}
+}
+
+
+// 取DI状态数据
+void StartDISpd(SpdClient *pSpd, CANNode *pcan)
+{	
+	if(pSpd==NULL) {return;}
+	if(pcan==NULL) {return;}
+
+	// 因为要用到这个地址，必须要使用static，或者全局变量，否则会被释放
+	pspd_data.spdpt = pSpd;
+	pspd_data.canpt = pcan;
+
+	pSpd->SPD_data_init();
+	// 数据发送线程
+	pthread_t tDI_server_SPD;
+	if (pthread_create(&tDI_server_SPD, NULL, DI_server_thread_SPD,&pspd_data))
+	{
+		printf("DI SPD create failed!\n");
+	}
+	pthread_mutex_init(&pspd_data.spdpt->SPDdataHandleMutex,NULL);
+}
+
+
 //初始化SPD
 void init_SPD(SpdClient *pSpd, VMCONTROL_CONFIG *pConf)
 {
@@ -567,7 +647,14 @@ void init_SPD(SpdClient *pSpd, VMCONTROL_CONFIG *pConf)
 	//初始化防雷器结构体
 	memset(pSpd->stuSpd_Param,0,sizeof(SPD_PARAMS));
 
-	pSpd->StartNetSpd();
+	if (pSpd->SPD_Type == TYPE_LT)
+	{	
+		StartDISpd(pSpd,pCOsCan);
+	}
+	else
+	{
+		pSpd->StartNetSpd();
+	}
 }
 
 
