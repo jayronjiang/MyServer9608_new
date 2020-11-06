@@ -29,16 +29,13 @@ using namespace Klib;
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
-#define ZTE_DOOR_POLL		0x0016		// 锁协议中的控制命令
-#define ZTE_DOOR_OPEN		0x0005
-#define ZTE_DOOR_CLOSE		0x0006
-
 #define DOOR_STATUS_ADDR	9	// 返回帧锁的状态在第几个字节
 #define DOOR_ID_ADDR		10	// 返回帧锁的ID在第几个字节
 #define DOOR_SOI_ADDR		0
 #define DOOR_EOI_ADDR		25
 
-#define DEF_INTERVAL (10)
+#define DEF_INTERVAL (2)
+#define POLL_INTERVAL	(2)	// 2*2=4s轮询一个数据,其实算上延时已经到了17s了
 
 #define ID_ARRAY_TO_INT(_id)                     (((uint32_t)_id[3] << 24) | ((uint32_t)_id[2] << 16) |((uint32_t)_id[1] << 8) |((uint32_t)_id[0]))
 
@@ -127,8 +124,8 @@ void SupervisionZTE::httpRequest(void *para){
     http->config(Http::Cfg_AppendHead, "Content-Type: application/json");
     http->config(Http::Cfg_AppendHead, "Accept-Language: zh-Hans-CN,zh-Hans;q=0.5");
     http->config(Http::Cfg_AppendHead, "Connection: close");
-    http->config(Http::Cfg_SetTimeout, 15);
-    http->config(Http::Cfg_SetConnTimeout, 15);
+    http->config(Http::Cfg_SetTimeout, 2);
+    http->config(Http::Cfg_SetConnTimeout, 2);
     http->config(Http::Cfg_SetSelfDelete, 1);
     http->config(Http::Cfg_SetDigestAuth, user, key);
     if(reqPara->data != NULL)
@@ -156,6 +153,7 @@ void SupervisionZTE::reqWarning(void){
     para->su = this;
     para->url = "http://" + ip + "/jscmd/alarmquery?type=now";
     para->data = NULL;
+	printf("warning = %s\r\n",para->url.c_str());
     httpRequest(para);
 }
 
@@ -183,6 +181,7 @@ void SupervisionZTE::reqObjData(std::string objid, ObjInfo_S *info) {
     para->su = this;
     para->url = "http://" + ip + "/jscmd/objdataquery?objId=" + objid + "&mId=0";
     para->data = NULL;
+	printf("url = %s\r\n",para->url.c_str());
     httpRequest(para);
 
 }
@@ -205,15 +204,73 @@ void SupervisionZTE::ctrlLock(uint16_t cmd, std::string objid, ObjInfo_S *info) 
     len = cmdpack( info->addr,cmd, buf);
     (*para->data) = Base64Cal.Encode(buf, len); // 加密
     (*para->data) = "{\"jsonrpc\":\"2.0\",\"method\":\"POST_METHOD\",\"id\":\"3\",\"params\":{\"objid\":\"" + objid + "\",\"data\":\"" + (*para->data) + "\",\"endchar\":\"\"}}";
-    // printf("data = %s\r\n",para->data->c_str());
+    printf("data = %s\r\n",para->data->c_str());
     httpRequest(para);
 }
+
+
+// 开锁接口
+// cmd:ZTE_DOOR_OPEN，开
+// pos:DEV_FRONT_DOOR/DEV_BACK_DOOR/POWER_FRONT_DOOR/POWER_BACK_DOOR
+void SupervisionZTE::openLock(uint16_t cmd, uint16_t pos) 
+{
+	map<string,ObjInfo_S>::iterator iter;
+	string objid = "";
+	ObjInfo_S *info = NULL;
+	
+	for (iter = objs.begin(); iter != objs.end(); iter++) 
+	{
+        info = &iter->second;
+		if (pos == DEV_FRONT_DOOR)
+		{
+			if ((info->portId == "0_COM5") && (info->addr == 1))
+			{
+				objid = iter->first;
+				break;
+			}
+		}
+		else if (pos == DEV_BACK_DOOR)
+		{
+			if ((info->portId == "0_COM5") && (info->addr == 2))
+			{
+				objid = iter->first;
+				break;
+			}
+		}
+		else if (pos == POWER_FRONT_DOOR)
+		{
+			if ((info->portId == "0_COM3") && (info->addr == 1))
+			{
+				objid = iter->first;
+				break;
+			}
+		}
+		else if (pos == POWER_BACK_DOOR)
+		{
+			if ((info->portId == "0_COM3") && (info->addr == 2))
+			{
+				objid = iter->first;
+				break;
+			}
+		}
+    }
+	if (objid != "")
+	{
+		printf("open_lock = %s,%s,%d\r\n",objid.c_str(),info->portId.c_str(),info->addr);
+		ctrlLock(cmd,objid,info);
+		usleep(200*1000);
+	}
+}
+
 
 
 /* static */
 void *SupervisionZTE::GetStateThread(void *arg) {
     SupervisionZTE *su = (SupervisionZTE *)arg;
     map<string,ObjInfo_S>::iterator iter;
+	static map<string,ObjInfo_S>::iterator data_iter;
+	static uint16_t cnt = POLL_INTERVAL-1;
+	bool exchg[2] = {false,false};
 
     printf("Supervision(%s) get state thread start ..\n",su->ip.c_str());
     
@@ -227,24 +284,40 @@ void *SupervisionZTE::GetStateThread(void *arg) {
         sleep(2);
     }while(!su->isGetSensorPort);
 
+		
     for (iter = su->objs.begin(); iter != su->objs.end(); iter++) {
         ObjInfo_S *info = &iter->second;
         printf("objid=%s,(%d) %s addr = %d port = %s\n",iter->first.c_str(),info->index,info->name.c_str(),info->addr,info->portId.c_str());
     }
 
-    for (;;) {
-        for(iter = su->objs.begin();iter != su->objs.end();iter++){
-            ObjInfo_S *info = &iter->second;
-            string objid = iter->first;
+	data_iter = su->objs.begin();
+    for (;;) 
+	{
+		// 17s钟取一个数据,5分钟一个循环
+		if (cnt++ > POLL_INTERVAL)
+		{
+			cnt = 0;
+	        //for(iter = su->objs.begin();iter != su->objs.end();iter++)
+			{
+	            ObjInfo_S *info = &data_iter->second;
+	            string objid = data_iter->first;
 
-            if(iter->second.type == DevType_CabLock)
-                su->ctrlLock(ZTE_DOOR_POLL,objid,info);
-            else
-                su->reqObjData(objid,info);
-            usleep(100 * 1000);
-        }
+	            if(data_iter->second.type == DevType_CabLock)
+	                su->ctrlLock(ZTE_DOOR_POLL,objid,info);
+	            else
+	                su->reqObjData(objid,info);
 
-        su->reqWarning();
+				//su->state.timestamp = getTickCount();
+				//printf("timestampdata=%ld,\n",su->state.timestamp);
+	        }
+			usleep(500*1000);
+			data_iter++;
+			if (data_iter == su->objs.end())
+			{
+				data_iter = su->objs.begin();
+			}
+	        //su->reqWarning();
+		}
 
 		for(iter = su->objs.begin();iter != su->objs.end();iter++)
 		{
@@ -253,12 +326,19 @@ void *SupervisionZTE::GetStateThread(void *arg) {
 
 			// 每秒单独轮询门锁
             if(iter->second.type == DevType_CabLock)
+            {
                 su->ctrlLock(ZTE_DOOR_POLL,objid,info);
+				//su->state.timestamp = getTickCount();
+				//printf("timestamp=%ld,\n",su->state.timestamp);
+				usleep(500*1000);
+            }
             else
                 continue;
         }
-	
+		su->reqWarning();
+		usleep(200*1000);
         su->state.timestamp = getTickCount();
+		printf("Warningtimestamp=%ld,\n",su->state.timestamp);
         if(su->callback != NULL)
             su->callback(su->state,su->userdata);
         sleep(su->interval);
@@ -273,7 +353,7 @@ void SupervisionZTE::HttpCallback(Http *http, Http::Value_S value, void *userdat
     if (para == NULL)
         return;
 
-    // printf("code:%ld  data = %s ,para type = %d\n",value.code,value.data,para->reqType);
+    //printf("code:%ld  data = %s ,para type = %d\n",value.code,value.data,para->reqType);
     if (value.code == 200 || value.code == 202) {
         CJsonObject json(value.data), jsResult;
         uint16_t i,j;
@@ -427,7 +507,7 @@ void SupervisionZTE::HttpCallback(Http *http, Http::Value_S value, void *userdat
                     // 这个锁读到的卡号是逆序的，比如0xD6E9C160的卡(3605643616)读出来是60 c1 e9 d6
                     su->state.lock[info->index].cardId = ID_ARRAY_TO_INT(cardId);
 
-                    printf("card id = %d\n",su->state.lock[info->index].cardId);
+                    printf("index = %d,card id = %d\n",info->index,su->state.lock[info->index].cardId);
                 }
 
                 free(data);

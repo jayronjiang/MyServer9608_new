@@ -29,6 +29,17 @@ const std::string StrDevType[] = {
 /**
  * 动环系统控制类 (Supervision system) 
  * */
+
+// 定义各门锁的位置
+#define DEV_FRONT_DOOR		0	// 设备柜前门锁
+#define DEV_BACK_DOOR		1
+#define POWER_FRONT_DOOR	2
+#define POWER_BACK_DOOR		3
+
+#define ZTE_DOOR_POLL		0x0016		// 锁协议中的控制命令
+#define ZTE_DOOR_OPEN		0x0005
+#define ZTE_DOOR_CLOSE		0x0006
+
 class SupervisionZTE {
 public:
 
@@ -276,6 +287,17 @@ public:
      * 
      * */
     SupervisionZTE::State_S getState(void);
+
+	/**
+     * @name: openLock
+     *
+     * @description:开/关门锁
+     *
+     * @para: cmd:ZTE_DOOR_OPEN,开，ZTE_DOOR_CLOSE关;
+     *		  pos:DEV_FRONT_DOOR:设备柜前门，POWER_FRONT_DOOR：电源柜前门
+     * 
+     * */
+	void openLock(uint16_t cmd, uint16_t pos);
 
 private:
     void reqObjs(void);
