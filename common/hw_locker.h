@@ -74,9 +74,11 @@ public:
     typedef void (*Callback)(uint8_t addr,Info_S info,void *userdata);
 	Signal_EN signal;
 	Info_S info;
+	bool linked;
 
 private:
     uint8_t addr;
+	uint8_t fail_cnt;
 
     Callback callback;
     void *userdata;
