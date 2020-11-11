@@ -1,5 +1,5 @@
 /*************************************************************************
- * File Name: SupervisionZTE.cpp
+ * File Name: Supervision_zte.cpp
  * Author:
  * Created Time: 2020-10-28
  * Version: V1.0
@@ -17,8 +17,8 @@
 #include <unistd.h>
 
 #include "CJsonObject.hpp"
-#include "http.h"
 #include "base_64.h"
+#include "http.h"
 
 #define SUPERVISION_PRIVATE
 #include "supervision_zte.h"
@@ -49,7 +49,8 @@ using namespace Klib;
 //     /* 数字温湿度 */
 //     {"118201001", "118204001", ""},
 //     /* 普通空调 */
-//     {"115008001", "115009001", "115010001", "115011001", "115012001", "115013001", "115014001", "115016001", "115018001", "115019001", "115020001", "115021001", "115022001", "115023001", "115024001","115025001","115026001","115027001",""},
+//     {"115008001", "115009001", "115010001", "115011001", "115012001", "115013001", "115014001", "115016001", "115018001", "115019001", "115020001", "115021001", "115022001", "115023001",
+//     "115024001","115025001","115026001","115027001",""},
 //     /* 锂电池 */
 //     {"190004001", "190264001", "190265001", "190002001", ""},
 //     /* 铁锂电池(暂时复制锂电池) */
@@ -74,7 +75,7 @@ using namespace Klib;
  ******************************************************************************/
 static void crc(uint8_t *pucData,uint8_t wLength,uint8_t *pOutData);
 static uint8_t cmdpack(uint8_t addr, uint16_t cmd, uint8_t *buf);
-static string getResFromJson(CJsonObject res,string id);
+static string getResFromJson(CJsonObject res,string id1,string id2);
 static string getWarnFromJson(CJsonObject res,string id,string *time);
 static uint32_t getTickCount(void);
 static void stateInit(SupervisionZTE::State_S *state);
@@ -183,7 +184,23 @@ void SupervisionZTE::reqObjData(std::string objid, ObjInfo_S *info) {
     para->data = NULL;
 	printf("url = %s\r\n",para->url.c_str());
     httpRequest(para);
+}
 
+void SupervisionZTE::reqAlarmMete(string objid, ObjInfo_S *info, string mId) {
+    if (info == NULL || info->type == DevType_Undefine)
+        return;
+
+    ReqPara_S *para = new ReqPara_S;
+
+    para->objid = objid;
+    para->objinfo = info;
+    para->reqType = Req_Alarm;
+    para->httpType = Http::Type_Get;
+    para->su = this;
+    para->url = "http://" + ip + "/jscmd/getAlarmMeteCfg?deviceId=" + objid + "&meteId=" + mId;
+    para->data = NULL;
+    printf("reqAlarmMete:%s\n", para->url.c_str());
+    httpRequest(para);
 }
 
 
@@ -223,7 +240,7 @@ void SupervisionZTE::openLock(uint16_t cmd, uint16_t pos)
         info = &iter->second;
 		if (pos == DEV_FRONT_DOOR)
 		{
-			if ((info->portId == "0_COM5") && (info->addr == 1))
+			if ((info->type == DevType_CabLock) &&(info->portId == "0_COM5") && (info->addr == 1))
 			{
 				objid = iter->first;
 				break;
@@ -231,7 +248,7 @@ void SupervisionZTE::openLock(uint16_t cmd, uint16_t pos)
 		}
 		else if (pos == DEV_BACK_DOOR)
 		{
-			if ((info->portId == "0_COM5") && (info->addr == 2))
+			if ((info->type == DevType_CabLock)&& (info->portId == "0_COM5") && (info->addr == 2))
 			{
 				objid = iter->first;
 				break;
@@ -239,7 +256,7 @@ void SupervisionZTE::openLock(uint16_t cmd, uint16_t pos)
 		}
 		else if (pos == POWER_FRONT_DOOR)
 		{
-			if ((info->portId == "0_COM3") && (info->addr == 1))
+			if ((info->type == DevType_CabLock)&&(info->portId == "0_COM3") && (info->addr == 1))
 			{
 				objid = iter->first;
 				break;
@@ -247,7 +264,7 @@ void SupervisionZTE::openLock(uint16_t cmd, uint16_t pos)
 		}
 		else if (pos == POWER_BACK_DOOR)
 		{
-			if ((info->portId == "0_COM3") && (info->addr == 2))
+			if ((info->type == DevType_CabLock)&&(info->portId == "0_COM3") && (info->addr == 2))
 			{
 				objid = iter->first;
 				break;
@@ -265,7 +282,8 @@ void SupervisionZTE::openLock(uint16_t cmd, uint16_t pos)
 
 
 /* static */
-void *SupervisionZTE::GetStateThread(void *arg) {
+void *SupervisionZTE::GetStateThread(void *arg) 
+{
     SupervisionZTE *su = (SupervisionZTE *)arg;
     map<string,ObjInfo_S>::iterator iter;
 	static map<string,ObjInfo_S>::iterator data_iter;
@@ -297,27 +315,36 @@ void *SupervisionZTE::GetStateThread(void *arg) {
 		if (cnt++ > POLL_INTERVAL)
 		{
 			cnt = 0;
-	        //for(iter = su->objs.begin();iter != su->objs.end();iter++)
-			{
-	            ObjInfo_S *info = &data_iter->second;
-	            string objid = data_iter->first;
+	        ObjInfo_S *info = &data_iter->second;
+	        string objid = data_iter->first;
 
-	            if(data_iter->second.type == DevType_CabLock)
-	                su->ctrlLock(ZTE_DOOR_POLL,objid,info);
-	            else
-	                su->reqObjData(objid,info);
-
-				//su->state.timestamp = getTickCount();
-				//printf("timestampdata=%ld,\n",su->state.timestamp);
-	        }
-			usleep(500*1000);
-			data_iter++;
-			if (data_iter == su->objs.end())
+			// 小心第一个就是锁
+			if (info->type != DevType_CabLock)
 			{
-				data_iter = su->objs.begin();
+            	su->reqObjData(objid, info);
 			}
-	        //su->reqWarning();
-		}
+
+            if (data_iter->second.type == DevType_TemHumi) {
+                usleep(500 * 1000);
+                su->reqAlarmMete(objid, info, "118202001");
+                usleep(500 * 1000);
+                su->reqAlarmMete(objid, info, "118203001");
+                usleep(500 * 1000);
+                su->reqAlarmMete(objid, info, "118206001");
+                usleep(500 * 1000);
+                su->reqAlarmMete(objid, info, "118205001");
+            }
+
+            su->state.timestamp = getTickCount();
+            printf("timestampdata=%ld,\n",su->state.timestamp);
+            usleep(500 * 1000);
+            do {
+                data_iter++;
+                if (data_iter == su->objs.end()) {
+                    data_iter = su->objs.begin();
+                }
+            } while (data_iter->second.type == DevType_CabLock);
+        }
 
 		for(iter = su->objs.begin();iter != su->objs.end();iter++)
 		{
@@ -353,7 +380,7 @@ void SupervisionZTE::HttpCallback(Http *http, Http::Value_S value, void *userdat
     if (para == NULL)
         return;
 
-    //printf("code:%ld  data = %s ,para type = %d\n",value.code,value.data,para->reqType);
+    printf("code:%ld  data = %s ,para type = %d\n",value.code,value.data,para->reqType);
     if (value.code == 200 || value.code == 202) {
         CJsonObject json(value.data), jsResult;
         uint16_t i,j;
@@ -435,6 +462,7 @@ void SupervisionZTE::HttpCallback(Http *http, Http::Value_S value, void *userdat
 
         case Req_Data:{
             ObjInfo_S *info = para->objinfo;
+            uint16_t resSize;
 
             if (!json.Get("result", jsResult))
                 break;
@@ -442,52 +470,125 @@ void SupervisionZTE::HttpCallback(Http *http, Http::Value_S value, void *userdat
             if(info == NULL)
                 break;
 
+            resSize = jsResult.GetArraySize();
+
             switch (info->type) {
             case DevType_SuHost: {
                 su->state.linked = true;
-                su->state.cpuRate = getResFromJson(jsResult,"138101001");
-                su->state.memRate = getResFromJson(jsResult,"138102001");
-                su->state.devDateTime = getResFromJson(jsResult,"138103001");
+                su->state.cpuRate = getResFromJson(jsResult,"138101001","");
+                su->state.memRate = getResFromJson(jsResult,"138102001","");
+                su->state.devDateTime = getResFromJson(jsResult,"138103001","");
             } break;
             case DevType_TemHumi: {
                 if(info->index < 0 || info->index > 1)
                     break;
 
-                su->state.temhumi[info->index].humity = getResFromJson(jsResult,"118201001");
-                su->state.temhumi[info->index].tempture = getResFromJson(jsResult,"118204001");
+                if (resSize == 0) {
+                    su->state.temhumi[info->index].isLink = false;
+                    break;
+                }
+
+                su->state.temhumi[info->index].isLink = true;
+                su->state.temhumi[info->index].humity = getResFromJson(jsResult, "118201001","");
+                su->state.temhumi[info->index].tempture = getResFromJson(jsResult, "118204001","");
+            } break;
+			case DevType_Immer: {
+                if(info->index < 0 || info->index > 1)
+                    break;
+
+                if (resSize == 0) {
+                    su->state.immerWarn[info->index].isLink = false;
+                    break;
+                }
+
+                su->state.immerWarn[info->index].isLink = true;
+                su->state.immerWarn[info->index].warning = getResFromJson(jsResult, "118001001","");
+            } break;
+			case DevType_Magnet: {
+                if(info->index < 0 || info->index > 1)
+                    break;
+
+                if (resSize == 0) {
+                    su->state.magnetWarn[info->index].isLink = false;
+                    break;
+                }
+
+                su->state.magnetWarn[info->index].isLink = true;
+                su->state.magnetWarn[info->index].warning = getResFromJson(jsResult, "118012001","");
+            } break;
+
+			case DevType_Smoke: {
+                if(info->index < 0 || info->index > 1)
+                    break;
+
+                if (resSize == 0) {
+                    su->state.smokeWarn[info->index].isLink = false;
+                    break;
+                }
+
+                su->state.smokeWarn[info->index].isLink = true;
+                su->state.smokeWarn[info->index].warning = getResFromJson(jsResult, "118002001","");
             } break;
             case DevType_AirCo: {
                 if(info->index < 0 || info->index > 1)
                     break;
 
-                su->state.airco[info->index].state = getResFromJson(jsResult,"115008001");
-                su->state.airco[info->index].interFanSta = getResFromJson(jsResult,"115009001");
-                su->state.airco[info->index].exterFanSta = getResFromJson(jsResult,"115010001");
-                su->state.airco[info->index].compressorSta = getResFromJson(jsResult,"115011001");
-                su->state.airco[info->index].retTempture = getResFromJson(jsResult,"115012001");
-                su->state.airco[info->index].outDoorTempture = getResFromJson(jsResult,"115013001");
-                su->state.airco[info->index].condenserTemp = getResFromJson(jsResult,"115014001");
-                su->state.airco[info->index].dcVol = getResFromJson(jsResult,"115016001");
-                su->state.airco[info->index].hiTempWarn = getResFromJson(jsResult,"115018001");
-                su->state.airco[info->index].lowTempWarn = getResFromJson(jsResult,"115019001");
-                su->state.airco[info->index].interFanFault = getResFromJson(jsResult,"115020001");
-                su->state.airco[info->index].exterFanFault = getResFromJson(jsResult,"115021001");
-                su->state.airco[info->index].compressorFault = getResFromJson(jsResult,"115022001");
-                su->state.airco[info->index].dcOverVol = getResFromJson(jsResult,"115023001");
-                su->state.airco[info->index].dcUnderVol = getResFromJson(jsResult,"115024001");
-                su->state.airco[info->index].acOverVol = getResFromJson(jsResult,"115025001");
-                su->state.airco[info->index].acUnderVol = getResFromJson(jsResult,"115026001");
-                su->state.airco[info->index].acPowDown = getResFromJson(jsResult,"115027001");
+                if (resSize == 0) {
+                    su->state.airco[info->index].isLink = false;
+                    break;
+                }
+                su->state.airco[info->index].isLink = true;
+                su->state.airco[info->index].state = getResFromJson(jsResult,"115008001","115238001");
+                su->state.airco[info->index].interFanSta = getResFromJson(jsResult,"115009001","115009001");
+                su->state.airco[info->index].exterFanSta = getResFromJson(jsResult,"115010001","115010001");
+                su->state.airco[info->index].compressorSta = getResFromJson(jsResult,"115011001","");
+                su->state.airco[info->index].retTempture = getResFromJson(jsResult,"115012001","115236001");
+                su->state.airco[info->index].outDoorTempture = getResFromJson(jsResult,"115013001","");
+                su->state.airco[info->index].condenserTemp = getResFromJson(jsResult,"115014001","");
+                su->state.airco[info->index].dcVol = getResFromJson(jsResult,"115016001","115015001");
+                su->state.airco[info->index].hiTempWarn = getResFromJson(jsResult,"115018001","115018001");
+                su->state.airco[info->index].lowTempWarn = getResFromJson(jsResult,"115019001","115019001");
+                su->state.airco[info->index].interFanFault = getResFromJson(jsResult,"115020001","");
+                su->state.airco[info->index].exterFanFault = getResFromJson(jsResult,"115021001","");
+                su->state.airco[info->index].compressorFault = getResFromJson(jsResult,"115022001","");
+                su->state.airco[info->index].dcOverVol = getResFromJson(jsResult,"115023001","115241001");
+                su->state.airco[info->index].dcUnderVol = getResFromJson(jsResult,"115024001","115242001");
+                su->state.airco[info->index].acOverVol = getResFromJson(jsResult,"115025001","");
+                su->state.airco[info->index].acUnderVol = getResFromJson(jsResult,"115026001","");
+                su->state.airco[info->index].acPowDown = getResFromJson(jsResult,"115027001","");
             } break;
-            case DevType_LiBat: {
+            case DevType_LiBat:
+			{
                 /* 锂电池 */
+                if (resSize == 0) {
+                    su->state.libat[info->index].isLink = false;
+                    break;
+                }
 
+                su->state.libat[info->index].isLink = true;
+				su->state.libat[info->index].voltage = getResFromJson(jsResult,"190229001","");
+				su->state.libat[info->index].capacity = getResFromJson(jsResult,"190264001","");
+				su->state.libat[info->index].fullCap = getResFromJson(jsResult,"190265001","");
+				su->state.libat[info->index].SOH = getResFromJson(jsResult,"190263001","");
+				su->state.libat[info->index].SOC = getResFromJson(jsResult,"190262001","");
             } break;
             case DevType_LiFeBat: {
-               /* 铁锂电池(暂时复制锂电池) */
+                /* 铁锂电池(暂时复制锂电池) */
+			    su->state.lifebat[info->index].isLink = su->state.libat[info->index].isLink;
+				su->state.lifebat[info->index].voltage= su->state.libat[info->index].voltage;
+				su->state.lifebat[info->index].capacity =su->state.libat[info->index].capacity;
+				su->state.lifebat[info->index].fullCap =su->state.libat[info->index].fullCap;
+				su->state.lifebat[info->index].SOH =su->state.libat[info->index].SOH;
+				su->state.lifebat[info->index].SOC =su->state.libat[info->index].SOC;
             } break;
             case DevType_UPS: {
-                     /* UPS */
+                /* UPS */
+                if (resSize == 0) {
+                    su->state.ups.isLink = false;
+                    break;
+                }
+
+                su->state.ups.isLink = true;
             } break;
             case DevType_CabLock: {
                 string strData;
@@ -495,6 +596,13 @@ void SupervisionZTE::HttpCallback(Http *http, Http::Value_S value, void *userdat
                 
                 if (!jsResult.Get("data", strData))
                     break;
+
+                if (resSize == 0) {
+                    su->state.lock[info->index].isLink = false;
+                    break;
+                }
+
+                su->state.lock[info->index].isLink = true;
 
                 data = (uint8_t *)malloc(100);
 
@@ -514,14 +622,26 @@ void SupervisionZTE::HttpCallback(Http *http, Http::Value_S value, void *userdat
 
             } break;
 
-            case DevType_PowSupply: {
-            } break;
+            case DevType_PowSupply: 
+				{
+					su->state.powSupply.rectifierOutVol = getResFromJson(jsResult,"106304001","");
+					su->state.powSupply.rectifierOutCurr = getResFromJson(jsResult,"106305001","");
+					su->state.powSupply.rectifierOutTemp = getResFromJson(jsResult,"106002001","");
+					su->state.powSupply.acInPhaseUa = getResFromJson(jsResult,"106400001","");
+					su->state.powSupply.acInPhaseUb = getResFromJson(jsResult,"106417001","");
+					su->state.powSupply.acInPhaseUc = getResFromJson(jsResult,"106425001","");
+					su->state.powSupply.acInPhaseIa = getResFromJson(jsResult,"106335002","");	// 实际是电池组1#电流
+					su->state.powSupply.acInPhaseIb = getResFromJson(jsResult,"106335001",""); // 实际是电池组3#电流
+					su->state.powSupply.acInPhaseIb = getResFromJson(jsResult,"106335001",""); // 实际是电池组3#电流
+            	} 
+				break;
             }
         }break;
         case Req_Warning:{
             // printf("Warning data:%s\n",value.data);
 
             CJsonObject json(value.data),res;
+			map<string,ObjInfo_S>::iterator iter;
 
             if (!json.Get("result", res))
                 break;
@@ -529,26 +649,108 @@ void SupervisionZTE::HttpCallback(Http *http, Http::Value_S value, void *userdat
             if(res.GetArraySize() <= 0)
                 break;
 
-            su->state.temhumi[0].warning = getWarnFromJson(res,"22550",&su->state.temhumi[0].warnTime);
-            
-            su->state.magnetWarn[0].warning = getWarnFromJson(res,"22826",&su->state.magnetWarn[0].warnTime);
-            su->state.magnetWarn[1].warning = getWarnFromJson(res,"22827",&su->state.magnetWarn[1].warnTime);
-            
-            su->state.smokeWarn[0].warning = getWarnFromJson(res,"22412",&su->state.smokeWarn[0].warnTime);
-            su->state.smokeWarn[1].warning = getWarnFromJson(res,"41",&su->state.smokeWarn[1].warnTime);
-            
-            su->state.immerWarn[0].warning = getWarnFromJson(res,"22825",&su->state.immerWarn[0].warnTime);
-            su->state.powSupply.warning = getWarnFromJson(res,"15",&su->state.powSupply.warnTime);
-           
-            su->state.airco[0].warning = getWarnFromJson(res,"21454",&su->state.airco[0].warnTime);
+			for(iter = su->objs.begin();iter != su->objs.end();iter++)
+			{
+	            ObjInfo_S *info = &iter->second;
+	            string objid = iter->first;
 
-            su->state.lifebat[0].warning = getWarnFromJson(res,"22140",&su->state.lifebat[0].warnTime);
-            su->state.lifebat[1].warning = getWarnFromJson(res,"22141",&su->state.lifebat[1].warnTime);
-            su->state.lifebat[2].warning = getWarnFromJson(res,"23063",&su->state.lifebat[2].warnTime);
-            su->state.lifebat[3].warning = getWarnFromJson(res,"23064",&su->state.lifebat[3].warnTime);
-        
+				if (info->type == DevType_TemHumi)
+				{
+					if (info->index < 2)
+					{
+						su->state.temhumi[info->index].warning = getWarnFromJson(res,objid,&su->state.temhumi[info->index].warnTime);
+						printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),info->index,su->state.temhumi[info->index].warning.c_str());
+					}
+				}
+				else if (info->type == DevType_Magnet)
+				{
+					if (info->index < 2)
+					{
+						su->state.magnetWarn[info->index].warning = getWarnFromJson(res,objid,&su->state.magnetWarn[info->index].warnTime);
+						printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),info->index,su->state.magnetWarn[info->index].warning.c_str());
+					}
+				}
+				else if (info->type == DevType_Smoke)
+				{
+					if (info->index < 2)
+					{
+						su->state.smokeWarn[info->index].warning = getWarnFromJson(res,objid,&su->state.smokeWarn[info->index].warnTime);
+						printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),info->index,su->state.smokeWarn[info->index].warning.c_str());
+					}
+				}
+				else if (info->type == DevType_Immer)
+				{
+					if (info->index < 2)
+					{
+						su->state.immerWarn[info->index].warning = getWarnFromJson(res,objid,&su->state.immerWarn[info->index].warnTime);
+						printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),info->index,su->state.immerWarn[info->index].warning.c_str());
+					}
+				}
+				else if (info->type == DevType_PowSupply)
+				{
+					su->state.powSupply.warning = getWarnFromJson(res,objid,&su->state.powSupply.warnTime);
+					printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),0,su->state.powSupply.warning.c_str());
+				}
+				else if (info->type == DevType_AirCo)
+				{
+					if (info->index < 2)
+					{
+						su->state.airco[info->index].warning = getWarnFromJson(res,objid,&su->state.airco[info->index].warnTime);
+						printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),info->index,su->state.airco[info->index].warning.c_str());
+					}
+				}
+				else if (info->type == DevType_LiBat)
+				{
+					if (info->index < 4)
+					{
+						su->state.libat[info->index].warning = getWarnFromJson(res,objid,&su->state.libat[info->index].warnTime);
+						printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),info->index,su->state.libat[info->index].warning.c_str());
+					}
+				}
+				else if (info->type == DevType_LiFeBat)
+				{
+					if (info->index < 4)
+					{
+						su->state.lifebat[info->index].warning = getWarnFromJson(res,objid,&su->state.lifebat[info->index].warnTime);
+						printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),info->index,su->state.libat[info->index].warning.c_str());
+					}
+				}
+				else
+				{
+					;
+				}
+	        }
+        } break;
+        case Req_Alarm: {
+            ObjInfo_S *info = para->objinfo;
 
-        
+            if (!json.Get("result", jsResult))
+                break;
+
+            if (info == NULL)
+                break;
+
+            switch (info->type) {
+            case DevType_TemHumi: {
+                if (info->index < 0 || info->index > 1)
+                    break;
+
+                string meteId = jsResult["meteId"].ToString();
+
+                if (meteId == "118202001") //温度过高
+                    jsResult.Get("lowThreshold", su->state.temhumi[info->index].tempUpperLimit);
+
+                else if (meteId == "118203001") //温度过低
+                    jsResult.Get("highThreshold", su->state.temhumi[info->index].tempLowerLimit);
+
+                else if (meteId == "118206001") //湿度过高
+                    jsResult.Get("lowThreshold", su->state.temhumi[info->index].humiUpperLimit);
+
+                else if (meteId == "118205001") //湿度过低
+                    jsResult.Get("highThreshold", su->state.temhumi[info->index].humiLowerLimit);
+
+            } break;
+            }
         }break;
         }
     }
@@ -562,8 +764,9 @@ static void stateInit(SupervisionZTE::State_S *state){
 
     uint8_t i;
 
-    state->linked = false;    //连接状态
-    state->timestamp = 0;; //状态获取时间戳
+    state->linked = false; //连接状态
+    state->timestamp = 0;
+    ; //状态获取时间戳
 
     state->devNum[DEV_TYPE_NUM]; //各类设备数量
 
@@ -574,6 +777,10 @@ static void stateInit(SupervisionZTE::State_S *state){
     for (i = 0; i < 2; i++) {
         state->temhumi[i].humity = "2147483647";
         state->temhumi[i].tempture = "2147483647";
+        state->temhumi[i].tempUpperLimit = "2147483647";
+        state->temhumi[i].tempLowerLimit = "2147483647";
+        state->temhumi[i].humiUpperLimit = "2147483647";
+        state->temhumi[i].humiLowerLimit = "2147483647";
         state->temhumi[i].warning = "2147483647";
         state->temhumi[i].warnTime = "2147483647";
 
@@ -648,34 +855,44 @@ static void stateInit(SupervisionZTE::State_S *state){
 
 }
 
-static string getResFromJson(CJsonObject res,string id){
+static string getResFromJson(CJsonObject res,string id1,string id2)
+{
     if(res.GetArraySize() <= 0)
-        return "";
+        return "2147483647";
 
     uint8_t i;
     string getId,val;
-    for(i = 0;i < res.GetArraySize();i++){
-        if(res[i].Get("Id",getId) && getId == id){
-            res[i].Get("Value",val);
-            return val;
+    for(i = 0;i < res.GetArraySize();i++)
+	{
+        if(res[i].Get("Id",getId))
+		{
+			if ((getId == id1) ||((id2 != "")&&(getId == id2)))
+			{
+	            res[i].Get("Value",val);
+	            return val;
+			}
         }
     }
 
-    return "";
+    return "2147483647";
 }
 
-static string getWarnFromJson(CJsonObject res,string id,string *time){
+static string getWarnFromJson(CJsonObject res,string id,string *time)
+{
     if(res.GetArraySize() <= 0)
         return "0";
 
     uint8_t i;
     string getId,val;
-    for(i = 0;i < res.GetArraySize();i++){
-        if(res[i].Get("DeviceId",getId) && getId == id){
-            if(time != NULL){
-                res[i].Get("AlarmTime",*time);
-            }
-            return "1";
+    for(i = 0;i < res.GetArraySize();i++)
+	{
+        if(res[i].Get("DeviceId",getId) &&(getId == id))
+		{
+	        if(time != NULL)
+			{
+	             res[i].Get("AlarmTime",*time);
+	        }
+	       	return "1";
         }
     }
 

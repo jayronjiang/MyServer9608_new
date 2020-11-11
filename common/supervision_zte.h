@@ -62,14 +62,20 @@ public:
 
     /* 数字温湿度 */
     typedef struct {
+        bool isLink;
         std::string tempture; // 温度
         std::string humity;   // 湿度
         std::string warning;
         std::string warnTime;
+        std::string tempUpperLimit;
+        std::string tempLowerLimit;
+        std::string humiUpperLimit;
+        std::string humiLowerLimit;
     } TemHumi_S;
 
     /* 普通空调 */
     typedef struct {
+        bool isLink;
         std::string state;           // 设备工作状态
         std::string interFanSta;     // 内风机状态
         std::string exterFanSta;     // 外风机状态
@@ -94,26 +100,33 @@ public:
 
     /* 锂电池 */
     typedef struct {
+        bool isLink;
         std::string voltage;// 电池组电压
         std::string capacity;// 剩余容量
         std::string fullCap;// 满充容量
         std::string monTempture;// 单体温度
+        std::string SOH;
+        std::string SOC;
         std::string warning;
         std::string warnTime;
     } LiBat_S;
 
     /* 铁锂电池 */
     typedef struct {
+        bool isLink;
         std::string voltage;// 电池组电压
         std::string capacity;// 剩余容量
         std::string fullCap;// 满充容量
         std::string monTempture;// 单体温度
+        std::string SOH;
+        std::string SOC;
         std::string warning;
         std::string warnTime;
     } LiFeBat_S;
 
     /* UPS */
     typedef struct {
+        bool isLink;
         std::string mainsVol;      // Ups市电电压
         std::string outVol;        // Ups输出电压
         std::string tempture;      // Ups温度
@@ -131,6 +144,7 @@ public:
 
     /* 开关电源 */
     typedef struct{
+        bool isLink;
         std::string rectifierOutVol;//整流模块输出电压
         std::string rectifierOutCurr;//整流模块输出电流
         std::string rectifierOutTemp;//整流模块温度
@@ -146,30 +160,35 @@ public:
 
     /* 水浸*/
     typedef struct{
+    	bool isLink;
         std::string warning;
         std::string warnTime;
     }Immer_S;
 
     /* 门磁 */
     typedef struct{
+    	bool isLink;
         std::string warning;
         std::string warnTime;
     }Magnet_S;
 
     /* 烟感*/
     typedef struct{
+    	bool isLink;
         std::string warning;
         std::string warnTime;
     }Smoke_S;
 
     /* 摄像头警告 */
     typedef struct{
+    	bool isLink;
         std::string warning;
         std::string warnTime;
     }CamAlarm_S;
 
     /* cabinet_lock */
     typedef struct {
+        bool isLink;
         uint8_t addr;
         uint32_t cardId;
     }CabLock_S;
@@ -208,6 +227,7 @@ private:
         Req_Data,
         Req_Warning,
         Req_SensorPort,
+        Req_Alarm,
     }ReqType_EN;
 
     typedef struct {
@@ -304,6 +324,7 @@ private:
     void reqWarning(void);
     void reqSensorPort(void);
     void reqObjData(std::string objid, ObjInfo_S *info);
+    void reqAlarmMete(std::string objid, ObjInfo_S *info,std::string mId);
     void ctrlLock(uint16_t cmd, std::string objid, ObjInfo_S *info);
     void httpRequest(void *para);
 
