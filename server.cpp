@@ -78,6 +78,7 @@ extern tsPanel *pCPanel;
 extern AirCondition *pCAirCondition;			//空调
 extern AirCondition::AirInfo_S AirCondInfo;		//直流空调结构体
 extern CallBackTimeStamp CBTimeStamp;				//外设采集回调时间戳
+extern SupervisionZTE *pCZTE;				//中兴机柜对象
 
 
 extern string zteLockDevID[4];
@@ -867,6 +868,11 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 			// 如果是生久电子锁
 			pCLock[0]->open();
 		}
+		else if(pConf->StrLockType=="3")
+		{
+			// 如果是中兴电子锁
+			pCZTE->openLock(DEV_FRONT_DOOR,ZTE_DOOR_OPEN);
+		}
 		usleep(2000);
 	 }
 	 if(pstuRCtrl->BackDoorCtrl==ACT_UNLOCK)				 //开锁
@@ -882,6 +888,11 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 			// 如果是生久电子锁
 			pCLock[1]->open();
 		}
+		else if(pConf->StrLockType=="3")
+		{
+			// 如果是中兴电子锁
+			pCZTE->openLock(DEV_BACK_DOOR,ZTE_DOOR_OPEN);
+		}
 		usleep(2000);
 	 }
 	 if(pstuRCtrl->SideDoorCtrl==ACT_UNLOCK && pConf->StrLockNum>="3")	 //开锁
@@ -892,10 +903,15 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 			// 如果是华为电子锁
 			pHWCLock[2]->open();
 		}
-		else if(pConf->StrLockType=="1")
+		else if(pConf->StrLockType=="2")
 		{
 			// 如果是生久电子锁
 			pCLock[2]->open();
+		}
+		else if(pConf->StrLockType=="3")
+		{
+			// 如果是中兴电子锁
+			pCZTE->openLock(POWER_FRONT_DOOR,ZTE_DOOR_OPEN);
 		}
 		usleep(2000);
 	 }
@@ -907,10 +923,15 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 			// 如果是华为电子锁
 			pHWCLock[3]->open();
 		}
-		else if(pConf->StrLockType=="1")
+		else if(pConf->StrLockType=="2")
 		{
 			// 如果是生久电子锁
 			pCLock[3]->open();
+		}
+		else if(pConf->StrLockType=="3")
+		{
+			// 如果是中兴电子锁
+			pCZTE->openLock(POWER_BACK_DOOR,ZTE_DOOR_OPEN);
 		}
 		usleep(2000);
 	 }

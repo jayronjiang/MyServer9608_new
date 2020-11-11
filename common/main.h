@@ -34,6 +34,7 @@
 #include "moninterface.h"
 #include "camera.h"
 #include "CsshDev.h"
+#include "supervision_zte.h"
 
 using namespace std; 
 

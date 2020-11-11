@@ -27,7 +27,7 @@ extern VMCONTROL_STATE VMCtl_State;	//控制器运行状态结构体
 extern VMCONTROL_CONFIG VMCtl_Config;	//控制器配置信息结构体
 
 CfirewallClient *pCfirewallClient[FIREWARE_NUM] = {NULL,NULL};	//防火墙对象
-CswitchClient *pCswitchClient[IPSWITCH_NUM] = {NULL,NULL};		//交换机对象
+CswitchClient *pCswitchClient[IPSWITCH_NUM] = {NULL,NULL,NULL,NULL};		//交换机对象
 Artc *pCArtRSU[RSUCTL_NUM] = {NULL,NULL};;					//RSU对象
 Huawei *pCHWRSU[RSUCTL_NUM] = {NULL,NULL};;					//RSU对象
 IPCam *pCVehplate[VEHPLATE_NUM];			//300万车牌识别仪对象
@@ -49,6 +49,7 @@ AirCondition::AirInfo_S AirCondInfo;		//直流空调结构体
 TemHumi::Info_S TemHumiInfo;				//温湿度结构体
 Lock::Info_S LockInfo[LOCK_NUM];			//电子锁结构体
 CallBackTimeStamp CBTimeStamp;				//外设采集回调时间戳
+SupervisionZTE *pCZTE = NULL;				//中兴机柜对象
 
 //#define CARD_NUM		5	// 暂时为5张卡
 //Lock *pCLock[LOCKER_MAX_NUM] = {NULL,NULL,NULL,NULL};
@@ -142,6 +143,11 @@ int main(void)
 		//IO
 	    pCIOdev = IODev::getInstance();
 	    pCIOdev->setCallback(IODevCallback,NULL);
+	}
+	else if(pConf->StrCabinetType=="5")			//中兴机柜
+	{
+		 pCZTE = new SupervisionZTE(pConf->StrHWServer,pConf->StrHWGetPasswd,pConf->StrHWSetPasswd);	
+		 pCZTE->setCallback(SuZTECallback,NULL);
 	}
 
 	/* 机柜监控摄像头，传参为摄像头IP地址以及 IMA_SAVE_PATH_ROOT 下图片文件夹名 */

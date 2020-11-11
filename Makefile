@@ -44,6 +44,7 @@ LIBS          =  $(SUBLIBS)  ./alib/CsshClient.a \
 							 ./alib/libmoninterface.a \
 							 ./alib/libtcp.a \
 							 ./alib/libcsshdev.a \
+							 ./alib/libsupervision.a \
 							 ./libiconv/lib/*.a \
 							 -L./goahead/bin -lgo -ldl  -lrt -lpthread 
 
@@ -62,7 +63,6 @@ OBJECTS       =  build/main.o     \
                  build/global.o \
                  build/tea.o   \
                  build/HttpServer.o \
-                 build/libsupervisionzte.o     \
                  build/config.o   
 
 
@@ -125,10 +125,6 @@ build/tea.o: tea.cpp \
 build/HttpServer.o: HttpServer.cpp \
     common/HttpServer.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) $(LIBS) -o build/HttpServer.o HttpServer.cpp
-
-build/libsupervisionzte.o: supervision_zte.cpp \
-    common/supervision_zte.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) $(LIBS) -o build/libsupervisionzte.o supervision_zte.cpp
 
 
 	

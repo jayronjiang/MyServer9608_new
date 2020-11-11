@@ -1092,5 +1092,92 @@ void HttpCallback(Http *http, Http::Value_S value, void *userdata){
         printf("capture IsCapturing\n");
 }*/
 
+/* 中兴动环回调 */
+void SuZTECallback(SupervisionZTE::State_S sta,void *userdata){
+    
+    printf("Supervision ZTE Callback .. \n");
+#if 0
+    uint8_t i;
+    for(i = 0;i < DEV_TYPE_NUM;i++){
+        printf("%s = %d\n",StrDevType[i].c_str(),sta.devNum[i]);
+    }
+
+
+    for (i = 0; i < 2; i++) {
+        printf("temhumi[%d].humity:%s\n",i,sta.temhumi[i].humity.c_str());
+        printf("sta.temhumi[%d].tempture:%s\n",i,sta.temhumi[i].tempture.c_str());
+        printf("sta.temhumi[%d].warning:%s\n",i,sta.temhumi[i].warning.c_str());
+        printf("sta.temhumi[%d].warnTime:%s\n",i,sta.temhumi[i].warnTime.c_str());
+
+        printf("sta.airco[%d].dcVol:%s\n",i,sta.airco[i].dcVol.c_str());
+        printf("sta.airco[%d].exterFanFault:%s\n",i,sta.airco[i].exterFanFault.c_str());
+        printf("sta.airco[%d].exterFanSta:%s\n",i,sta.airco[i].exterFanSta.c_str());
+        printf("sta.airco[%d].hiTempWarn:%s\n",i,sta.airco[i].hiTempWarn.c_str());
+        printf("sta.airco[%d].interFanFault:%s\n",i,sta.airco[i].interFanFault.c_str());
+        printf("sta.airco[%d].interFanSta:%s\n",i,sta.airco[i].interFanSta.c_str());
+        printf("sta.airco[%d].lowTempWarn:%s\n",i,sta.airco[i].lowTempWarn.c_str());
+        printf("sta.airco[%d].outDoorTempture:%s\n",i,sta.airco[i].outDoorTempture.c_str());
+        printf("sta.airco[%d].retTempture:%s\n",i,sta.airco[i].retTempture.c_str());
+        printf("sta.airco[%d].state:%s\n",i,sta.airco[i].state.c_str());
+        printf("sta.airco[%d].warning:%s\n",i,sta.airco[i].warning.c_str());
+        printf("sta.airco[%d].warnTime:%s\n",i,sta.airco[i].warnTime.c_str());
+
+        printf("sta.immerWarn[%d].warning:%s\n",i,sta.immerWarn[i].warning.c_str());
+        printf("sta.immerWarn[%d].warnTime:%s\n",i,sta.immerWarn[i].warnTime.c_str());
+
+        printf("sta.magnetWarn[%d].warning:%s\n",i,sta.magnetWarn[i].warning.c_str());
+        printf("sta.magnetWarn[%d].warnTime:%s\n",i,sta.magnetWarn[i].warnTime.c_str());
+
+        printf("sta.smokeWarn[%d].warning:%s\n",i,sta.smokeWarn[i].warning.c_str());
+        printf("sta.smokeWarn[%d].warnTime:%s\n",i,sta.smokeWarn[i].warnTime.c_str());
+
+        printf("sta.camAlarmWarn[%d].warning:%s\n",i,sta.camAlarmWarn[i].warning.c_str());
+        printf("sta.camAlarmWarn[%d].warnTime:%s\n",i,sta.camAlarmWarn[i].warnTime.c_str());
+    }
+
+    for (i = 0; i < 4; i++) {
+        printf("sta.libat[%d].capacity:%s\n",i,sta.libat[i].capacity.c_str());
+        printf("sta.libat[%d].fullCap:%s\n",i,sta.libat[i].fullCap.c_str());
+        printf("sta.libat[%d].monTempture:%s\n",i,sta.libat[i].monTempture.c_str());
+        printf("sta.libat[%d].voltage:%s\n",i,sta.libat[i].voltage.c_str());
+        printf("sta.libat[%d].warning:%s\n",i,sta.libat[i].warning.c_str());
+        printf("sta.libat[%d].warnTime:%s\n",i,sta.libat[i].warnTime.c_str());
+
+        printf("sta.lifebat[%d].capacity:%s\n",i,sta.lifebat[i].capacity.c_str());
+        printf("sta.lifebat[%d].fullCap:%s\n",i,sta.lifebat[i].fullCap.c_str());
+        printf("sta.lifebat[%d].monTempture:%s\n",i,sta.lifebat[i].monTempture.c_str());
+        printf("sta.lifebat[%d].voltage:%s\n",i,sta.lifebat[i].voltage.c_str());
+        printf("sta.lifebat[%d].warning:%s\n",i,sta.lifebat[i].warning.c_str());
+        printf("sta.lifebat[%d].warnTime:%s\n",i,sta.lifebat[i].warnTime.c_str());
+
+        printf("sta.lock[%d].addr:%d\n",i,sta.lock[i].addr);
+    }
+
+    printf("sta.ups.faultWarn:%s\n",sta.ups.faultWarn.c_str());
+    printf("sta.ups.inputFreq:%s\n",sta.ups.inputFreq.c_str());
+    printf("sta.ups.inputVol:%s\n",sta.ups.inputVol.c_str());
+    printf("sta.ups.isBypass:%s\n",sta.ups.isBypass.c_str());
+    printf("sta.ups.loadPercent:%s\n",sta.ups.loadPercent.c_str());
+    printf("sta.ups.lowBatVol:%s\n",sta.ups.lowBatVol.c_str());
+    printf("sta.ups.lowBatWarn:%s\n",sta.ups.lowBatWarn.c_str());
+    printf("sta.ups.mainsVol:%s\n",sta.ups.mainsVol.c_str());
+    printf("sta.ups.mainsVolAbnor:%s\n",sta.ups.mainsVolAbnor.c_str());
+    printf("sta.ups.outVol:%s\n",sta.ups.outVol.c_str());
+    printf("sta.ups.runState:%s\n",sta.ups.runState.c_str());
+    printf("sta.ups.tempture:%s\n",sta.ups.tempture.c_str());
+
+    printf("sta.powSupply.acInPhaseIa:%s\n",sta.powSupply.acInPhaseIa.c_str());
+    printf("sta.powSupply.acInPhaseIb:%s\n",sta.powSupply.acInPhaseIb.c_str());
+    printf("sta.powSupply.acInPhaseIc:%s\n",sta.powSupply.acInPhaseIc.c_str());
+    printf("sta.powSupply.acInPhaseUa:%s\n",sta.powSupply.acInPhaseUa.c_str());
+    printf("sta.powSupply.acInPhaseUb:%s\n",sta.powSupply.acInPhaseUb.c_str());
+    printf("sta.powSupply.acInPhaseUc:%s\n",sta.powSupply.acInPhaseUc.c_str());
+    printf("sta.powSupply.rectifierOutCurr:%s\n",sta.powSupply.rectifierOutCurr.c_str());
+    printf("sta.powSupply.rectifierOutTemp:%s\n",sta.powSupply.rectifierOutTemp.c_str());
+    printf("sta.powSupply.rectifierOutVol:%s\n",sta.powSupply.rectifierOutVol.c_str());
+    printf("sta.powSupply.warning:%s\n",sta.powSupply.warning.c_str());
+    printf("sta.powSupply.warnTime:%s\n",sta.powSupply.warnTime.c_str());
+#endif
+}
 
 

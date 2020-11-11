@@ -28,6 +28,7 @@
 #include "camera.h"
 #include "http.h"
 #include "CsshDev.h"
+#include "supervision_zte.h"
 
 using namespace std;//引入整个名空间
 
@@ -56,6 +57,7 @@ void initAirConditionInfo(AirCondition::AirInfo_S *Info);
 void CameraCallback(Camera::MsgType_EN msg,const char *jpgName,void *userdata);
 void init_sshdev_struct(CsshDev *psshdev);
 //void HttpCallback(Http *http, Http::Value_S value, void *userdata);
+void SuZTECallback(SupervisionZTE::State_S sta,void *userdata);
 
 #endif
 

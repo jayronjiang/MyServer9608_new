@@ -59,9 +59,6 @@ typedef unsigned long long  UINT64;
 #define DATA_ERR						0x03		/*数据错误*/
 #define OPERATION_ERR				0x04		/*无效操作*/
 
-#define FRAME_HEAD_NUM 				3	/*MODBUS读数据时返回帧有效数据前数据个数*/
-
-
 /*电源控制器地址*/
 #define POWER_CTRL_ADDR			71		/*电源控制器地址*/
 
@@ -114,9 +111,9 @@ typedef unsigned long long  UINT64;
 //预留12路天线
 #define ANTENNA_NUM 12
 //预留2台交换机
-#define IPSWITCH_NUM 2
+#define IPSWITCH_NUM 4
 //预留2台防火墙
-#define FIREWARE_NUM 2
+#define FIREWARE_NUM 4
 //预留4路CAM
 #define CAM_NUM 4
 //预留2路ATLAS
@@ -158,6 +155,12 @@ typedef unsigned long long  UINT64;
 //最大支持4路485串口
 #define RS485_CNT			4
 
+#define TYPE_LEIXUN		1
+#define TYPE_HUAZI		2
+#define TYPE_KY			3	// 宽永
+#define TYPE_ZPTA		4	// 中普同安
+#define TYPE_ZPZH		5	// 中普众合
+#define TYPE_KY0M		6	// 宽永0M型号,广西路段
 
 /*功能码*/
 #define	READ_REGS				0x03           //读寄存器
@@ -274,7 +277,6 @@ typedef struct device_params_struct	/*共384个字节*/
 }DEVICE_PARAMS;
 
 //控制器参数结构体
-#define TYPE_LEIXUN		1	// 与SPDCLIENT.H要保持一致
 typedef struct vmctl_config_struct
 {
 	string STRCONFIG = "";
