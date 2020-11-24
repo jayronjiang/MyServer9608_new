@@ -73,28 +73,8 @@ int GetConfig(void)
 	//CABINETTYPE:作为区分机柜类型，用于编译不同的代码
 	//CABINETTYPE  1：华为（包括华为单门 双门等） 5：中兴; 6：金晟安; 7：爱特斯; 8:诺龙; 9：容尊堡; 
 				//10:亚邦; 11：艾特网能；12：华软
-    #if(CABINETTYPE == 1) //华为
-	   pConf->StrVersionNo ="V2.01.09" ;//当前版本号
-	   pConf->StrSoftDate="2020-11-13" ;	//当前版本日期
-    #elif (CABINETTYPE == 5) //飞达中兴
-       pConf->StrVersionNo ="V1.05.25b" ;
-   	   pConf->StrSoftDate="2020-07-13" ;	 //当前版本日期
-    #elif (CABINETTYPE == 6) //金晟安
-       pConf->StrVersionNo ="V1.06.26a" ;//当前版本号 
-	   pConf->StrSoftDate="2020-04-13" ;	  //当前版本日期
-    #elif (CABINETTYPE == 7) //爱特斯
-       pConf->StrVersionNo ="V1.07.22" ;//当前版本号
-	   pConf->StrSoftDate="2020-01-09" ;	//当前版本日期
-	#elif (CABINETTYPE == 8 || CABINETTYPE == 10) //诺龙/亚邦
-	   pConf->StrVersionNo ="V1.08.27" ;//当前版本号
-	   pConf->StrSoftDate="2020-07-13" ;   //当前版本日期
-	#elif (CABINETTYPE == 9) //容尊
-	   pConf->StrVersionNo ="V1.09.26a" ;//当前版本号
-	   pConf->StrSoftDate="2020-05-04" ;   //当前版本日期
-	#elif (CABINETTYPE == 11) //艾特网能
-	   pConf->StrVersionNo ="V1.11.25" ;//当前版本号
-	   pConf->StrSoftDate="2020-07-09" ;   //当前版本日期
-    #endif
+	pConf->StrVersionNo ="V2.01.11" ;//当前版本号
+	pConf->StrSoftDate="2020-11-20" ;	//当前版本日期
 
 
     int i,j,vehplatecnt,vehplate900cnt,rsucnt;

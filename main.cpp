@@ -50,6 +50,7 @@ TemHumi::Info_S TemHumiInfo;				//温湿度结构体
 Lock::Info_S LockInfo[LOCK_NUM];			//电子锁结构体
 CallBackTimeStamp CBTimeStamp;				//外设采集回调时间戳
 SupervisionZTE *pCZTE = NULL;				//中兴机柜对象
+SupervisionXJ *pCSuJX = NULL;					//捷迅机柜对象
 
 //#define CARD_NUM		5	// 暂时为5张卡
 //Lock *pCLock[LOCKER_MAX_NUM] = {NULL,NULL,NULL,NULL};
@@ -128,7 +129,7 @@ int main(void)
 	pCTrapClient->SetTrapAlarmBack(TrapCallBack,(unsigned int)pCTrapClient);
 	pCTrapClient->Start();
 
-	if(pConf->StrCabinetType=="13") //利通机柜
+//	if(pConf->StrCabinetType=="13") //利通机柜
 	{
 		//温湿度：传参为485地址 
 		pCTemHumi = new TemHumi(0x7);
@@ -144,11 +145,16 @@ int main(void)
 	    pCIOdev = IODev::getInstance();
 	    pCIOdev->setCallback(IODevCallback,NULL);
 	}
-	else if(pConf->StrCabinetType=="5")			//中兴机柜
+//	else if(pConf->StrCabinetType=="5")			//中兴机柜
 	{
-		 pCZTE = new SupervisionZTE(pConf->StrHWServer,pConf->StrHWGetPasswd,pConf->StrHWSetPasswd);	
+		 pCZTE = new SupervisionZTE(pConf->StrHWServer,pConf->StrHWGetPasswd,pConf->StrHWSetPasswd);	//"128.8.82.117","440220102411"
 		 pCZTE->setCallback(SuZTECallback,NULL);
 	}
+/*	else if(pConf->StrCabinetType=="14")			//捷迅机柜对象
+	{
+		 pCSuJX = new SupervisionXJ(pConf->StrHWServer,pConf->StrHWGetPasswd);	
+		 pCSuJX->setCallback(SuJXCallback,NULL);
+	}*/
 
 	/* 机柜监控摄像头，传参为摄像头IP地址以及 IMA_SAVE_PATH_ROOT 下图片文件夹名 */
 	for(i=0;i<CAM_NUM;i++)
@@ -214,7 +220,6 @@ int main(void)
    		}
 		else if(pConf->StrRSUType=="2")	//华为RSU
 		{
-printf("start rsu %s\r\n",pConf->StrIP.c_str());
 			pCHWRSU[i]  = new Huawei(pConf->StrIP.c_str(),pConf->StrRSUPort[i],"/tr069");
 			pCHWRSU[i]->setCallback(RsuCallback,pCHWRSU[i]);
 		}

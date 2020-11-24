@@ -1074,6 +1074,7 @@ void MoninterCallback(Moninterface::State_S state,void *userdata){
 }
 
 void CameraCallback(Camera::MsgType_EN msg,const char *jpgName,void *userdata){
+printf("CameraCallback %d\r\n",msg);
     if(msg == Camera::Msg_CaptureSuccess)
         printf("capture success file = \"%s\"\n",jpgName);
 	else if(msg == Camera::Msg_CaptureFail)
@@ -1177,6 +1178,121 @@ void SuZTECallback(SupervisionZTE::State_S sta,void *userdata){
     printf("sta.powSupply.rectifierOutVol:%s\n",sta.powSupply.rectifierOutVol.c_str());
     printf("sta.powSupply.warning:%s\n",sta.powSupply.warning.c_str());
     printf("sta.powSupply.warnTime:%s\n",sta.powSupply.warnTime.c_str());
+#endif
+}
+
+/* 捷迅动环回调 */
+void SuJXCallback(SupervisionXJ::State_S sta, void *userdata) {
+
+#if 0
+    uint8_t i;
+
+    printf("%s = %s\n","elock1",sta.elock[0].c_str());
+    printf("%s = %s\n","elock2",sta.elock[1].c_str());
+    printf("\n");
+
+    printf("%s = %s\n","smoke1",sta.monitor.smoke1.c_str());
+    printf("%s = %s\n","smoke2",sta.monitor.smoke2.c_str());
+    printf("%s = %s\n","humidity1",sta.monitor.humidity1.c_str());
+    printf("%s = %s\n","humidity2",sta.monitor.humidity2.c_str());
+    printf("%s = %s\n","temperature1",sta.monitor.temperature1.c_str());
+    printf("%s = %s\n","temperature2",sta.monitor.temperature2.c_str());
+    printf("%s = %s\n","door1",sta.monitor.door1.c_str());
+    printf("%s = %s\n","door2",sta.monitor.door2.c_str());
+    printf("%s = %s\n","water1",sta.monitor.water1.c_str());
+    printf("%s = %s\n","water2",sta.monitor.water2.c_str());
+    printf("%s = %s\n","do7",sta.monitor.do7.c_str());
+    printf("\n");
+
+    printf("%s = %s\n","amm_online",sta.ammeter.isLink ? "true" : "false");
+    printf("%s = %s\n","pvolt",sta.ammeter.pvolt.c_str());
+    printf("%s = %s\n","pcurr",sta.ammeter.pcurr.c_str());
+    printf("%s = %s\n","ppower",sta.ammeter.ppower.c_str());
+    printf("%s = %s\n","pfact",sta.ammeter.pfact.c_str());
+    printf("%s = %s\n","pfreq",sta.ammeter.pfreq.c_str());
+    printf("%s = %s\n","pallpower",sta.ammeter.pallpower.c_str());
+    printf("\n");
+
+    printf("%s = %s\n","sw_online",sta.sw.isLink ? "true" : "false");
+    printf("%s = %s\n","kk_sw1",sta.sw.sw.c_str());
+    printf("%s = %s\n","sw_cur",sta.sw.current.c_str());
+    printf("%s = %s\n","sw_leak_cur",sta.sw.leak_cur.c_str());
+    printf("%s = %s\n","sw_vol",sta.sw.voltage.c_str());
+    printf("%s = %s\n","sw_ov_cur_cnt",sta.sw.ov_cur_cnt.c_str());
+    printf("%s = %s\n","sw_leak_cur_cnt",sta.sw.leak_cur_cnt.c_str());
+    printf("%s = %s\n","sw_under_vol_cnt",sta.sw.under_vol_cnt.c_str());
+    printf("%s = %s\n","sw_ov_vol_cnt",sta.sw.ov_vol_cnt.c_str());
+    printf("%s = %s\n","sw_ov_cur_warn",sta.sw.ov_cur_warn.c_str());
+    printf("%s = %s\n","sw_leak_cur_warn",sta.sw.leak_cur_warn.c_str());
+    printf("%s = %s\n","sw_under_vol_warn",sta.sw.under_vol_warn.c_str());
+    printf("%s = %s\n","sw_ov_vol_warn",sta.sw.ov_vol_warn.c_str());
+    printf("%s = %s\n","sw_power_off",sta.sw.power_off.c_str());
+    printf("\n");
+
+    for (i = 0; i < AIR_CONDITION_NUM; i++) {
+        printf("kt%d_%s = %s\n",i,"ac_online",sta.airc[i].isLink ? "true" : "false");
+        printf("kt%d_%s = %s\n",i,"ac_temp",sta.airc[i].tempture.c_str());
+        printf("kt%d_%s = %s\n",i,"ac_vptemp",sta.airc[i].vptemp.c_str());
+        printf("kt%d_%s = %s\n",i,"ac_extemp",sta.airc[i].extemp.c_str());
+        printf("kt%d_%s = %s\n",i,"ac_comp_vol",sta.airc[i].comp_vol.c_str());
+        printf("kt%d_%s = %s\n",i,"ac_comp_cur",sta.airc[i].comp_cur.c_str());
+        printf("kt%d_%s = %s\n",i,"ac_kout",sta.airc[i].kout.c_str());
+        printf("kt%d_%s = %s\n",i,"ac_sysal",sta.airc[i].sysal.c_str());
+        printf("kt%d_%s = %s\n",i,"ac_swork",sta.airc[i].swork.c_str());
+        printf("kt%d_%s = %s\n",i,"ac_srun",sta.airc[i].srun.c_str());
+        printf("kt%d_%s = %s\n",i,"temp_warn",sta.airc[i].temp_warn.c_str());
+        printf("kt%d_%s = %s\n",i,"sysal_warn",sta.airc[i].sysal_warn.c_str());
+        printf("\n");
+    }
+
+    for (i = 0; i < UPS_NUM; i++) {
+        printf("ups%d_%s = %s\n",i,"online",sta.ups[i].isLink ? "true" : "false");
+        printf("ups%d_%s = %s\n",i,"invol",sta.ups[i].invol.c_str());
+        printf("ups%d_%s = %s\n",i,"outvol",sta.ups[i].outvol.c_str());
+        printf("ups%d_%s = %s\n",i,"freq",sta.ups[i].freq.c_str());
+        printf("ups%d_%s = %s\n",i,"loadrate",sta.ups[i].loadrate.c_str());
+        printf("ups%d_%s = %s\n",i,"outdc_vol",sta.ups[i].outdc_vol.c_str());
+        printf("ups%d_%s = %s\n",i,"outcur",sta.ups[i].outcur.c_str());
+        printf("ups%d_%s = %s\n",i,"chgcur",sta.ups[i].chgcur.c_str());
+        printf("ups%d_%s = %s\n",i,"dischgcur",sta.ups[i].dischgcur.c_str());
+        printf("ups%d_%s = %s\n",i,"power_rate",sta.ups[i].power_rate.c_str());
+        printf("ups%d_%s = %s\n",i,"invol_low_warn",sta.ups[i].invol_low_warn.c_str());
+        printf("ups%d_%s = %s\n",i,"invol_high_warn",sta.ups[i].invol_high_warn.c_str());
+        printf("ups%d_%s = %s\n",i,"outvol_low_warn",sta.ups[i].outvol_low_warn.c_str());
+        printf("ups%d_%s = %s\n",i,"outvol_high_warn",sta.ups[i].outvol_high_warn.c_str());
+        printf("ups%d_%s = %s\n",i,"dischg_stat",sta.ups[i].dischg_stat.c_str());
+        printf("ups%d_%s = %s\n",i,"work_mode",sta.ups[i].work_mode.c_str());
+        printf("ups%d_%s = %s\n",i,"falt_warn",sta.ups[i].falt_warn.c_str());
+        printf("ups%d_%s = %s\n",i,"vol",sta.ups[i].vol.c_str());
+        printf("ups%d_%s = %s\n",i,"output_cur",sta.ups[i].output_cur.c_str());
+        printf("ups%d_%s = %s\n",i,"load_rate",sta.ups[i].load_rate.c_str());
+        printf("ups%d_%s = %s\n",i,"charge_cur",sta.ups[i].charge_cur.c_str());
+        printf("ups%d_%s = %s\n",i,"acfail",sta.ups[i].acfail.c_str());
+        printf("ups%d_%s = %s\n",i,"over_cur",sta.ups[i].over_cur.c_str());
+        printf("ups%d_%s = %s\n",i,"overload",sta.ups[i].overload.c_str());
+        printf("\n");
+    }
+
+    for (i = 0; i < BMS_NUM; i++) {
+        printf("bms%d_%s = %s\n",i,"online",sta.bms[i].isLink ? "true" : "false");
+        printf("bms%d_%s = %s\n",i,"high_vol",sta.bms[i].high_vol.c_str());
+        printf("bms%d_%s = %s\n",i,"low_vol",sta.bms[i].low_vol.c_str());
+        printf("bms%d_%s = %s\n",i,"total_vol",sta.bms[i].total_vol.c_str());
+        printf("bms%d_%s = %s\n",i,"high_temp",sta.bms[i].high_temp.c_str());
+        printf("bms%d_%s = %s\n",i,"low_temp",sta.bms[i].low_temp.c_str());
+        printf("bms%d_%s = %s\n",i,"discharge",sta.bms[i].discharge.c_str());
+        printf("bms%d_%s = %s\n",i,"charge",sta.bms[i].charge.c_str());
+        printf("bms%d_%s = %s\n",i,"vol",sta.bms[i].vol.c_str());
+        printf("bms%d_%s = %s\n",i,"cur",sta.bms[i].cur.c_str());
+        printf("bms%d_%s = %s\n",i,"subvol",sta.bms[i].subvol.c_str());
+        printf("bms%d_%s = %s\n",i,"rlcap",sta.bms[i].rlcap.c_str());
+        printf("bms%d_%s = %s\n",i,"soc",sta.bms[i].soc.c_str());
+        printf("bms%d_%s = %s\n",i,"soh",sta.bms[i].soh.c_str());
+        printf("bms%d_%s = %s\n",i,"cnt",sta.bms[i].cnt.c_str());
+        printf("bms%d_%s = %s\n",i,"temp",sta.bms[i].temp.c_str());
+        printf("\n");
+    }
+
 #endif
 }
 

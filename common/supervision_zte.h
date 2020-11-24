@@ -96,6 +96,11 @@ public:
         std::string acOverVol;       // 交流过压
         std::string acUnderVol;      // 交流欠压
         std::string acPowDown;       // 交流掉电
+        std::string heatActTemp;     //加热开启点
+        std::string aircActTemp;     //空调开启点
+        std::string workCurrent;     //工作电流
+        std::string refrigWarn;      //制冷告警
+        std::string tempSensorWarn;  //温度传感器故障告警
         std::string warning;
         std::string warnTime;
     }AirCo_S;

@@ -64,6 +64,7 @@ private:
     uint8_t stpBit, verBit, dBit;
     uint32_t baudrate;
     TransType_EN transType;
+    uint16_t sendIntervalms;
 
     list<Callback_S> lstCallback;
     sem_t semSend,semRecv;
@@ -76,7 +77,7 @@ public:
 
     void config(BaudRate_EN baudrate, uint8_t stpBit, uint8_t verBit, uint8_t dBit);
     void setCallback(Callback cb, void *userdata);
-    void setTransmitType(TransType_EN type);
+    void setTransmitType(TransType_EN type,uint16_t intervalMs);
     void send(uint8_t *buf, uint32_t len);
 
 private:

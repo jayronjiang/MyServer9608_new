@@ -105,7 +105,8 @@ private:
 	   void *snmptrapd_add_session(void *t);
 	   
 };
-#pragma pack(pop)
+
+#pragma pack(pop)
 
 
 

@@ -35,6 +35,7 @@
 #include "camera.h"
 #include "CsshDev.h"
 #include "supervision_zte.h"
+#include "supervision_xj.h"
 
 using namespace std; 
 
