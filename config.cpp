@@ -74,8 +74,8 @@ int GetConfig(void)
 	//CABINETTYPE  1：华为（包括华为单门 双门等） 5：中兴; 6：金晟安; 7：爱特斯; 8:诺龙; 9：容尊堡; 
 				//10:亚邦; 11：艾特网能；12：华软
     #if(CABINETTYPE == 1) //华为
-	   pConf->StrVersionNo ="V2.01.08" ;//当前版本号
-	   pConf->StrSoftDate="2020-11-11" ;	//当前版本日期
+	   pConf->StrVersionNo ="V2.01.09" ;//当前版本号
+	   pConf->StrSoftDate="2020-11-13" ;	//当前版本日期
     #elif (CABINETTYPE == 5) //飞达中兴
        pConf->StrVersionNo ="V1.05.25b" ;
    	   pConf->StrSoftDate="2020-07-13" ;	 //当前版本日期

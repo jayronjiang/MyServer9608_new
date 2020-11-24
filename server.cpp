@@ -871,7 +871,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		else if(pConf->StrLockType=="3")
 		{
 			// 如果是中兴电子锁
-			pCZTE->openLock(DEV_FRONT_DOOR,ZTE_DOOR_OPEN);
+			pCZTE->openLock(ZTE_DOOR_OPEN,DEV_FRONT_DOOR);
 		}
 		usleep(2000);
 	 }
@@ -891,7 +891,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		else if(pConf->StrLockType=="3")
 		{
 			// 如果是中兴电子锁
-			pCZTE->openLock(DEV_BACK_DOOR,ZTE_DOOR_OPEN);
+			pCZTE->openLock(ZTE_DOOR_OPEN,DEV_BACK_DOOR);
 		}
 		usleep(2000);
 	 }
@@ -911,7 +911,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		else if(pConf->StrLockType=="3")
 		{
 			// 如果是中兴电子锁
-			pCZTE->openLock(POWER_FRONT_DOOR,ZTE_DOOR_OPEN);
+			pCZTE->openLock(ZTE_DOOR_OPEN,POWER_FRONT_DOOR);
 		}
 		usleep(2000);
 	 }
@@ -931,7 +931,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		else if(pConf->StrLockType=="3")
 		{
 			// 如果是中兴电子锁
-			pCZTE->openLock(POWER_BACK_DOOR,ZTE_DOOR_OPEN);
+			pCZTE->openLock(ZTE_DOOR_OPEN,POWER_BACK_DOOR);
 		}
 		usleep(2000);
 	 }

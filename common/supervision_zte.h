@@ -40,6 +40,8 @@ const std::string StrDevType[] = {
 #define ZTE_DOOR_OPEN		0x0005
 #define ZTE_DOOR_CLOSE		0x0006
 
+
+#pragma pack(push, 1)
 class SupervisionZTE {
 public:
 
@@ -189,6 +191,7 @@ public:
     /* cabinet_lock */
     typedef struct {
         bool isLink;
+		bool status;	// 锁是否被开启0:close 1:open
         uint8_t addr;
         uint32_t cardId;
     }CabLock_S;
@@ -334,6 +337,7 @@ private:
     static void HttpCallback(Klib::Http *http,Klib::Http::Value_S value, void *userdata);
 #endif
 };
+#pragma pack(pop)
 
 
 

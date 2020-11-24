@@ -5180,7 +5180,7 @@ bool jsonStrHWCabinetWriter(int messagetype,char *pstPam, string &mstrjson)
 		{
 			//中兴机柜字段
 			sprintf(str,"\"isonline\":\"%d\",\n",state.linked); strJson = strJson + str;//连接状态
-			bool BatIsOnline=state.lifebat[0].isLink & state.lifebat[1].isLink & state.lifebat[2].isLink & state.lifebat[3].isLink;
+			bool BatIsOnline=state.libat[0].isLink & state.libat[1].isLink & state.libat[2].isLink & state.libat[3].isLink;
 			sprintf(str,"\"acbgroupbatonline\":\"%d\",\n",BatIsOnline); strJson = strJson + str;//锂电池组是否在线
 			sprintf(str,"\"dcaironline\":\"%d\",\n",state.airco[0].isLink); strJson = strJson + str;//直流空调是否在线（设备柜）
 			sprintf(str,"\"dcaironline2\":\"%d\",\n",state.airco[1].isLink); strJson = strJson + str;//直流空调是否在线（电池柜）
@@ -5235,8 +5235,8 @@ bool jsonStrHWCabinetWriter(int messagetype,char *pstPam, string &mstrjson)
 			sprintf(str,"\"hwsmokesensorstatus2\": %s,\n", state.smokeWarn[1].warning.c_str());strJson += str;	 //烟雾传感器状态
 			sprintf(str,"\"hwwatersensorstatus\": %s,\n", state.immerWarn[0].warning.c_str());strJson += str; 	 //水浸传感器状态
 			sprintf(str,"\"hwwatersensorstatus2\": %s,\n", state.immerWarn[1].warning.c_str());strJson += str;	 //水浸传感器状态
-			sprintf(str,"\"hwdoorsensorstatus\": %s,\n", state.smokeWarn[0].warning.c_str());strJson += str;		 //（电池柜）门磁传感器状态
-			sprintf(str,"\"hwdoorsensorstatus2\": %s,\n", state.smokeWarn[1].warning.c_str());strJson += str; 	 //（电池柜）门磁传感器状态
+			sprintf(str,"\"hwdoorsensorstatus\": %s,\n", state.magnetWarn[0].warning.c_str());strJson += str;		 //（电池柜）门磁传感器状态
+			sprintf(str,"\"hwdoorsensorstatus2\": %s,\n", state.magnetWarn[1].warning.c_str());strJson += str; 	 //（电池柜）门磁传感器状态
 			
 			sprintf(str,"\"rectifiermodulevol\": %s,\n", state.powSupply.rectifierOutVol.c_str());strJson += str; 	 //整流器输出电压
 			sprintf(str,"\"rectifiermodulecurr\": %s,\n", state.powSupply.rectifierOutCurr.c_str());strJson += str;		 //整流器输出电流
@@ -5270,12 +5270,12 @@ bool jsonStrHWCabinetWriter(int messagetype,char *pstPam, string &mstrjson)
 				int TotalBat=0,RemainBat=0;
 				for(i=0;i<4;i++)
 				{
-					TotalBat+=atoi(state.lifebat[i].fullCap.c_str());
-					RemainBat+=atoi(state.lifebat[i].capacity.c_str());
+					TotalBat+=atoi(state.libat[i].fullCap.c_str());
+					RemainBat+=atoi(state.libat[i].capacity.c_str());
 				}
 				sprintf(str,"\"hwacbgrouptotalcapacity\": %d,\n", TotalBat);strJson += str;	//锂电电池总容量 216	 
 				sprintf(str,"\"hwacbgrouptotalremaincapacity\": %d,\n", RemainBat);strJson += str;	//锂电电池剩余容量 217	 
-			    strJson = strJson + "\"hwacbgrouptemperature\": " + state.lifebat[0].monTempture + ",\n";	//电池温度
+			    strJson = strJson + "\"hwacbgrouptemperature\": " + state.libat[0].monTempture + ",\n";	//电池温度
 			}
 			//空调
 			if(state.airco[0].isLink)
@@ -5289,10 +5289,22 @@ bool jsonStrHWCabinetWriter(int messagetype,char *pstPam, string &mstrjson)
 				sprintf(str,"\"hwdcaircompressorrunstatus2\": %s,\n", state.airco[1].compressorSta.c_str());strJson += str;		 //空调压缩机状态 1：待机；2：运行中；3：故障；255：未知
 			}
 			//2019-11-19新增4个门锁状态
-			status=state.lock[0].isLink;	sprintf(str,"\"hwequcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜前门锁状态
-			status=state.lock[1].isLink;	sprintf(str,"\"hwequcabbackdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜后门锁状态
-			status=state.lock[2].isLink;	sprintf(str,"\"hwbatcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;		 //电池柜前门锁状态
-			status=state.lock[3].isLink;	sprintf(str,"\"hwbatcabbackdoorstatus\": \"%d\",\n", status);strJson += str;		 //电池柜后门锁状态
+			if (state.devNum[SupervisionZTE::DevType_CabLock] >= 1) 
+			{
+				status=state.lock[0].status;	sprintf(str,"\"hwequcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜前门锁状态
+			}
+			if (state.devNum[SupervisionZTE::DevType_CabLock] >= 2) 
+			{
+				status=state.lock[1].status;	sprintf(str,"\"hwequcabbackdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜后门锁状态
+			}
+			if (state.devNum[SupervisionZTE::DevType_CabLock] >= 3)
+			{
+				status=state.lock[2].status;	sprintf(str,"\"hwbatcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;		 //电池柜前门锁状态
+			}
+			if (state.devNum[SupervisionZTE::DevType_CabLock] >= 4)
+			{
+				status=state.lock[3].status;	sprintf(str,"\"hwbatcabbackdoorstatus\": \"%d\",\n", status);strJson += str;		 //电池柜后门锁状态
+			}
 		}
 		else
 		{

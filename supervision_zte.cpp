@@ -39,6 +39,8 @@ using namespace Klib;
 
 #define ID_ARRAY_TO_INT(_id)                     (((uint32_t)_id[3] << 24) | ((uint32_t)_id[2] << 16) |((uint32_t)_id[1] << 8) |((uint32_t)_id[0]))
 
+#define POLL_GAP  1000	//MS
+
 
 /*******************************************************************************
  * Variables
@@ -115,7 +117,10 @@ SupervisionZTE::State_S SupervisionZTE::getState(void) {
 
 void SupervisionZTE::httpRequest(void *para){
     if(para == NULL)
-        return;
+    {
+		return;
+    }
+        
 
     ReqPara_S *reqPara = (ReqPara_S *)para;
 
@@ -125,12 +130,15 @@ void SupervisionZTE::httpRequest(void *para){
     http->config(Http::Cfg_AppendHead, "Content-Type: application/json");
     http->config(Http::Cfg_AppendHead, "Accept-Language: zh-Hans-CN,zh-Hans;q=0.5");
     http->config(Http::Cfg_AppendHead, "Connection: close");
-    http->config(Http::Cfg_SetTimeout, 2);
-    http->config(Http::Cfg_SetConnTimeout, 2);
-    http->config(Http::Cfg_SetSelfDelete, 1);
+    http->config(Http::Cfg_SetTimeout, 15);
+    http->config(Http::Cfg_SetConnTimeout, 15);
+    //http->config(Http::Cfg_SetSelfDelete, 1);
     http->config(Http::Cfg_SetDigestAuth, user, key);
     if(reqPara->data != NULL)
-        http->config(Http::Cfg_SetContent,*reqPara->data);
+    {
+        http->config(Http::Cfg_SetContent,reqPara->data->c_str());
+		delete reqPara->data;
+	}
     http->setCallback(HttpCallback, reqPara);
     http->perform();
 }
@@ -154,7 +162,7 @@ void SupervisionZTE::reqWarning(void){
     para->su = this;
     para->url = "http://" + ip + "/jscmd/alarmquery?type=now";
     para->data = NULL;
-	printf("warning = %s\r\n",para->url.c_str());
+	//printf("warning = %s\r\n",para->url.c_str());
     httpRequest(para);
 }
 
@@ -182,7 +190,7 @@ void SupervisionZTE::reqObjData(std::string objid, ObjInfo_S *info) {
     para->su = this;
     para->url = "http://" + ip + "/jscmd/objdataquery?objId=" + objid + "&mId=0";
     para->data = NULL;
-	printf("url = %s\r\n",para->url.c_str());
+	//printf("url = %s\r\n",para->url.c_str());
     httpRequest(para);
 }
 
@@ -199,7 +207,7 @@ void SupervisionZTE::reqAlarmMete(string objid, ObjInfo_S *info, string mId) {
     para->su = this;
     para->url = "http://" + ip + "/jscmd/getAlarmMeteCfg?deviceId=" + objid + "&meteId=" + mId;
     para->data = NULL;
-    printf("reqAlarmMete:%s\n", para->url.c_str());
+    //printf("reqAlarmMete:%s\n", para->url.c_str());
     httpRequest(para);
 }
 
@@ -221,7 +229,8 @@ void SupervisionZTE::ctrlLock(uint16_t cmd, std::string objid, ObjInfo_S *info) 
     len = cmdpack( info->addr,cmd, buf);
     (*para->data) = Base64Cal.Encode(buf, len); // 加密
     (*para->data) = "{\"jsonrpc\":\"2.0\",\"method\":\"POST_METHOD\",\"id\":\"3\",\"params\":{\"objid\":\"" + objid + "\",\"data\":\"" + (*para->data) + "\",\"endchar\":\"\"}}";
-    printf("data = %s\r\n",para->data->c_str());
+	printf("url = %s\r\n",para->url.c_str());
+	printf("data = %s\r\n",para->data->c_str());
     httpRequest(para);
 }
 
@@ -234,7 +243,8 @@ void SupervisionZTE::openLock(uint16_t cmd, uint16_t pos)
 	map<string,ObjInfo_S>::iterator iter;
 	string objid = "";
 	ObjInfo_S *info = NULL;
-	
+
+	printf("open_lock\r\n");
 	for (iter = objs.begin(); iter != objs.end(); iter++) 
 	{
         info = &iter->second;
@@ -275,7 +285,7 @@ void SupervisionZTE::openLock(uint16_t cmd, uint16_t pos)
 	{
 		printf("open_lock = %s,%s,%d\r\n",objid.c_str(),info->portId.c_str(),info->addr);
 		ctrlLock(cmd,objid,info);
-		usleep(200*1000);
+		usleep(500*1000);
 	}
 }
 
@@ -325,19 +335,19 @@ void *SupervisionZTE::GetStateThread(void *arg)
 			}
 
             if (data_iter->second.type == DevType_TemHumi) {
-                usleep(500 * 1000);
+                usleep(POLL_GAP * 1000);
                 su->reqAlarmMete(objid, info, "118202001");
-                usleep(500 * 1000);
+                usleep(POLL_GAP * 1000);
                 su->reqAlarmMete(objid, info, "118203001");
-                usleep(500 * 1000);
+                usleep(POLL_GAP * 1000);
                 su->reqAlarmMete(objid, info, "118206001");
-                usleep(500 * 1000);
+                usleep(POLL_GAP * 1000);
                 su->reqAlarmMete(objid, info, "118205001");
             }
 
             su->state.timestamp = getTickCount();
-            printf("timestampdata=%ld,\n",su->state.timestamp);
-            usleep(500 * 1000);
+            //printf("timestampdata=%ld,\n",su->state.timestamp);
+            usleep(POLL_GAP * 1000);
             do {
                 data_iter++;
                 if (data_iter == su->objs.end()) {
@@ -357,15 +367,15 @@ void *SupervisionZTE::GetStateThread(void *arg)
                 su->ctrlLock(ZTE_DOOR_POLL,objid,info);
 				//su->state.timestamp = getTickCount();
 				//printf("timestamp=%ld,\n",su->state.timestamp);
-				usleep(500*1000);
+				usleep(POLL_GAP*1000);
             }
             else
                 continue;
         }
 		su->reqWarning();
-		usleep(200*1000);
+		usleep(POLL_GAP*1000);
         su->state.timestamp = getTickCount();
-		printf("Warningtimestamp=%ld,\n",su->state.timestamp);
+		//printf("Warningtimestamp=%ld,\n",su->state.timestamp);
         if(su->callback != NULL)
             su->callback(su->state,su->userdata);
         sleep(su->interval);
@@ -376,11 +386,14 @@ void *SupervisionZTE::GetStateThread(void *arg)
 void SupervisionZTE::HttpCallback(Http *http, Http::Value_S value, void *userdata) {
     ReqPara_S *para = (ReqPara_S *)userdata;
     SupervisionZTE *su = para->su;
-    
+	uint8_t data[100];
+
+	memset(data,0,100);
+	
     if (para == NULL)
         return;
 
-    printf("code:%ld  data = %s ,para type = %d\n",value.code,value.data,para->reqType);
+    //printf("code:%ld  data = %s ,para type = %d\n",value.code,value.data,para->reqType);
     if (value.code == 200 || value.code == 202) {
         CJsonObject json(value.data), jsResult;
         uint16_t i,j;
@@ -489,8 +502,8 @@ void SupervisionZTE::HttpCallback(Http *http, Http::Value_S value, void *userdat
                 }
 
                 su->state.temhumi[info->index].isLink = true;
-                su->state.temhumi[info->index].humity = getResFromJson(jsResult, "118201001","");
-                su->state.temhumi[info->index].tempture = getResFromJson(jsResult, "118204001","");
+                su->state.temhumi[info->index].humity = getResFromJson(jsResult, "118204001","");
+                su->state.temhumi[info->index].tempture = getResFromJson(jsResult, "118201001","");
             } break;
 			case DevType_Immer: {
                 if(info->index < 0 || info->index > 1)
@@ -566,7 +579,9 @@ void SupervisionZTE::HttpCallback(Http *http, Http::Value_S value, void *userdat
                 }
 
                 su->state.libat[info->index].isLink = true;
+				su->state.ups.isLink = true;
 				su->state.libat[info->index].voltage = getResFromJson(jsResult,"190229001","");
+				su->state.ups.batVol = su->state.libat[0].voltage;
 				su->state.libat[info->index].capacity = getResFromJson(jsResult,"190264001","");
 				su->state.libat[info->index].fullCap = getResFromJson(jsResult,"190265001","");
 				su->state.libat[info->index].SOH = getResFromJson(jsResult,"190263001","");
@@ -592,33 +607,31 @@ void SupervisionZTE::HttpCallback(Http *http, Http::Value_S value, void *userdat
             } break;
             case DevType_CabLock: {
                 string strData;
-                uint8_t *data;
                 
                 if (!jsResult.Get("data", strData))
+                {
+                	su->state.lock[info->index].isLink = false;
                     break;
-
-                if (resSize == 0) {
-                    su->state.lock[info->index].isLink = false;
-                    break;
-                }
+				}
 
                 su->state.lock[info->index].isLink = true;
 
-                data = (uint8_t *)malloc(100);
-
+                //data = (uint8_t *)malloc(100);
+				
                 base64_2_Hex_decode(strData.c_str(), strData.size(), data);
 
                 if ((data[0] == 0x7E) && (data[DOOR_EOI_ADDR] == 0x7E)) // 锁的协议以0x7E开始，0x7E结束
                 {
                     uint8_t cardId[4];
                     memcpy(cardId, &data[DOOR_ID_ADDR], 4);
+					su->state.lock[info->index].status = (data[DOOR_STATUS_ADDR]==0)?0:1;
                     // 这个锁读到的卡号是逆序的，比如0xD6E9C160的卡(3605643616)读出来是60 c1 e9 d6
                     su->state.lock[info->index].cardId = ID_ARRAY_TO_INT(cardId);
 
-                    printf("index = %d,card id = %d\n",info->index,su->state.lock[info->index].cardId);
+                    printf("index = %d,status=%d,card id = %d\n",info->index,su->state.lock[info->index].status,su->state.lock[info->index].cardId);
                 }
 
-                free(data);
+                //free(data);
 
             } break;
 
@@ -659,7 +672,7 @@ void SupervisionZTE::HttpCallback(Http *http, Http::Value_S value, void *userdat
 					if (info->index < 2)
 					{
 						su->state.temhumi[info->index].warning = getWarnFromJson(res,objid,&su->state.temhumi[info->index].warnTime);
-						printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),info->index,su->state.temhumi[info->index].warning.c_str());
+						//printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),info->index,su->state.temhumi[info->index].warning.c_str());
 					}
 				}
 				else if (info->type == DevType_Magnet)
@@ -667,7 +680,7 @@ void SupervisionZTE::HttpCallback(Http *http, Http::Value_S value, void *userdat
 					if (info->index < 2)
 					{
 						su->state.magnetWarn[info->index].warning = getWarnFromJson(res,objid,&su->state.magnetWarn[info->index].warnTime);
-						printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),info->index,su->state.magnetWarn[info->index].warning.c_str());
+						//printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),info->index,su->state.magnetWarn[info->index].warning.c_str());
 					}
 				}
 				else if (info->type == DevType_Smoke)
@@ -675,7 +688,7 @@ void SupervisionZTE::HttpCallback(Http *http, Http::Value_S value, void *userdat
 					if (info->index < 2)
 					{
 						su->state.smokeWarn[info->index].warning = getWarnFromJson(res,objid,&su->state.smokeWarn[info->index].warnTime);
-						printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),info->index,su->state.smokeWarn[info->index].warning.c_str());
+						//printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),info->index,su->state.smokeWarn[info->index].warning.c_str());
 					}
 				}
 				else if (info->type == DevType_Immer)
@@ -683,20 +696,20 @@ void SupervisionZTE::HttpCallback(Http *http, Http::Value_S value, void *userdat
 					if (info->index < 2)
 					{
 						su->state.immerWarn[info->index].warning = getWarnFromJson(res,objid,&su->state.immerWarn[info->index].warnTime);
-						printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),info->index,su->state.immerWarn[info->index].warning.c_str());
+						//printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),info->index,su->state.immerWarn[info->index].warning.c_str());
 					}
 				}
 				else if (info->type == DevType_PowSupply)
 				{
 					su->state.powSupply.warning = getWarnFromJson(res,objid,&su->state.powSupply.warnTime);
-					printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),0,su->state.powSupply.warning.c_str());
+					//printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),0,su->state.powSupply.warning.c_str());
 				}
 				else if (info->type == DevType_AirCo)
 				{
 					if (info->index < 2)
 					{
 						su->state.airco[info->index].warning = getWarnFromJson(res,objid,&su->state.airco[info->index].warnTime);
-						printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),info->index,su->state.airco[info->index].warning.c_str());
+						//printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),info->index,su->state.airco[info->index].warning.c_str());
 					}
 				}
 				else if (info->type == DevType_LiBat)
@@ -704,7 +717,7 @@ void SupervisionZTE::HttpCallback(Http *http, Http::Value_S value, void *userdat
 					if (info->index < 4)
 					{
 						su->state.libat[info->index].warning = getWarnFromJson(res,objid,&su->state.libat[info->index].warnTime);
-						printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),info->index,su->state.libat[info->index].warning.c_str());
+						//printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),info->index,su->state.libat[info->index].warning.c_str());
 					}
 				}
 				else if (info->type == DevType_LiFeBat)
@@ -712,7 +725,7 @@ void SupervisionZTE::HttpCallback(Http *http, Http::Value_S value, void *userdat
 					if (info->index < 4)
 					{
 						su->state.lifebat[info->index].warning = getWarnFromJson(res,objid,&su->state.lifebat[info->index].warnTime);
-						printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),info->index,su->state.libat[info->index].warning.c_str());
+						//printf("%s warning: index=%d,warning=%s\r\n",StrDevType[info->type].c_str(),info->index,su->state.libat[info->index].warning.c_str());
 					}
 				}
 				else

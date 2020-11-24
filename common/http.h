@@ -52,7 +52,6 @@ public:
         Cfg_SetConnTimeout,
         Cfg_SetCustomOpt,
         Cfg_SetUri,
-        Cfg_SetSelfDelete,
     } ConfigType_S;
 
     typedef struct {
@@ -98,7 +97,6 @@ class HttpClient : public Http {
 private:
     void *curl, *slist;
     RequestType_EN type;
-    bool isSelfDelete;
 
 private:
     static bool CurlInit(void);
