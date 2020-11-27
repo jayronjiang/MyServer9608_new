@@ -13,7 +13,6 @@ LINK          = arm-none-linux-gnueabi-g++
 LFLAGS        = -Wl,-O1 -Wl,-rpath,/home/ctools/arm-2011.03/arm-none-linux-gnueabi/lib
 
 LIBS          =  $(SUBLIBS)  ./alib/CsshClient.a \
-							 ./alib/tsPanel.a \
 							 ./alib/comport.a \
 							 ./alib/CabinetClient.a \
 							 ./alib/CswitchClient.a \
@@ -45,8 +44,6 @@ LIBS          =  $(SUBLIBS)  ./alib/CsshClient.a \
 							 ./alib/libtcp.a \
 							 ./alib/libcsshdev.a \
 							 ./alib/libsupervision.a \
-							 ./alib/libsupervisionxj.a \
-							 ./alib/libmqtt.a \
 							 ./libiconv/lib/*.a \
 							 -L./goahead/bin -lgo -ldl  -lrt -lpthread 
 
@@ -54,6 +51,7 @@ TARGET        = tranter
 
 
 OBJECTS       =  build/main.o     \
+				 build/tsPanel.o 	\
                  build/initmodule.o   \
                  build/MyCritical.o		\
                  build/server.o     \
@@ -79,6 +77,10 @@ $(TARGET):  $(OBJECTS)
 build/main.o: main.cpp 
 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) $(LIBS) -o build/main.o main.cpp
+
+build/tsPanel.o: tsPanel.cpp \
+    common/tsPanel.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) $(LIBS) -o build/tsPanel.o tsPanel.cpp
 
 build/config.o: config.cpp \
     common/config.h

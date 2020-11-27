@@ -229,8 +229,8 @@ void SupervisionZTE::ctrlLock(uint16_t cmd, std::string objid, ObjInfo_S *info) 
     len = cmdpack( info->addr,cmd, buf);
     (*para->data) = Base64Cal.Encode(buf, len); // 加密
     (*para->data) = "{\"jsonrpc\":\"2.0\",\"method\":\"POST_METHOD\",\"id\":\"3\",\"params\":{\"objid\":\"" + objid + "\",\"data\":\"" + (*para->data) + "\",\"endchar\":\"\"}}";
-	printf("url = %s\r\n",para->url.c_str());
-	printf("data = %s\r\n",para->data->c_str());
+	//printf("url = %s\r\n",para->url.c_str());
+	//printf("data = %s\r\n",para->data->c_str());
     httpRequest(para);
 }
 
@@ -559,8 +559,8 @@ void SupervisionZTE::HttpCallback(Http *http, Http::Value_S value, void *userdat
                 su->state.airco[info->index].outDoorTempture = getResFromJson(jsResult,"115013001","");
                 su->state.airco[info->index].condenserTemp = getResFromJson(jsResult,"115014001","");
                 su->state.airco[info->index].dcVol = getResFromJson(jsResult,"115016001","115015001");
-                su->state.airco[info->index].hiTempWarn = getResFromJson(jsResult,"115018001","115018001");
-                su->state.airco[info->index].lowTempWarn = getResFromJson(jsResult,"115019001","115019001");
+                su->state.airco[info->index].hiTempWarn = getResFromJson(jsResult,"115233001","115018001");
+                su->state.airco[info->index].lowTempWarn = getResFromJson(jsResult,"115234001","115019001");
                 su->state.airco[info->index].interFanFault = getResFromJson(jsResult,"115020001","");
                 su->state.airco[info->index].exterFanFault = getResFromJson(jsResult,"115021001","");
                 su->state.airco[info->index].compressorFault = getResFromJson(jsResult,"115022001","");
@@ -569,7 +569,13 @@ void SupervisionZTE::HttpCallback(Http *http, Http::Value_S value, void *userdat
                 su->state.airco[info->index].acOverVol = getResFromJson(jsResult,"115025001","");
                 su->state.airco[info->index].acUnderVol = getResFromJson(jsResult,"115026001","");
                 su->state.airco[info->index].acPowDown = getResFromJson(jsResult,"115027001","");
-            } break;
+
+                su->state.airco[info->index].heatActTemp = getResFromJson(jsResult,"115232001","");
+                su->state.airco[info->index].aircActTemp = getResFromJson(jsResult,"115235001","");
+                su->state.airco[info->index].workCurrent = getResFromJson(jsResult,"115237001","");
+                su->state.airco[info->index].refrigWarn = getResFromJson(jsResult,"115239001","");
+                su->state.airco[info->index].tempSensorWarn = getResFromJson(jsResult,"115240001","");
+		   } break;
             case DevType_LiBat:
 			{
                 /* 锂电池 */
@@ -608,10 +614,13 @@ void SupervisionZTE::HttpCallback(Http *http, Http::Value_S value, void *userdat
             case DevType_CabLock: {
                 string strData;
                 
-                if (!jsResult.Get("data", strData))
+                if (jsResult.Get("data", strData))
                 {
-                	su->state.lock[info->index].isLink = false;
-                    break;
+                	if (strData == "")
+                	{
+                		su->state.lock[info->index].isLink = false;
+                    	break;
+                	}
 				}
 
                 su->state.lock[info->index].isLink = true;
@@ -809,6 +818,11 @@ static void stateInit(SupervisionZTE::State_S *state){
         state->airco[i].state = "2147483647";
         state->airco[i].warning = "2147483647";
         state->airco[i].warnTime = "2147483647";
+        state->airco[i].heatActTemp = "2147483647";
+        state->airco[i].aircActTemp = "2147483647";
+        state->airco[i].workCurrent = "2147483647";
+        state->airco[i].refrigWarn = "2147483647";
+        state->airco[i].tempSensorWarn = "2147483647";
 
         state->immerWarn[i].warning = "2147483647";
         state->immerWarn[i].warnTime = "2147483647";
