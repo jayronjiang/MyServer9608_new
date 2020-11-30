@@ -38,6 +38,7 @@ extern TemHumi::Info_S TemHumiInfo;				//温湿度结构体
 extern Lock::Info_S LockInfo[LOCK_NUM];			//电子锁结构体
 extern CallBackTimeStamp CBTimeStamp;				//外设采集回调时间戳
 extern SupervisionZTE *pCZTE;				//中兴机柜对象
+extern HWLock *pHWCLock[LOCK_NUM];				//华为门锁对象
 
 bool isIPAddressValid(const char* pszIPAddr)
 {
@@ -2263,6 +2264,7 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
 	jsonkey = cJSON_GetObjectItem(json, "hwgetpasswd");
 	if(jsonkey!=0)				
 	{
+		sprintf(value,"%s",jsonkey->valuestring);
 		if(strcmp(jsonkey->valuestring,"")==0 && atoi(pConf->StrCabinetType.c_str())<=4)//华为 如果是空值，恢复成默认值
 			sprintf(value,"ReadHuawei123");
 		if(value!=pConf->StrHWGetPasswd)
@@ -2277,6 +2279,7 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
 	jsonkey = cJSON_GetObjectItem(json, "hwsetpasswd");
 	if(jsonkey!=0)				
 	{
+		sprintf(value,"%s",jsonkey->valuestring);
 		if(strcmp(jsonkey->valuestring,"")==0 && atoi(pConf->StrCabinetType.c_str())<=4)//华为 如果是空值，恢复成默认值
 			sprintf(value,"WriteHuawei");
 		if(value!=pConf->StrHWSetPasswd)
@@ -2650,6 +2653,7 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
                 jsonkey=cJSON_GetObjectItem(jsonitem,"getpasswd");
                 if(jsonkey != NULL)
                 {
+					sprintf(value,"%s",jsonkey->valuestring);
 					if(strcmp(jsonkey->valuestring,"")==0 && pConf->StrIPSwitchType=="1")//华为 如果是空值，恢复成默认值
 						sprintf(value,"Huawei123");
 					else if(strcmp(jsonkey->valuestring,"")==0 && pConf->StrIPSwitchType=="3")//三旺
@@ -2666,6 +2670,10 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
                 if(jsonkey != NULL)
                 {
 					sprintf(value,"%s",jsonkey->valuestring);
+					if(strcmp(jsonkey->valuestring,"")==0 && pConf->StrIPSwitchType=="1")//华为 如果是空值，恢复成默认值
+						sprintf(value,"Huawei123");
+					else if(strcmp(jsonkey->valuestring,"")==0 && pConf->StrIPSwitchType=="3")//三旺
+						sprintf(value,"public");
 					if(value!=pConf->StrIPSwitchSetPasswd[i])
 					{
 						pConf->StrIPSwitchSetPasswd[i]=value;
@@ -2728,6 +2736,7 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
                 jsonkey=cJSON_GetObjectItem(jsonitem,"getpasswd");
                 if(jsonkey != NULL)
                 {
+					sprintf(value,"%s",jsonkey->valuestring);
 					if(strcmp(jsonkey->valuestring,"")==0 && pConf->StrFireWareType=="1")//华为 如果是空值，恢复成默认值
 						sprintf(value,"Huawei123");
 					if(value!=pConf->StrFireWareGetPasswd[i])
@@ -2742,6 +2751,8 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
                 if(jsonkey != NULL)
                 {
 					sprintf(value,"%s",jsonkey->valuestring);
+					if(strcmp(jsonkey->valuestring,"")==0 && pConf->StrFireWareType=="1")//华为 如果是空值，恢复成默认值
+						sprintf(value,"Huawei123");
 					if(value!=pConf->StrFireWareSetPasswd[i])
 					{
 						pConf->StrFireWareSetPasswd[i]=value;
@@ -3220,6 +3231,10 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
 				//交换机get密码
 				if(getpasswd!=pConf->StrIPSwitchGetPasswd[no])
 				{
+					if(getpasswd=="" && pConf->StrIPSwitchType=="1")//华为 如果是空值，恢复成默认值
+						getpasswd="Huawei123";
+					else if(getpasswd=="" && pConf->StrIPSwitchType=="3")//三旺
+						getpasswd="public";
 					pConf->StrIPSwitchGetPasswd[no]=getpasswd;
 					sprintf(key,"Switch%dGetPasswd=",no+1);
 					Setconfig(key,getpasswd.c_str());
@@ -3227,6 +3242,10 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
 				//交换机set密码
 				if(setpasswd!=pConf->StrIPSwitchSetPasswd[no])
 				{
+					if(setpasswd=="" && pConf->StrIPSwitchType=="1")//华为 如果是空值，恢复成默认值
+						setpasswd="Huawei123";
+					else if(setpasswd=="" && pConf->StrIPSwitchType=="3")//三旺
+						setpasswd="public";
 					pConf->StrIPSwitchSetPasswd[no]=setpasswd;
 					sprintf(key,"Switch%dSetPasswd=",no+1);
 					Setconfig(key,setpasswd.c_str());
@@ -3246,6 +3265,8 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
 				//防火墙get密码
 				if(getpasswd!=pConf->StrFireWareGetPasswd[no])
 				{
+					if(getpasswd=="" && pConf->StrFireWareType=="1")//华为 如果是空值，恢复成默认值
+						getpasswd="Huawei123";
 					pConf->StrFireWareGetPasswd[no]=getpasswd;
 					sprintf(key,"FireWare%dGetPasswd=",no+1);
 					Setconfig(key,getpasswd.c_str());
@@ -3253,6 +3274,8 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
 				//防火墙set密码
 				if(setpasswd!=pConf->StrFireWareSetPasswd[no])
 				{
+					if(setpasswd=="" && pConf->StrFireWareType=="1")//华为 如果是空值，恢复成默认值
+						setpasswd="Huawei123";
 					pConf->StrFireWareSetPasswd[no]=setpasswd;
 					sprintf(key,"FireWare%dSetPasswd=",no+1);
 					Setconfig(key,setpasswd.c_str());
@@ -3480,6 +3503,10 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
 				//交换机get密码
 				if(getpasswd!=pConf->StrIPSwitchGetPasswd[no])
 				{
+					if(getpasswd=="" && pConf->StrIPSwitchType=="1")//华为 如果是空值，恢复成默认值
+						getpasswd="Huawei123";
+					else if(getpasswd=="" && pConf->StrIPSwitchType=="3")//三旺
+						getpasswd="public";
 					pConf->StrIPSwitchGetPasswd[no]=getpasswd;
 					sprintf(key,"Switch%dGetPasswd=",no+1);
 					Setconfig(key,getpasswd.c_str());
@@ -3487,6 +3514,10 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
 				//交换机set密码
 				if(setpasswd!=pConf->StrIPSwitchSetPasswd[no])
 				{
+					if(setpasswd=="" && pConf->StrIPSwitchType=="1")//华为 如果是空值，恢复成默认值
+						setpasswd="Huawei123";
+					else if(setpasswd=="" && pConf->StrIPSwitchType=="3")//三旺
+						setpasswd="public";
 					pConf->StrIPSwitchSetPasswd[no]=setpasswd;
 					sprintf(key,"Switch%dSetPasswd=",no+1);
 					Setconfig(key,setpasswd.c_str());
@@ -3506,6 +3537,8 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
 				//防火墙get密码
 				if(getpasswd!=pConf->StrFireWareGetPasswd[no])
 				{
+					if(getpasswd=="" && pConf->StrFireWareType=="1")//华为 如果是空值，恢复成默认值
+						getpasswd="Huawei123";
 					pConf->StrFireWareGetPasswd[no]=getpasswd;
 					sprintf(key,"FireWare%dGetPasswd=",no+1);
 					Setconfig(key,getpasswd.c_str());
@@ -3513,6 +3546,8 @@ bool jsonstrVmCtlParamReaderXY(char* jsonstr, int len, UINT8 *pstPam)
 				//防火墙set密码
 				if(setpasswd!=pConf->StrFireWareSetPasswd[no])
 				{
+					if(setpasswd=="" && pConf->StrFireWareType=="1")//华为 如果是空值，恢复成默认值
+						setpasswd="Huawei123";
 					pConf->StrFireWareSetPasswd[no]=setpasswd;
 					sprintf(key,"FireWare%dSetPasswd=",no+1);
 					Setconfig(key,setpasswd.c_str());
@@ -4715,9 +4750,9 @@ bool jsonStrVMCtrlStateWriter(int messagetype, string &mstrjson)
 	if(pSta->Linked && GetTickCount()-pSta->TimeStamp>2*60)//如果大于2分钟没更新，认为没连接
 	{
 		init_lt_state_struct();
-char msg[256];
-sprintf(msg,"VMCtrlState now=0x%x last=0x%x \r\n",GetTickCount(),pSta->TimeStamp);
-WriteLog(msg);
+//char msg[256];
+//sprintf(msg,"VMCtrlState now=0x%x last=0x%x \r\n",GetTickCount(),pSta->TimeStamp);
+//WriteLog(msg);
 	}
 	strJson = strJson + "\"hostname\":\""+ pSta->strhostname +"\",\n";	//主机名称
 	strJson = strJson + "\"cpurate\":\""+ pSta->strcpuRate +"\",\n";	//CPU占用率
@@ -4956,13 +4991,13 @@ bool jsonStrSwitchStatusWriterXY(int messagetype, string &mstrjson)
 		{
 			sprintf(str,"\"isconnect\":%d,\n",pCan->canNode[i].isConnect); strJson = strJson + str;//连接状态
 			sprintf(str,"\"canversion\":\"%s\",\n",pCan->canNode[i].phase.version.c_str()); strJson = strJson + str;//can动力板版本号
-			if(pCan->canNode[i].phase.vln<24.0)
+			if(pCan->canNode[i].phase.vln<36.0)
 				sprintf(str,"\"status\":0,\n"); //断电
 			else 
 				sprintf(str,"\"status\":1,\n"); //通电
 			strJson = strJson + str;
 			sprintf(str,"\"volt\":%.1f,\n",pCan->canNode[i].phase.vln); strJson = strJson + str;//电压
-			sprintf(str,"\"amp\":%.3f\n",pCan->canNode[i].phase.amp); strJson = strJson + str;//电流
+			sprintf(str,"\"amp\":%.2f\n",pCan->canNode[i].phase.amp); strJson = strJson + str;//电流
 		}
 		else
 		{
@@ -5153,16 +5188,28 @@ bool jsonStrHWCabinetWriter(int messagetype,char *pstPam, string &mstrjson)
 			strJson = strJson + "\"hwacbbatsoh\": " + pCab->HUAWEIDevValue.strhwAcbBatSoh + ",\n";		 //单个电池串SOH
 			strJson = strJson + "\"hwacbbatcapacity\": " + pCab->HUAWEIDevValue.strhwAcbBatCapacity + ",\n";		 //单个电池容量
 			//2019-11-19新增4个门锁状态
-			status=LockInfo[0].isOpen;	sprintf(str,"\"hwequcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜前门锁状态
-			status=LockInfo[1].isOpen;	sprintf(str,"\"hwequcabbackdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜后门锁状态
-			status=LockInfo[2].isOpen;	sprintf(str,"\"hwbatcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;		 //电池柜前门锁状态
-			status=LockInfo[3].isOpen;	sprintf(str,"\"hwbatcabbackdoorstatus\": \"%d\",\n", status);strJson += str;		 //电池柜后门锁状态
+			if(LockInfo[0].isLink)
+				{status=LockInfo[0].isOpen;	sprintf(str,"\"hwequcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;}		 //设备柜前门锁状态
+			else
+				{sprintf(str,"\"hwequcabfrontdoorstatus\": \"2\",\n");strJson += str;}		 //设备柜前门锁状态
+			if(LockInfo[1].isLink)
+				{status=LockInfo[1].isOpen;	sprintf(str,"\"hwequcabbackdoorstatus\": \"%d\",\n", status);strJson += str;}		 //设备柜后门锁状态
+			else
+				{sprintf(str,"\"hwequcabbackdoorstatus\": \"2\",\n");strJson += str;}		 //设备柜后门锁状态
+			if(LockInfo[2].isLink)
+				{status=LockInfo[2].isOpen;	sprintf(str,"\"hwbatcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;}		 //电池柜前门锁状态
+			else
+				{sprintf(str,"\"hwbatcabfrontdoorstatus\": \"2\",\n");strJson += str;}		 //电池柜前门锁状态
+			if(LockInfo[3].isLink)
+				{status=LockInfo[3].isOpen;	sprintf(str,"\"hwbatcabbackdoorstatus\": \"%d\",\n", status);strJson += str;}		 //电池柜后门锁状态
+			else
+				{sprintf(str,"\"hwbatcabbackdoorstatus\": \"2\",\n");strJson += str;}		 //电池柜后门锁状态
 		}
 		else
 		{
 			char msg[256];
 			sprintf(msg,"HWCabinet now=0x%x last=0x%x \r\n",GetTickCount(),pCab->HUAWEIDevValue.hwTimeStamp);
-			WriteLog(msg);
+//			WriteLog(msg);
 			initHUAWEIGantry(pCab);
 			initHUAWEIALARM(pCab);
 			sprintf(str,"\"isonline\":\"%d\",\n",pCab->HUAWEIDevValue.hwLinked); strJson = strJson + str;//连接状态
@@ -5315,22 +5362,36 @@ bool jsonStrHWCabinetWriter(int messagetype,char *pstPam, string &mstrjson)
 				strJson = strJson + "\"hwdcairrunstatus2\": " + state.airco[1].state + ",\n";		 //空调运行状态状态 1：待机；2：运行中；3：故障；255：未知
 				strJson = strJson + "\"hwdcaircompressorrunstatus2\": " + state.airco[1].compressorSta + ",\n";		 //空调压缩机状态 1：待机；2：运行中；3：故障；255：未知
 			}
+for(i=0;i<4;i++)
+	printf("lock(%d) isLink:%d \r\n",i,state.lock[i].isLink);
 			//2019-11-19新增4个门锁状态
 			if (state.devNum[SupervisionZTE::DevType_CabLock] >= 1) 
 			{
-				status=state.lock[0].status;	sprintf(str,"\"hwequcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜前门锁状态
+				if(state.lock[0].isLink)
+					{status=state.lock[0].status;	sprintf(str,"\"hwequcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;}		 //设备柜前门锁状态
+				else
+					{sprintf(str,"\"hwequcabfrontdoorstatus\": \"2\",\n");strJson += str;}		 //设备柜前门锁状态
 			}
 			if (state.devNum[SupervisionZTE::DevType_CabLock] >= 2) 
 			{
-				status=state.lock[1].status;	sprintf(str,"\"hwequcabbackdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜后门锁状态
+				if(state.lock[1].isLink)
+					{status=state.lock[1].status;	sprintf(str,"\"hwequcabbackdoorstatus\": \"%d\",\n", status);strJson += str;}		 //设备柜后门锁状态
+				else
+					{sprintf(str,"\"hwequcabbackdoorstatus\": \"2\",\n");strJson += str;}		 //设备柜后门锁状态
 			}
 			if (state.devNum[SupervisionZTE::DevType_CabLock] >= 3)
 			{
-				status=state.lock[2].status;	sprintf(str,"\"hwbatcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;		 //电池柜前门锁状态
+				if(state.lock[2].isLink)
+					{status=state.lock[2].status;	sprintf(str,"\"hwbatcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;}		 //电池柜前门锁状态
+				else
+					{sprintf(str,"\"hwbatcabfrontdoorstatus\": \"2\",\n");strJson += str;}		 //电池柜前门锁状态
 			}
 			if (state.devNum[SupervisionZTE::DevType_CabLock] >= 4)
 			{
-				status=state.lock[3].status;	sprintf(str,"\"hwbatcabbackdoorstatus\": \"%d\",\n", status);strJson += str;		 //电池柜后门锁状态
+				if(state.lock[3].isLink)
+					{status=state.lock[3].status;	sprintf(str,"\"hwbatcabbackdoorstatus\": \"%d\",\n", status);strJson += str;}		 //电池柜后门锁状态
+				else
+					{sprintf(str,"\"hwbatcabbackdoorstatus\": \"2\",\n");strJson += str;}		 //电池柜后门锁状态
 			}
 		}
 		else
@@ -5404,8 +5465,16 @@ bool jsonStrHWCabinetWriter(int messagetype,char *pstPam, string &mstrjson)
 		strJson = strJson + "\"hwwateralarmtraps\": " + pCab->HUAWEIDevAlarm.hwWaterAlarmTraps + ",\n"; //水浸告警 242
 		strJson = strJson + "\"hwsmokealarmtraps\": " + pCab->HUAWEIDevAlarm.hwSmokeAlarmTraps + ",\n"; //烟雾告警 243
 		//2019-11-19新增4个门锁状态
-		status=LockInfo[0].isOpen;	sprintf(str,"\"hwequcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜前门锁状态
-		status=LockInfo[1].isOpen;	sprintf(str,"\"hwequcabbackdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜后门锁状态
+//		status=LockInfo[0].isOpen;	sprintf(str,"\"hwequcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜前门锁状态
+//		status=LockInfo[1].isOpen;	sprintf(str,"\"hwequcabbackdoorstatus\": \"%d\",\n", status);strJson += str;		 //设备柜后门锁状态
+		if(LockInfo[0].isLink)
+			{status=LockInfo[0].isOpen;	sprintf(str,"\"hwequcabfrontdoorstatus\": \"%d\",\n", status);strJson += str;}		 //设备柜前门锁状态
+		else
+			{sprintf(str,"\"hwequcabfrontdoorstatus\": \"2\",\n");strJson += str;}		 //设备柜前门锁状态
+		if(LockInfo[1].isLink)
+			{status=LockInfo[1].isOpen;	sprintf(str,"\"hwequcabbackdoorstatus\": \"%d\",\n", status);strJson += str;}		 //设备柜后门锁状态
+		else
+			{sprintf(str,"\"hwequcabbackdoorstatus\": \"2\",\n");strJson += str;}		 //设备柜后门锁状态
 	}
 	#if 0
 	else if(atoi(pConf->StrCabinetType.c_str())==14) //捷迅机柜

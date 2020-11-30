@@ -34,6 +34,7 @@ extern Camera *pCCam[CAM_NUM];						//机柜监控摄像头
 extern AirCondition::AirInfo_S AirCondInfo;		//直流空调结构体
 extern TemHumi::Info_S TemHumiInfo;				//温湿度结构体
 extern Lock::Info_S LockInfo[LOCK_NUM];			//电子锁结构体
+extern HWLock *pHWCLock[LOCK_NUM];				//华为门锁对象
 extern unsigned long GetTickCount();
 extern CallBackTimeStamp CBTimeStamp;				//外设采集回调时间戳
 void myprintf(char* str);
@@ -776,10 +777,10 @@ void HuaweiCallback(void *data, void *userdata)
     printf("latitude = %s\n", info->latitude.c_str());
 }
 
-/* 门锁回调函数 */
+/* 生久门锁回调函数 */
 void LockCallback(uint8_t addr, Lock::Info_S info, void *userdata) 
 {
-    printf("LockCallback Lock(%d) isOpen:%02X Card{%02X %02X %02X %02X} Event:%02X isAuthorCard:%02X\n", addr, info.isOpen, info.cardId[0], info.cardId[1], info.cardId[2], info.cardId[3], info.event,
+    printf("LockCallback Lock(%d) isLink:%d isOpen:%02X Card{%02X %02X %02X %02X} Event:%02X isAuthorCard:%02X\n", addr, info.isLink, info.isOpen, info.cardId[0], info.cardId[1], info.cardId[2], info.cardId[3], info.event,
            info.isAuthorCard);
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
 	for(int i=0;i<LOCK_NUM;i++)
@@ -798,6 +799,7 @@ void HWLockCallback(uint8_t addr, HWLock::Info_S info, void *userdata)
 	{
 		if(addr==atoi(pConf->StrAdrrLock[i].c_str()))
 		{
+			LockInfo[i].isLink=pHWCLock[i]->linked;
 			LockInfo[i].isOpen=info.status;
 //			LockInfo[i].event=info.reason;
 		}

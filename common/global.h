@@ -2,6 +2,7 @@
 #define __GLOBAL_h__
 
 #include <string>
+#include <map>
 #include <time.h>
 #include "CabinetClient.h"
 #include "CfirewallClient.h"
@@ -12,6 +13,8 @@
 #include "rsu.h"
 #include "CsshClient.h"
 #include "CsshDev.h"
+#include "supervision_zte.h"
+#include "tem_humi.h"
 
 using namespace std;//引入整个名空间
 
@@ -74,6 +77,8 @@ void VAgetFromDevice(uint8_t seq, string& volt, string& amp);
 uint16_t DoorStatusFromLocker(void);
 extern unsigned long GetTickCount(); //返回秒
 
-
+string TempGetFromBox(uint8_t seq);
+string HumiGetFromBox(uint8_t seq);
 
 #endif
+

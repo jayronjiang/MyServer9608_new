@@ -25,6 +25,7 @@ extern CabinetClient *pCabinetClient[HWSERVER_NUM];//华为机柜状态
 extern CTrapClient *pCTrapClient;//华为告警状态
 extern VMCONTROL_STATE VMCtl_State;	//控制器运行状态结构体
 extern VMCONTROL_CONFIG VMCtl_Config;	//控制器配置信息结构体
+extern pthread_mutex_t uprebootMutex ;
 
 CfirewallClient *pCfirewallClient[FIREWARE_NUM] = {NULL,NULL};	//防火墙对象
 CswitchClient *pCswitchClient[IPSWITCH_NUM] = {NULL,NULL,NULL,NULL};		//交换机对象
@@ -91,6 +92,7 @@ int main(void)
 	int i,j;
 	unsigned int pos_cnt = 0;
 	unsigned int temp = 0;
+	unsigned int MainloopTime = 0;
 	char str[256],dir[20];
 	string ip;
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
@@ -333,7 +335,18 @@ int main(void)
 
 		write(WDTfd, "\0", 1);
 		
-		printf("GetTickCount=0x%x\n",GetTickCount());
+//		printf("GetTickCount=0x%x\n",GetTickCount());
+
+        if(++ MainloopTime > 12*60*24)	//24小时重启一次
+        {
+            //判断是否正在远程升级
+			WriteLog("24小时，自动重启！\n");
+            pthread_mutex_lock(&uprebootMutex);
+			system("echo 1 > /proc/sys/kernel/sysrq") ;
+			sleep(2);
+			system("echo b > /proc/sysrq-trigger") ;
+            pthread_mutex_unlock(&uprebootMutex);
+        }
 	}
 
    

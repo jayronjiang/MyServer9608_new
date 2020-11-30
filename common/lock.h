@@ -37,6 +37,7 @@ public:
     }Event_EN;
 
     typedef struct{
+        bool isLink;
         bool isOpen;
         bool isAuthorCard;
         uint8_t cardId[4];
@@ -63,12 +64,16 @@ private:
     Signal_EN signal;
     Info_S info;
 
+    uint8_t queryCnt;
+
     Callback callback;
     void *userdata;
 
 public:
     Lock(uint8_t addr);
     ~Lock();
+
+    Info_S getInfo(void);
 
     void setCallback(Callback cb,void *userdata);
     void open(void);

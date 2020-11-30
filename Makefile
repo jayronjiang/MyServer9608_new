@@ -44,6 +44,8 @@ LIBS          =  $(SUBLIBS)  ./alib/CsshClient.a \
 							 ./alib/libtcp.a \
 							 ./alib/libcsshdev.a \
 							 ./alib/libsupervision.a \
+							 ./alib/libsupervisionxj.a \
+							 ./alib/libmqtt.a \
 							 ./libiconv/lib/*.a \
 							 -L./goahead/bin -lgo -ldl  -lrt -lpthread 
 

@@ -83,6 +83,12 @@ extern void VAgetFromDevice(uint8_t seq, string& volt, string& amp);
 extern uint16_t DoorStatusFromLocker(void);
 extern unsigned long GetTickCount(); //返回秒
 
+// 获取机柜温度 seq:0:设备柜，1：电源柜
+extern string TempGetFromBox(uint8_t seq);
+// 获取机柜湿度 seq:0:设备柜，1：电源柜
+extern string HumiGetFromBox(uint8_t seq);
+
+
 /****************************************************************/
 
 
@@ -626,7 +632,8 @@ uint8_t tsPanel::tsPanelBoxValuePack(uint8_t *pbuf,uint16_t addr)
 
 	// 柜1温度
 	str_name = "设备柜温度:";
-	str_value = pCab->HUAWEIDevValue.strhwEnvTemperature[0];
+	str_value = TempGetFromBox(0);
+		//pCab->HUAWEIDevValue.strhwEnvTemperature[0];
 	str_unit = "℃,";
 	if ((str_value == TO_STR(BOX_NULL_VALUE)) || (str_value == ""))
 	{
@@ -637,7 +644,7 @@ uint8_t tsPanel::tsPanelBoxValuePack(uint8_t *pbuf,uint16_t addr)
 
 	// 柜1湿度
 	str_temp = "设备柜湿度:";
-	str_value = pCab->HUAWEIDevValue.strhwEnvHumidity[0];
+	str_value = HumiGetFromBox(0);
 	str_unit = "%";
 	if ((str_value == TO_STR(BOX_NULL_VALUE)) || (str_value == ""))
 	{
@@ -662,7 +669,7 @@ uint8_t tsPanel::tsPanelBoxValuePack(uint8_t *pbuf,uint16_t addr)
 		
 		// 柜2温度
 		str_name = "电池柜温度:";
-		str_value = pCab->HUAWEIDevValue.strhwEnvTemperature[1];
+		str_value = TempGetFromBox(1);
 		str_unit = "℃,";
 		if ((str_value == TO_STR(BOX_NULL_VALUE)) || (str_value == ""))
 		{
@@ -673,7 +680,7 @@ uint8_t tsPanel::tsPanelBoxValuePack(uint8_t *pbuf,uint16_t addr)
 
 		// 柜2湿度
 		str_temp = "湿度:";
-		str_value = pCab->HUAWEIDevValue.strhwEnvHumidity[1];
+		str_value = HumiGetFromBox(1);
 		str_unit = "%";
 		if ((str_value == TO_STR(BOX_NULL_VALUE)) || (str_value == ""))
 		{

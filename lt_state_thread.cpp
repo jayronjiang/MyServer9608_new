@@ -132,14 +132,14 @@ int getallstate(void)
 
 	pSta->TimeStamp=GetTickCount();
 	pSta->Linked=true;
-sprintf(strmsg,"begin getallstate timestamp=0x%x\n",pSta->TimeStamp);
-WriteLog(strmsg);
+//sprintf(strmsg,"begin getallstate timestamp=0x%x\n",pSta->TimeStamp);
+//WriteLog(strmsg);
 
     //查询系统名称
     system("hostname > ./ltinfo");
     memset(infobuf,0x00,1024*5+1) ;
     ReadLTInfo(infobuf);
-WriteLog(infobuf);
+//WriteLog(infobuf);
     pSta->strhostname = infobuf;
     //处理最后回车的值
     if(pSta->strhostname.find("\r\n") == (pSta->strhostname.size()-2))
@@ -151,8 +151,8 @@ WriteLog(infobuf);
         pSta->strhostname = pSta->strhostname.substr(0,(pSta->strhostname.size()-1)) ;
     }
 	pSta->strhostname="LTXY-INT-301";
-sprintf(strmsg,"系统名称:%s\n",pSta->strhostname.c_str());
-WriteLog(strmsg);
+//sprintf(strmsg,"系统名称:%s\n",pSta->strhostname.c_str());
+//WriteLog(strmsg);
     printf("系统名称:%s\r\n",pSta->strhostname.c_str());
 
 	//查询主程序占用率
@@ -161,7 +161,7 @@ WriteLog(strmsg);
     memset(infobuf,0x00,1024*5+1) ;
     ReadLTInfo(infobuf);
     strinfo = infobuf;
-WriteLog(infobuf);
+//WriteLog(infobuf);
 	int posr=strinfo.find("%");
 	if(posr>0)
 	{
@@ -175,8 +175,8 @@ WriteLog(infobuf);
 	softRate=softRate<99?softRate+1:softRate;
 	sprintf(value,"%.2f",softRate);
 	pSta->strSoftRate=value;
-sprintf(strmsg,"主程序占用率:%s%\n",pSta->strSoftRate.c_str());
-WriteLog(strmsg);
+//sprintf(strmsg,"主程序占用率:%s%\n",pSta->strSoftRate.c_str());
+//WriteLog(strmsg);
 	printf("主程序占用率:%s%\r\n",pSta->strSoftRate.c_str());
 	
 	if(atof(pSta->strSoftRate.c_str())>=50.0)
@@ -189,7 +189,7 @@ WriteLog(strmsg);
     system("top -bn1 |grep ksoftirqd/0 |awk '{ print $7 }' > ./ltinfo");
     memset(infobuf,0x00,1024*5+1) ;
     ReadLTInfo(infobuf);
-WriteLog(infobuf);
+//WriteLog(infobuf);
     strinfo = infobuf;
 	posr=strinfo.find("%");
 	if(posr>0)
@@ -200,15 +200,15 @@ WriteLog(infobuf);
 	{
 		pSta->strKsoftirqdRate=strinfo;
 	}
-sprintf(strmsg,"ksoftirqd占用率:%s%\n",pSta->strKsoftirqdRate.c_str());
-WriteLog(strmsg);
+//sprintf(strmsg,"ksoftirqd占用率:%s%\n",pSta->strKsoftirqdRate.c_str());
+//WriteLog(strmsg);
     printf("ksoftirqd占用率:%s%\r\n",pSta->strKsoftirqdRate.c_str());
 
 	//kworker占用率
     system("top -bn1 |grep kworker/0 |awk '{ print $7 }' > ./ltinfo");
     memset(infobuf,0x00,1024*5+1) ;
     ReadLTInfo(infobuf);
-WriteLog(infobuf);
+//WriteLog(infobuf);
     strinfo = infobuf;
 	posr=strinfo.find("\n");
 	if(posr>0)
@@ -219,8 +219,8 @@ WriteLog(infobuf);
 	{
 		pSta->strkworkerRate=strinfo;
 	}
-sprintf(strmsg,"kworker占用率:%s%\n",pSta->strkworkerRate.c_str());
-WriteLog(strmsg);
+//sprintf(strmsg,"kworker占用率:%s%\n",pSta->strkworkerRate.c_str());
+//WriteLog(strmsg);
     printf("kworker占用率:%s%\r\n",pSta->strkworkerRate.c_str());
 
 	//查询网口2广播风暴报警信息
@@ -237,8 +237,8 @@ WriteLog(strmsg);
 		pSta->strLan2BroadcastAlarm="0";
 	}
 	pSta->strLan2BroadcastAlarmMesg=strinfo;
-sprintf(strmsg,"网口2广播风暴报警:%s\n",pSta->strLan2BroadcastAlarm.c_str());
-WriteLog(strmsg);
+//sprintf(strmsg,"网口2广播风暴报警:%s\n",pSta->strLan2BroadcastAlarm.c_str());
+//WriteLog(strmsg);
     printf("网口2广播风暴报警:%s\r\n",pSta->strLan2BroadcastAlarm.c_str());
     printf("网口2广播风暴报警信息:%s\r\n",pSta->strLan2BroadcastAlarmMesg.c_str());
 
@@ -247,7 +247,7 @@ WriteLog(strmsg);
     system("top -bn1 | grep CPU: > ./ltinfo");
     memset(infobuf,0x00,1024*5+1) ;
     ReadLTInfo(infobuf);
-WriteLog(infobuf);
+//WriteLog(infobuf);
     strinfo = infobuf;
 	int poscpuid=strinfo.find("% idle");
 	int poscpuni=strinfo.find("nic ");
@@ -261,8 +261,8 @@ WriteLog(infobuf);
 	fcpuRate = fcpuRate<99?fcpuRate+1:fcpuRate;
 	sprintf(value,"%.2f", fcpuRate);
     pSta->strcpuRate = value;
-sprintf(strmsg,"CPU占用率:%s%\n",pSta->strcpuRate.c_str());
-WriteLog(strmsg);
+//sprintf(strmsg,"CPU占用率:%s%\n",pSta->strcpuRate.c_str());
+//WriteLog(strmsg);
     printf("CPU占用率:%s%\r\n",pSta->strcpuRate.c_str());
 	
 	if(fcpuRate>=atof(pConf->StrCpuAlarmValue.c_str()))
@@ -276,12 +276,12 @@ WriteLog(strmsg);
     system("cat /sys/class/thermal/thermal_zone0/temp > ./ltinfo");
     memset(infobuf,0x00,1024*5+1) ;
     ReadLTInfo(infobuf);
-WriteLog(infobuf);
+//WriteLog(infobuf);
     strinfo = infobuf;
 	sprintf(infobuf,"%.1f\0",atoi(infobuf)/1000.0);
 	pSta->strcpuTemp=infobuf;   
-sprintf(strmsg,"CPU温度:%s\n",pSta->strcpuTemp.c_str());
-WriteLog(strmsg);
+//sprintf(strmsg,"CPU温度:%s\n",pSta->strcpuTemp.c_str());
+//WriteLog(strmsg);
     printf("CPU温度:%s\r\n",pSta->strcpuTemp.c_str());
 
 	if(atof(pSta->strcpuTemp.c_str())>=atof(pConf->StrCpuTempAlarmValue.c_str()))
@@ -295,25 +295,25 @@ WriteLog(strmsg);
     memset(infobuf,0x00,1024*5+1) ;
     ReadLTInfo(infobuf);
     strinfo = infobuf;
-WriteLog(infobuf);
+//WriteLog(infobuf);
     strinfo = strinfo + " ";
     if(getstrvaule(strinfo,2) == 2)
        pSta->strmenTotal = strinfo;
     else
        pSta->strmenTotal = "" ;
-sprintf(strmsg,"内存总大小%sM\n",pSta->strmenTotal.c_str());
-WriteLog(strmsg);
+//sprintf(strmsg,"内存总大小%sM\n",pSta->strmenTotal.c_str());
+//WriteLog(strmsg);
     printf("内存总大小%sM\r\n",pSta->strmenTotal.c_str());
 
     strinfo = infobuf;
-WriteLog(infobuf);
+//WriteLog(infobuf);
     strinfo = strinfo + " ";
     if(getstrvaule(strinfo,3) == 3)
        pSta->strmenUsed = strinfo;
     else
        pSta->strmenUsed = "" ;
-sprintf(strmsg,"内存使用大小%sM\n",pSta->strmenUsed.c_str());
-WriteLog(strmsg);
+//sprintf(strmsg,"内存使用大小%sM\n",pSta->strmenUsed.c_str());
+//WriteLog(strmsg);
     printf("内存使用大小%sM\r\n",pSta->strmenUsed.c_str());
 
     float FmenTotal = (float)atoi(pSta->strmenTotal.c_str());
@@ -322,29 +322,29 @@ WriteLog(strmsg);
 
 	sprintf(infobuf,"%.1f\0",FmenRate);
 	pSta->strmenRate=infobuf;
-sprintf(strmsg,"内存占用率%s%\n",pSta->strmenRate.c_str());
-WriteLog(strmsg);
+//sprintf(strmsg,"内存占用率%s%\n",pSta->strmenRate.c_str());
+//WriteLog(strmsg);
     printf("内存占用率%s%\r\n",pSta->strmenRate.c_str());
 
 	if(atof(pSta->strmenRate.c_str())>=atof(pConf->StrMemAlarmValue.c_str()))
 		pSta->strMemAlarm = "1";
 	else
 		pSta->strMemAlarm = "0";
-sprintf(strmsg,"内存使用率报警:%s\n",pSta->strMemAlarm.c_str());
-WriteLog(strmsg);
+//sprintf(strmsg,"内存使用率报警:%s\n",pSta->strMemAlarm.c_str());
+//WriteLog(strmsg);
     printf("内存使用率报警:%s\r\n",pSta->strMemAlarm.c_str());
 
     //查询内核日期
     system("uname -a > ./ltinfo");
     memset(infobuf,0x00,1024*5+1) ;
     ReadLTInfo(infobuf);
-WriteLog(infobuf);
+//WriteLog(infobuf);
 	string verdate=infobuf;
 	int pos1=verdate.find("Aug 14 09:24:07 CST 2019");
 	int pos2=verdate.find("Aug 18 16:33:37 CST 2020");
 	int pos3=verdate.find("Sep 30 03:26:33 PDT 2020");
 	int pos4=verdate.find("Oct 26 02:52:36 PDT 2020");
-printf("内核1:pos1=%d,pos2=%d,%s\r\n",pos1,pos2,verdate.c_str());
+//printf("内核1:pos1=%d,pos2=%d,%s\r\n",pos1,pos2,verdate.c_str());
 
     //处理最后回车的值
 	if(pos1>0)
@@ -375,8 +375,8 @@ printf("内核1:pos1=%d,pos2=%d,%s\r\n",pos1,pos2,verdate.c_str());
 		if(posHead>0 && posEnd>0 && posEnd>posHead)
 			pSta->strzimageDate = verdate.substr(posHead+3,posEnd-(posHead+3));;
 	}
-sprintf(strmsg,"内核版本:%s\n",pSta->strzimageVer.c_str());
-WriteLog(strmsg);
+//sprintf(strmsg,"内核版本:%s\n",pSta->strzimageVer.c_str());
+//WriteLog(strmsg);
     printf("内核版本:%s\r\n",pSta->strzimageVer.c_str());
     printf("内核日期:%s\r\n",pSta->strzimageDate.c_str());
 

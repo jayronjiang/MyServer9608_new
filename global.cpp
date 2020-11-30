@@ -33,6 +33,8 @@ extern IPCam *pCVehplate[VEHPLATE_NUM];
 extern IPCam *pCVehplate900[VEHPLATE900_NUM];
 extern CsshClient *pCsshClient[ATLAS_NUM];			//ATLAS对象
 extern Lock::Info_S LockInfo[LOCK_NUM];			//电子锁结构体
+extern SupervisionZTE *pCZTE;				//中兴机柜对象
+extern TemHumi::Info_S TemHumiInfo;				//温湿度结构体
 
 void SetIPinfo()
 {
@@ -103,12 +105,24 @@ float ampTrueGetFromDev(uint8_t seq)
 uint16_t linkStGetFrombox(uint8_t seq)
 {
 	CabinetClient *pCab=pCabinetClient[seq];//华为机柜状态
+	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
+	bool linked = 0;
+	uint16_t re_val = 0;
+
 	if(pCab==NULL) return 0;
 	
-	uint16_t re_val = 0;
-	bool hwBox = pCab->HUAWEIDevValue.hwLinked;
+	if(atoi(pConf->StrCabinetType.c_str())>=1 && atoi(pConf->StrCabinetType.c_str())<=4)	//华为机柜
+		linked= pCab->HUAWEIDevValue.hwLinked;
+	else if(atoi(pConf->StrCabinetType.c_str())==5)	//中兴机柜
+	{
+		SupervisionZTE::State_S state;
+		state = pCZTE->getState();
+		linked= state.linked;
+	}
+	else if(atoi(pConf->StrCabinetType.c_str())==13)	//利通机柜
+		linked= 1;
 
-	if (hwBox)
+	if (linked)
 	{
 		re_val = 1;
 	}
@@ -379,9 +393,20 @@ string IPGetFromBox(uint8_t seq)
 string linkStringGetFromBox(uint8_t seq)
 {
 	CabinetClient *pCab=pCabinetClient[seq];//华为机柜状态
+	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
 	
 	string str_re = "";
-	bool linked = pCab->HUAWEIDevValue.hwLinked;
+	bool linked;
+	if(atoi(pConf->StrCabinetType.c_str())>=1 && atoi(pConf->StrCabinetType.c_str())<=4)	//华为机柜
+		linked= pCab->HUAWEIDevValue.hwLinked;
+	else if(atoi(pConf->StrCabinetType.c_str())==5)	//中兴机柜
+	{
+		SupervisionZTE::State_S state;
+		state = pCZTE->getState();
+		linked= state.linked;
+	}
+	else if(atoi(pConf->StrCabinetType.c_str())==13)	//利通机柜
+		linked= 1;
 	
 /*	if (seq == 1)
 	{
@@ -398,6 +423,77 @@ string linkStringGetFromBox(uint8_t seq)
 	}
 	return str_re;
 }
+
+
+
+// 获取机柜的温度
+string TempGetFromBox(uint8_t seq)
+{
+	if (seq >1)
+	{
+		return "";
+	}
+	
+	CabinetClient *pCab=pCabinetClient[seq];//华为机柜状态
+	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
+	TemHumi::Info_S *pTemHumi=&TemHumiInfo;			//温湿度结构体
+	
+	string str_re = "";
+	if(atoi(pConf->StrCabinetType.c_str())>=1 && atoi(pConf->StrCabinetType.c_str())<=4)	//华为机柜
+	{
+		str_re = pCab->HUAWEIDevValue.strhwEnvTemperature[seq];
+	}
+	else if(atoi(pConf->StrCabinetType.c_str())==5)	//中兴机柜
+	{
+		SupervisionZTE::State_S state;
+		state = pCZTE->getState();
+		str_re= state.temhumi[seq].tempture;
+	}
+	else if(atoi(pConf->StrCabinetType.c_str())==13)	//利通机柜
+	{
+		char value[10];
+		sprintf(value,"%.1f",pTemHumi->tempture);
+		str_re= value;
+	}
+	
+	return str_re;
+}
+
+
+// 获取机柜的湿度
+string HumiGetFromBox(uint8_t seq)
+{
+	if (seq >1)
+	{
+		return "";
+	}
+	
+	CabinetClient *pCab=pCabinetClient[seq];//华为机柜状态
+	VMCONTROL_CONFIG *pConf=&VMCtl_Config;	//控制器配置信息结构体
+	TemHumi::Info_S *pTemHumi=&TemHumiInfo;			//温湿度结构体
+	
+	string str_re = "";
+	if(atoi(pConf->StrCabinetType.c_str())>=1 && atoi(pConf->StrCabinetType.c_str())<=4)	//华为机柜
+	{
+		str_re = pCab->HUAWEIDevValue.strhwEnvHumidity[seq];
+	}
+	else if(atoi(pConf->StrCabinetType.c_str())==5)	//中兴机柜
+	{
+		SupervisionZTE::State_S state;
+		state = pCZTE->getState();
+		str_re= state.temhumi[seq].humity;
+	}
+	else if(atoi(pConf->StrCabinetType.c_str())==13)	//利通机柜
+	{
+		char value[10];
+		sprintf(value,"%.1f",pTemHumi->humidity);
+		str_re= value;
+	}
+	
+	return str_re;
+}
+
+
 
 // 取8个字节的ID号
 unsigned long long IDgetFromConfig(void)
