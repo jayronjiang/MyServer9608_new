@@ -109,6 +109,7 @@ public:
     typedef struct {
         bool isLink;
         std::string voltage;// 电池组电压
+		std::string Curr;// 电池组电流
         std::string capacity;// 剩余容量
         std::string fullCap;// 满充容量
         std::string monTempture;// 单体温度

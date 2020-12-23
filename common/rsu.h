@@ -171,6 +171,8 @@ private:
 
     RsuInfo_S info;
 
+    void sendC0(void);
+
 public:
     /**
      * @name: RSU构造函数

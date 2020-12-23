@@ -7,7 +7,7 @@
 #define NETPACKET_MAXLEN     1024*1024*3
 //#define IPV4_LEN 15
 
-#define JSON_LEN 10*1024
+#define JSON_LEN 100*1024
 
 #define NETCMD_MAGIC       0x12345678
 
@@ -46,6 +46,7 @@ typedef enum NETCMD_TYPE
 	NETCMD_SEND_SPD_RES_PARAM = 28,	//接地电阻参数
 	NETCMD_SEND_VEHPLATE900_PARAM = 29, //300万全景车牌识别参数
 	NETCMD_SEND_VMCTRL_STATE = 30, 	//控制器运行状态
+	NETCMD_SEND_CAPTURE_IMAGE = 33,	//上传抓拍图片
 	
 	NETCMD_TEST_485 = 100,			//测试485
 	NETCMD_TEST_232_1 = 101,			//测试232-1

@@ -231,6 +231,10 @@ int getallstate(void)
 	if(strinfo!="")
 	{
 		pSta->strLan2BroadcastAlarm="1";
+		
+		system("echo 1 > /proc/sys/kernel/sysrq") ;		//reboot
+		sleep(2);
+		system("echo b > /proc/sysrq-trigger") ;
 	}
 	else
 	{

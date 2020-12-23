@@ -19,8 +19,8 @@
 #include <unistd.h> 
 #include "registers.h"
 
-#define BUF_MAX  50*1024
-#define JSON_LEN 50*1024
+#define BUF_MAX  100*1024
+#define JSON_LEN 100*1024
 
 
 using namespace std;

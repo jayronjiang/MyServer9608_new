@@ -806,7 +806,7 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 	int i,j;
 	VMCONTROL_CONFIG *pConf=&VMCtl_Config;  //控制器配置信息结构体
 	REMOTE_CONTROL *pstuRCtrl=(REMOTE_CONTROL *)pRCtrl;
-	CabinetClient *pCab=pCabinetClient[0];//华为机柜
+	CabinetClient *pCab=pCabinetClient[0],*pCab2=pCabinetClient[1];//华为机柜
 	THUAWEIGantry *pHWDev=&(pCab->HUAWEIDevValue);//华为机柜状态
 	CANNode *pCan=pCOsCan;								//Can对象
 	SpdClient *pSpd=pCSpdClent;		//SPD防雷器
@@ -855,366 +855,386 @@ void Client_CmdProcess(int fd, char *cmdbuffer,void *arg)
 		}
 	}
 
-	 if(pstuRCtrl->FrontDoorCtrl==ACT_UNLOCK)					 //开锁
-	 {
+	if(pstuRCtrl->FrontDoorCtrl==ACT_UNLOCK)					 //开锁
+	{
 		printf("设备柜前门 开锁\r\n");
-		if(pConf->StrLockType=="1")
+		if(atoi(pConf->StrCabinetType.c_str())<=4)
 		{
 			// 如果是华为电子锁
 			pHWCLock[0]->open();
 		}
-		else if(pConf->StrLockType=="2")
+		else if(pConf->StrLockType=="2" || pConf->StrCabinetType=="13")
 		{
 			// 如果是生久电子锁
 			pCLock[0]->open();
 		}
-		else if(pConf->StrLockType=="3")
+		else if(pConf->StrLockType=="3" || pConf->StrCabinetType=="5")
 		{
 			// 如果是中兴电子锁
 			pCZTE->openLock(ZTE_DOOR_OPEN,DEV_FRONT_DOOR);
 		}
+		else if(pConf->StrCabinetType=="12")
+		{
+			// 如果是华软电子锁
+			pCab->pSupervisionHR->openDoor(0);
+		}
 		usleep(2000);
-	 }
-	 if(pstuRCtrl->BackDoorCtrl==ACT_UNLOCK)				 //开锁
-	 {
+	}
+	if(pstuRCtrl->BackDoorCtrl==ACT_UNLOCK)				 //开锁
+	{
 		printf("设备柜后门 开锁\r\n");
-		if(pConf->StrLockType=="1")
+		if(atoi(pConf->StrCabinetType.c_str())<=4)
 		{
 			// 如果是华为电子锁
 			pHWCLock[1]->open();
 		}
-		else if(pConf->StrLockType=="2")
+		else if(pConf->StrLockType=="2" || pConf->StrCabinetType=="13")
 		{
 			// 如果是生久电子锁
 			pCLock[1]->open();
 		}
-		else if(pConf->StrLockType=="3")
+		else if(pConf->StrLockType=="3" || pConf->StrCabinetType=="5")
 		{
 			// 如果是中兴电子锁
 			pCZTE->openLock(ZTE_DOOR_OPEN,DEV_BACK_DOOR);
 		}
+		else if(pConf->StrCabinetType=="12")
+		{
+			// 如果是华软电子锁
+			pCab->pSupervisionHR->openDoor(1);
+		}
 		usleep(2000);
-	 }
-	 if(pstuRCtrl->SideDoorCtrl==ACT_UNLOCK && pConf->StrLockNum>="3")	 //开锁
-	 {
+	}
+	if(pstuRCtrl->SideDoorCtrl==ACT_UNLOCK && pConf->StrLockNum>="3")	 //开锁
+	{
 		printf("电池柜前门 开锁\r\n");
-		if(pConf->StrLockType=="1")
+		if(atoi(pConf->StrCabinetType.c_str())<=4)
 		{
 			// 如果是华为电子锁
 			pHWCLock[2]->open();
 		}
-		else if(pConf->StrLockType=="2")
+		else if(pConf->StrLockType=="2" || pConf->StrCabinetType=="13")
 		{
 			// 如果是生久电子锁
 			pCLock[2]->open();
 		}
-		else if(pConf->StrLockType=="3")
+		else if(pConf->StrLockType=="3" || pConf->StrCabinetType=="5")
 		{
 			// 如果是中兴电子锁
 			pCZTE->openLock(ZTE_DOOR_OPEN,POWER_FRONT_DOOR);
 		}
+		else if(pConf->StrCabinetType=="12")
+		{
+			// 如果是华软电子锁
+			pCab2->pSupervisionHR->openDoor(0);
+		}
 		usleep(2000);
-	 }
-	 if(pstuRCtrl->RightSideDoorCtrl==ACT_UNLOCK && pConf->StrLockNum>="4")	 //开锁
-	 {
+	}
+	if(pstuRCtrl->RightSideDoorCtrl==ACT_UNLOCK && pConf->StrLockNum>="4")	 //开锁
+	{
 		printf("电池柜后门 开锁\r\n");
-		if(pConf->StrLockType=="1")
+		if(atoi(pConf->StrCabinetType.c_str())<=4)
 		{
 			// 如果是华为电子锁
 			pHWCLock[3]->open();
 		}
-		else if(pConf->StrLockType=="2")
+		else if(pConf->StrLockType=="2" || pConf->StrCabinetType=="13")
 		{
 			// 如果是生久电子锁
 			pCLock[3]->open();
 		}
-		else if(pConf->StrLockType=="3")
+		else if(pConf->StrLockType=="3" || pConf->StrCabinetType=="5")
 		{
 			// 如果是中兴电子锁
 			pCZTE->openLock(ZTE_DOOR_OPEN,POWER_BACK_DOOR);
 		}
+		else if(pConf->StrCabinetType=="12")
+		{
+			// 如果是华软电子锁
+			pCab2->pSupervisionHR->openDoor(1);
+		}
 		usleep(2000);
-	 }
+	}
 
-	 if(pHWDev->hwLinked && GetTickCount()-pHWDev->hwTimeStamp>5*60) //超过5分钟没更新，认为没有连接)
-	 	pHWDev->hwLinked=false;
- 	 //控制单板复位 0：保持；1：热复位；
-	 if(pHWDev->hwLinked && pstuRCtrl->hwctrlmonequipreset!=ACT_HOLD)
-	 {
-		 sprintf(value,"%d",pstuRCtrl->hwctrlmonequipreset);
-		 printf("RemoteControl 控制单板复位=%s\n",value);
-		 pCab->SnmpSetOid(hwCtrlMonEquipReset,value,1);
-		 pCab->SetIntervalTime(1);
-	 }
- 	 //AC过压点设置 0:保持；50-600（有效）；280（缺省值）
-	 if(pHWDev->hwLinked && pstuRCtrl->hwsetacsuppervoltlimit!=ACT_HOLD)
-	 {
-		 sprintf(value,"%d",pstuRCtrl->hwsetacsuppervoltlimit);
-		 printf("RemoteControl AC过压点设置=%s\n",value);
-		 pCab->SnmpSetOid(hwSetAcsUpperVoltLimit,value,1);
-		 pCab->SetIntervalTime(1);
-	 }
-	 //AC欠压点设置 0:保持；50-600（有效）；180（缺省值）
-	 if(pHWDev->hwLinked && pstuRCtrl->hwsetacslowervoltlimit!=ACT_HOLD)
-	 {
-		 sprintf(value,"%d",pstuRCtrl->hwsetacslowervoltlimit);
-		 printf("RemoteControl AC欠压点设置=%s\n",value);
-		 pCab->SnmpSetOid(hwSetAcsLowerVoltLimit,value,1);
-		 pCab->SetIntervalTime(1);
-	 }
-	 //设置DC过压点 0:保持；53-600（有效）；58（缺省值）
-	 if(pHWDev->hwLinked && pstuRCtrl->hwsetdcsuppervoltlimit!=ACT_HOLD)
-	 {
-		 sprintf(value,"%d",pstuRCtrl->hwsetdcsuppervoltlimit*10);
-		 printf("RemoteControl 设置DC过压点=%s\n",value);
-		 pCab->SnmpSetOid(hwSetDcsUpperVoltLimit,value,1);
-		 pCab->SetIntervalTime(1);
-	 }
-	 //设置DC欠压点 0:保持；35 - 57（有效）；45（缺省值）
-	 if(pHWDev->hwLinked && pstuRCtrl->hwsetdcslowervoltlimit!=ACT_HOLD)
-	 {
-		 sprintf(value,"%d",pstuRCtrl->hwsetdcslowervoltlimit*10);
-		 printf("RemoteControl 设置DC欠压点=%s\n",value);
-		 pCab->SnmpSetOid(hwSetDcsLowerVoltLimit,value,1);
-		 pCab->SetIntervalTime(1);
-	 }
-	 //环境温度告警上限 0:保持；25-80（有效）；55（缺省值）
-	 for(i=0;i<2;i++)
-	 {
-		 if(pHWDev->hwLinked && pstuRCtrl->hwsetenvtempupperlimit[i]!=ACT_HOLD)
-		 {
-			 sprintf(value,"%d",pstuRCtrl->hwsetenvtempupperlimit[i]);
-			 printf("RemoteControl 环境温度告警上限%d=%s\n",i,value);
-			 pCab->SnmpSetOid(hwSetEnvTempUpperLimit,value,i+1);
-			 pCab->SetIntervalTime(1);
-		 }
-	 }
-	 //环境温度告警下限255:保持；-20-20（有效）；-20（缺省值）
-	 for(i=0;i<2;i++)
-	 {
-		 if(pHWDev->hwLinked && pstuRCtrl->hwsetenvtemplowerlimit[i]!=ACT_HOLD_FF)
-		 {
-			 sprintf(value,"%d",pstuRCtrl->hwsetenvtemplowerlimit[i]);
-			 printf("RemoteControl 环境温度告警下限%d=%s\n",i,value);
-			 pCab->SnmpSetOid(hwSetEnvTempLowerLimit,value,i+1);
-			 pCab->SetIntervalTime(1);
-		 }
-	 }
-	 //环境湿度告警上限 255:保持；0-100（有效）；95（缺省值）
-	 for(i=0;i<2;i++)
-	 {
-		 if(pHWDev->hwLinked && pstuRCtrl->hwsetenvhumidityupperlimit[i]!=ACT_HOLD_FF)
-		 {
-			 sprintf(value,"%d",pstuRCtrl->hwsetenvhumidityupperlimit[i]);
-			 printf("RemoteControl 环境湿度告警上限%d=%s\n",i,value);
-			 pCab->SnmpSetOid(hwSetEnvHumidityUpperLimit,value,i+1);
-			 pCab->SetIntervalTime(1);
-		 }
-	 }
-	 //环境湿度告警下限 255:保持；0-100（有效）；5（缺省值）
-	 for(i=0;i<2;i++)
-	 {
-		 if(pHWDev->hwLinked && pstuRCtrl->hwsetenvhumiditylowerlimit[i]!=ACT_HOLD_FF)
-		 {
-			 sprintf(value,"%d",pstuRCtrl->hwsetenvhumiditylowerlimit[i]);
-			 printf("RemoteControl 环境湿度告警下限%d=%s\n",i,value);
-			 pCab->SnmpSetOid(hwSetEnvHumidityLowerLimit,value,i+1);
-			 pCab->SetIntervalTime(1);
-		 }
-	 }
-	 //温控模式 	 0：保持；1：纯风扇模式；2：纯空调模式；3：智能模式；
-     if(pHWDev->hwLinked && pstuRCtrl->hwcoolingdevicesmode!=ACT_HOLD)
-	 {
-         sprintf(value,"%d",pstuRCtrl->hwcoolingdevicesmode);
-         printf("RemoteControl 温控模式=%s\n",value);
-         pCab->SnmpSetOid(hwCoolingDevicesMode,value,1);
-		 pCab->SetIntervalTime(1);
-	 }
-	 //空调开机温度点		 255:保持； -20-80（有效）；45(缺省值)
-	 for(i=0;i<2;i++)
-	 {
-	     if(pHWDev->hwLinked && pstuRCtrl->hwdcairpowerontemppoint[i]!=ACT_HOLD_FF)
-		 {
-	         sprintf(value,"%d",pstuRCtrl->hwdcairpowerontemppoint[i]);
-	         printf("RemoteControl 空调开机温度点%d=%s\n",i,value);
-	         pCab->SnmpSetOid(hwDcAirPowerOnTempPoint,value,i+1);
-			 pCab->SetIntervalTime(1);
-		 }
-	 }
-	 //空调关机温度点		   255:保持； -20-80（有效）；37(缺省值)
-	 for(i=0;i<2;i++)
-	 {
-	     if(pHWDev->hwLinked && pstuRCtrl->hwdcairpowerofftemppoint[i]!=ACT_HOLD_FF)
-		 {
-	         sprintf(value,"%d",pstuRCtrl->hwdcairpowerofftemppoint[i]);
-	         printf("RemoteControl 空调关机温度点%d=%s\n",i,value);
-	         pCab->SnmpSetOid(hwDcAirPowerOffTempPoint,value,i+1);
-			 pCab->SetIntervalTime(1);
-		 }
-	 }
-	 //空调控制模式 0：保持；1：自动；2：手动
-	 for(i=0;i<2;i++)
-	 {
-		 if(pHWDev->hwLinked && pstuRCtrl->hwdcairctrlmode[i]!=ACT_HOLD)
-		 {
-			 sprintf(value,"%d",pstuRCtrl->hwdcairctrlmode[i]);
-			 printf("RemoteControl 空调控制模式%d=%s\n",i,value);
-			 pCab->SnmpSetOid(hwDcAirCtrlMode,value,i+1);
-			 pCab->SetIntervalTime(1);
-		 }
-	 }
-	 //控制烟感复位 0：保持；1：不需复位；2：复位
-	 for(i=0;i<2;i++)
-	 {
-		 if(pHWDev->hwLinked && pstuRCtrl->hwctrlsmokereset[i]!=ACT_HOLD)
-		 {
-			 sprintf(value,"%d",pstuRCtrl->hwctrlsmokereset[i]);
-			 printf("RemoteControl 控制烟感复位%d=%s\n",i,value);
-			 pCab->SnmpSetOid(hwCtrlSmokeReset,value,i+1);
-			 pCab->SetIntervalTime(1);
-		 }
-	 }
+	if(pHWDev->hwLinked && GetTickCount()-pHWDev->hwTimeStamp>5*60) //超过5分钟没更新，认为没有连接)
+		pHWDev->hwLinked=false;
+	//控制单板复位 0：保持；1：热复位；
+	if(pHWDev->hwLinked && pstuRCtrl->hwctrlmonequipreset!=ACT_HOLD)
+	{
+		sprintf(value,"%d",pstuRCtrl->hwctrlmonequipreset);
+		printf("RemoteControl 控制单板复位=%s\n",value);
+		pCab->SnmpSetOid(hwCtrlMonEquipReset,value,1);
+		pCab->SetIntervalTime(1);
+	}
+	//AC过压点设置 0:保持；50-600（有效）；280（缺省值）
+	if(pHWDev->hwLinked && pstuRCtrl->hwsetacsuppervoltlimit!=ACT_HOLD)
+	{
+		sprintf(value,"%d",pstuRCtrl->hwsetacsuppervoltlimit);
+		printf("RemoteControl AC过压点设置=%s\n",value);
+		pCab->SnmpSetOid(hwSetAcsUpperVoltLimit,value,1);
+		pCab->SetIntervalTime(1);
+	}
+	//AC欠压点设置 0:保持；50-600（有效）；180（缺省值）
+	if(pHWDev->hwLinked && pstuRCtrl->hwsetacslowervoltlimit!=ACT_HOLD)
+	{
+		sprintf(value,"%d",pstuRCtrl->hwsetacslowervoltlimit);
+		printf("RemoteControl AC欠压点设置=%s\n",value);
+		pCab->SnmpSetOid(hwSetAcsLowerVoltLimit,value,1);
+		pCab->SetIntervalTime(1);
+	}
+	//设置DC过压点 0:保持；53-600（有效）；58（缺省值）
+	if(pHWDev->hwLinked && pstuRCtrl->hwsetdcsuppervoltlimit!=ACT_HOLD)
+	{
+		sprintf(value,"%d",pstuRCtrl->hwsetdcsuppervoltlimit*10);
+		printf("RemoteControl 设置DC过压点=%s\n",value);
+		pCab->SnmpSetOid(hwSetDcsUpperVoltLimit,value,1);
+		pCab->SetIntervalTime(1);
+	}
+	//设置DC欠压点 0:保持；35 - 57（有效）；45（缺省值）
+	if(pHWDev->hwLinked && pstuRCtrl->hwsetdcslowervoltlimit!=ACT_HOLD)
+	{
+		sprintf(value,"%d",pstuRCtrl->hwsetdcslowervoltlimit*10);
+		printf("RemoteControl 设置DC欠压点=%s\n",value);
+		pCab->SnmpSetOid(hwSetDcsLowerVoltLimit,value,1);
+		pCab->SetIntervalTime(1);
+	}
+	//环境温度告警上限 0:保持；25-80（有效）；55（缺省值）
+	for(i=0;i<2;i++)
+	{
+		if(pHWDev->hwLinked && pstuRCtrl->hwsetenvtempupperlimit[i]!=ACT_HOLD)
+		{
+			sprintf(value,"%d",pstuRCtrl->hwsetenvtempupperlimit[i]);
+			printf("RemoteControl 环境温度告警上限%d=%s\n",i,value);
+			pCab->SnmpSetOid(hwSetEnvTempUpperLimit,value,i+1);
+			pCab->SetIntervalTime(1);
+		}
+	}
+	//环境温度告警下限255:保持；-20-20（有效）；-20（缺省值）
+	for(i=0;i<2;i++)
+	{
+		if(pHWDev->hwLinked && pstuRCtrl->hwsetenvtemplowerlimit[i]!=ACT_HOLD_FF)
+		{
+			sprintf(value,"%d",pstuRCtrl->hwsetenvtemplowerlimit[i]);
+			printf("RemoteControl 环境温度告警下限%d=%s\n",i,value);
+			pCab->SnmpSetOid(hwSetEnvTempLowerLimit,value,i+1);
+			pCab->SetIntervalTime(1);
+		}
+	}
+	//环境湿度告警上限 255:保持；0-100（有效）；95（缺省值）
+	for(i=0;i<2;i++)
+	{
+		if(pHWDev->hwLinked && pstuRCtrl->hwsetenvhumidityupperlimit[i]!=ACT_HOLD_FF)
+		{
+			sprintf(value,"%d",pstuRCtrl->hwsetenvhumidityupperlimit[i]);
+			printf("RemoteControl 环境湿度告警上限%d=%s\n",i,value);
+			pCab->SnmpSetOid(hwSetEnvHumidityUpperLimit,value,i+1);
+			pCab->SetIntervalTime(1);
+		}
+	}
+	//环境湿度告警下限 255:保持；0-100（有效）；5（缺省值）
+	for(i=0;i<2;i++)
+	{
+		if(pHWDev->hwLinked && pstuRCtrl->hwsetenvhumiditylowerlimit[i]!=ACT_HOLD_FF)
+		{
+			sprintf(value,"%d",pstuRCtrl->hwsetenvhumiditylowerlimit[i]);
+			printf("RemoteControl 环境湿度告警下限%d=%s\n",i,value);
+			pCab->SnmpSetOid(hwSetEnvHumidityLowerLimit,value,i+1);
+			pCab->SetIntervalTime(1);
+		}
+	}
+	//温控模式 	 0：保持；1：纯风扇模式；2：纯空调模式；3：智能模式；
+	if(pHWDev->hwLinked && pstuRCtrl->hwcoolingdevicesmode!=ACT_HOLD)
+	{
+		sprintf(value,"%d",pstuRCtrl->hwcoolingdevicesmode);
+		printf("RemoteControl 温控模式=%s\n",value);
+		pCab->SnmpSetOid(hwCoolingDevicesMode,value,1);
+		pCab->SetIntervalTime(1);
+	}
+	//空调开机温度点		 255:保持； -20-80（有效）；45(缺省值)
+	for(i=0;i<2;i++)
+	{
+		if(pHWDev->hwLinked && pstuRCtrl->hwdcairpowerontemppoint[i]!=ACT_HOLD_FF)
+		{
+			sprintf(value,"%d",pstuRCtrl->hwdcairpowerontemppoint[i]);
+			printf("RemoteControl 空调开机温度点%d=%s\n",i,value);
+			pCab->SnmpSetOid(hwDcAirPowerOnTempPoint,value,i+1);
+			pCab->SetIntervalTime(1);
+		}
+	}
+	//空调关机温度点		   255:保持； -20-80（有效）；37(缺省值)
+	for(i=0;i<2;i++)
+	{
+		if(pHWDev->hwLinked && pstuRCtrl->hwdcairpowerofftemppoint[i]!=ACT_HOLD_FF)
+		{
+			sprintf(value,"%d",pstuRCtrl->hwdcairpowerofftemppoint[i]);
+			printf("RemoteControl 空调关机温度点%d=%s\n",i,value);
+			pCab->SnmpSetOid(hwDcAirPowerOffTempPoint,value,i+1);
+			pCab->SetIntervalTime(1);
+		}
+	}
+	//空调控制模式 0：保持；1：自动；2：手动
+	for(i=0;i<2;i++)
+	{
+		if(pHWDev->hwLinked && pstuRCtrl->hwdcairctrlmode[i]!=ACT_HOLD)
+		{
+			sprintf(value,"%d",pstuRCtrl->hwdcairctrlmode[i]);
+			printf("RemoteControl 空调控制模式%d=%s\n",i,value);
+			pCab->SnmpSetOid(hwDcAirCtrlMode,value,i+1);
+			pCab->SetIntervalTime(1);
+		}
+	}
+	//控制烟感复位 0：保持；1：不需复位；2：复位
+	for(i=0;i<2;i++)
+	{
+		if(pHWDev->hwLinked && pstuRCtrl->hwctrlsmokereset[i]!=ACT_HOLD)
+		{
+			sprintf(value,"%d",pstuRCtrl->hwctrlsmokereset[i]);
+			printf("RemoteControl 控制烟感复位%d=%s\n",i,value);
+			pCab->SnmpSetOid(hwCtrlSmokeReset,value,i+1);
+			pCab->SetIntervalTime(1);
+		}
+	}
 	 
-	 //利通机柜空调
-	 //制冷点  255:保持；15-50（有效）；
-     if(GetTickCount()-CBTimeStamp.AirConTimeStamp<5*60 && pstuRCtrl->refrigeratTemp!=ACT_HOLD_FF)
-	 {
-         sprintf(str,"RemoteControl 空调设置制冷点=%d\n",pstuRCtrl->refrigeratTemp);
-		 myprintf(str);
-		 pAirCon->config(AirCondition::Cfg_Refrigeration, pstuRCtrl->refrigeratTemp);
-	 }
-	 //制冷回差 	 255:保持；1-10（有效）；
-     if(GetTickCount()-CBTimeStamp.AirConTimeStamp<5*60 && pstuRCtrl->refriRetDiff!=ACT_HOLD_FF)
-	 {
-         sprintf(str,"RemoteControl 空调设置制冷回差=%d\n",pstuRCtrl->refriRetDiff);
-		 myprintf(str);
-		 pAirCon->config(AirCondition::Cfg_RefriRetDiff, pstuRCtrl->refriRetDiff);
-	 }
-	 //加热点		 255:保持；-15-15（有效）；
-     if(GetTickCount()-CBTimeStamp.AirConTimeStamp<5*60 && pstuRCtrl->heatTemp!=ACT_HOLD_FF)
-	 {
-         sprintf(str,"RemoteControl 空调设置加热点=%d\n",pstuRCtrl->heatTemp);
-		 myprintf(str);
-		 pAirCon->config(AirCondition::Cfg_Heating, (uint8_t)pstuRCtrl->heatTemp);
-	 }
-	 //加热回差 	 255:保持；1-10（有效）；
-     if(GetTickCount()-CBTimeStamp.AirConTimeStamp<5*60 && pstuRCtrl->heatRetDiff!=ACT_HOLD_FF)
-	 {
-         sprintf(str,"RemoteControl 空调设置加热点=%d\n",pstuRCtrl->heatRetDiff);
-		 myprintf(str);
-		 pAirCon->config(AirCondition::Cfg_HeatRetDiff, pstuRCtrl->heatRetDiff);
-	 }
-	 //环境温度告警上限 0:保持；25-80（有效）；55（缺省值）
-     if(GetTickCount()-CBTimeStamp.AirConTimeStamp<5*60 && pstuRCtrl->hwsetenvtempupperlimit[0]!=ACT_HOLD)
-	 {
-         sprintf(str,"RemoteControl 空调设置高温点=%d\n",pstuRCtrl->hwsetenvtempupperlimit[0]);
-		 myprintf(str);
-		 pAirCon->config(AirCondition::Cfg_HighTemp, pstuRCtrl->hwsetenvtempupperlimit[0]);
-	 }
-	 //环境温度告警下限255:保持；-20-20（有效）；-20（缺省值）
-     if(GetTickCount()-CBTimeStamp.AirConTimeStamp<5*60 && pstuRCtrl->hwsetenvtemplowerlimit[0]!=ACT_HOLD_FF)
-	 {
-         sprintf(str,"RemoteControl 空调设置低温点=%d\n",pstuRCtrl->hwsetenvtemplowerlimit[0]);
-		 myprintf(str);
-		 pAirCon->config(AirCondition::Cfg_LowTemp, (uint8_t)pstuRCtrl->hwsetenvtemplowerlimit[0]);
-	 }
-	 //环境湿度告警上限 255:保持；0-100（有效）；95（缺省值）
-     if(GetTickCount()-CBTimeStamp.AirConTimeStamp<5*60 && pstuRCtrl->hwsetenvhumidityupperlimit[0]!=ACT_HOLD_FF)
-	 {
-         sprintf(str,"RemoteControl 空调设置高湿点=%d\n",pstuRCtrl->hwsetenvhumidityupperlimit[0]);
-		 myprintf(str);
-		 pAirCon->config(AirCondition::Cfg_HighHumi, pstuRCtrl->hwsetenvhumidityupperlimit[0]);
-	 }
-	 
-	 //SPD控制
-	 for(i=0;i<SPD_NUM;i++)
-	 {
-		 if(pstuRCtrl->DO_spdcnt_clear[i]!=ACT_HOLD)
-		 {
-			 sprintf(value,"%d",pstuRCtrl->DO_spdcnt_clear[i]);
-			 printf("RemoteControl SPD%d雷击计数清零=%s\n",i+1,value);
-			 //雷击计数清零
-			 if (pConf->SPD_Type == TYPE_LEIXUN)
-			 {
+	//利通机柜空调
+	//制冷点  255:保持；15-50（有效）；
+	if(GetTickCount()-CBTimeStamp.AirConTimeStamp<5*60 && pstuRCtrl->refrigeratTemp!=ACT_HOLD_FF)
+	{
+		sprintf(str,"RemoteControl 空调设置制冷点=%d\n",pstuRCtrl->refrigeratTemp);
+		myprintf(str);
+		pAirCon->config(AirCondition::Cfg_Refrigeration, pstuRCtrl->refrigeratTemp);
+	}
+	//制冷回差 	 255:保持；1-10（有效）；
+	if(GetTickCount()-CBTimeStamp.AirConTimeStamp<5*60 && pstuRCtrl->refriRetDiff!=ACT_HOLD_FF)
+	{
+		sprintf(str,"RemoteControl 空调设置制冷回差=%d\n",pstuRCtrl->refriRetDiff);
+		myprintf(str);
+		pAirCon->config(AirCondition::Cfg_RefriRetDiff, pstuRCtrl->refriRetDiff);
+	}
+	//加热点		 255:保持；-15-15（有效）；
+	if(GetTickCount()-CBTimeStamp.AirConTimeStamp<5*60 && pstuRCtrl->heatTemp!=ACT_HOLD_FF)
+	{
+		sprintf(str,"RemoteControl 空调设置加热点=%d\n",pstuRCtrl->heatTemp);
+		myprintf(str);
+		pAirCon->config(AirCondition::Cfg_Heating, (uint8_t)pstuRCtrl->heatTemp);
+	}
+	//加热回差 	 255:保持；1-10（有效）；
+	if(GetTickCount()-CBTimeStamp.AirConTimeStamp<5*60 && pstuRCtrl->heatRetDiff!=ACT_HOLD_FF)
+	{
+		sprintf(str,"RemoteControl 空调设置加热点=%d\n",pstuRCtrl->heatRetDiff);
+		myprintf(str);
+		pAirCon->config(AirCondition::Cfg_HeatRetDiff, pstuRCtrl->heatRetDiff);
+	}
+	//环境温度告警上限 0:保持；25-80（有效）；55（缺省值）
+	if(GetTickCount()-CBTimeStamp.AirConTimeStamp<5*60 && pstuRCtrl->hwsetenvtempupperlimit[0]!=ACT_HOLD)
+	{
+		sprintf(str,"RemoteControl 空调设置高温点=%d\n",pstuRCtrl->hwsetenvtempupperlimit[0]);
+		myprintf(str);
+		pAirCon->config(AirCondition::Cfg_HighTemp, pstuRCtrl->hwsetenvtempupperlimit[0]);
+	}
+	//环境温度告警下限255:保持；-20-20（有效）；-20（缺省值）
+	if(GetTickCount()-CBTimeStamp.AirConTimeStamp<5*60 && pstuRCtrl->hwsetenvtemplowerlimit[0]!=ACT_HOLD_FF)
+	{
+		sprintf(str,"RemoteControl 空调设置低温点=%d\n",pstuRCtrl->hwsetenvtemplowerlimit[0]);
+		myprintf(str);
+		pAirCon->config(AirCondition::Cfg_LowTemp, (uint8_t)pstuRCtrl->hwsetenvtemplowerlimit[0]);
+	}
+	//环境湿度告警上限 255:保持；0-100（有效）；95（缺省值）
+	if(GetTickCount()-CBTimeStamp.AirConTimeStamp<5*60 && pstuRCtrl->hwsetenvhumidityupperlimit[0]!=ACT_HOLD_FF)
+	{
+		sprintf(str,"RemoteControl 空调设置高湿点=%d\n",pstuRCtrl->hwsetenvhumidityupperlimit[0]);
+		myprintf(str);
+		pAirCon->config(AirCondition::Cfg_HighHumi, pstuRCtrl->hwsetenvhumidityupperlimit[0]);
+	}
+
+	//SPD控制
+	for(i=0;i<SPD_NUM;i++)
+	{
+		if(pstuRCtrl->DO_spdcnt_clear[i]!=ACT_HOLD)
+		{
+			sprintf(value,"%d",pstuRCtrl->DO_spdcnt_clear[i]);
+			printf("RemoteControl SPD%d雷击计数清零=%s\n",i+1,value);
+			//雷击计数清零
+			if (pConf->SPD_Type == TYPE_LEIXUN)
+			{
 				//if (i == 0)
 				{
 					pSpd->Ex_SPD_Set_Process(i,SPD_DO_SET,DO_ADDR_CNT_CLR,dummy,DO_ON_CMD);
 				}
-			 }
-			 else if ((pConf->SPD_Type == TYPE_KY) ||(pConf->SPD_Type == TYPE_KY0M))
-			 {
+			}
+			else if ((pConf->SPD_Type == TYPE_KY) ||(pConf->SPD_Type == TYPE_KY0M))
+			{
 				pSpd->Ex_SPD_Set_Process(i,SPD_DO_SET,KY_CLEAR_ADDR,dummy,DO_ON_CMD_KY);	// 这里是1:清除记录
-			 }
-		 }
-		 if(pstuRCtrl->DO_totalspdcnt_clear[i]!=ACT_HOLD)
-		 {
-			 sprintf(value,"%d",pstuRCtrl->DO_totalspdcnt_clear[i]);
-			 printf("RemoteControl SPD%d总雷击计数清零=%s\n",i+1,value);
-			 //总雷击计数清零
-			 if (pConf->SPD_Type == TYPE_LEIXUN)
-			 {
+			}
+		}
+		if(pstuRCtrl->DO_totalspdcnt_clear[i]!=ACT_HOLD)
+		{
+			sprintf(value,"%d",pstuRCtrl->DO_totalspdcnt_clear[i]);
+			printf("RemoteControl SPD%d总雷击计数清零=%s\n",i+1,value);
+			//总雷击计数清零
+			if (pConf->SPD_Type == TYPE_LEIXUN)
+			{
 				//if (i == 0)
 				{
 					pSpd->Ex_SPD_Set_Process(i,SPD_DO_SET,DO_ADDR_TOTAL_CLR,dummy,DO_ON_CMD);
 				}
-			 }
-		 }
-		 if(pstuRCtrl->DO_psdtime_clear[i]!=ACT_HOLD)
-		 {
-			 sprintf(value,"%d",pstuRCtrl->DO_psdtime_clear[i]);
-			 printf("RemoteControl SPD%d雷击时间清零=%s\n",i+1,value);
-			 //雷击时间清零
-			 if (pConf->SPD_Type == TYPE_LEIXUN)
-			 {
+			}
+		}
+		if(pstuRCtrl->DO_psdtime_clear[i]!=ACT_HOLD)
+		{
+			sprintf(value,"%d",pstuRCtrl->DO_psdtime_clear[i]);
+			printf("RemoteControl SPD%d雷击时间清零=%s\n",i+1,value);
+			//雷击时间清零
+			if (pConf->SPD_Type == TYPE_LEIXUN)
+			{
 				//if (i == 0)
 				{
 					pSpd->Ex_SPD_Set_Process(i,SPD_DO_SET,DO_ADDR_STRUCK_TIME_CLR,dummy,DO_ON_CMD);
 				}
-			 }
-		 }
-		 if(pstuRCtrl->DO_daytime_clear[i]!=ACT_HOLD)
-		 {
-			 sprintf(value,"%d",pstuRCtrl->DO_daytime_clear[i]);
-			 printf("RemoteControl SPD%d在线时间清零=%s\n",i+1,value);
-			 //在线时间清零
-			 if (pConf->SPD_Type == TYPE_LEIXUN)
-			 {
+			}
+		}
+		if(pstuRCtrl->DO_daytime_clear[i]!=ACT_HOLD)
+		{
+			sprintf(value,"%d",pstuRCtrl->DO_daytime_clear[i]);
+			printf("RemoteControl SPD%d在线时间清零=%s\n",i+1,value);
+			//在线时间清零
+			if (pConf->SPD_Type == TYPE_LEIXUN)
+			{
 				//if (i == 0)
 				{
 					pSpd->Ex_SPD_Set_Process(i,SPD_DO_SET,DO_ADDR_WORK_TIME_CLR,dummy,DO_ON_CMD);
 				}
-			 }
-		 }
-		 if(pstuRCtrl->DO_leak_type[i]!=ACT_HOLD)
-		 {
-			 sprintf(value,"%d",pstuRCtrl->DO_leak_type[i]);
-			 printf("RemoteControl SPD%d外接漏电流控制=%s\n",i+1,value);//0:保持，1:内置漏电流，2：外接漏电流
-			 //外接漏电流控制	 注意:设置时 0:内置漏电流，1：外接漏电流
-			 if (pConf->SPD_Type == TYPE_LEIXUN)
-			 {
+			}
+		}
+		if(pstuRCtrl->DO_leak_type[i]!=ACT_HOLD)
+		{
+			sprintf(value,"%d",pstuRCtrl->DO_leak_type[i]);
+			printf("RemoteControl SPD%d外接漏电流控制=%s\n",i+1,value);//0:保持，1:内置漏电流，2：外接漏电流
+			//外接漏电流控制	 注意:设置时 0:内置漏电流，1：外接漏电流
+			if (pConf->SPD_Type == TYPE_LEIXUN)
+			{
 				//if (i == 0)
 				{
 					// 把1,2转换成0,1
 					temp = ((pstuRCtrl->DO_leak_type[i]-1) == 0)?0:1;
 					pSpd->Ex_SPD_Set_Process(i,SPD_DO_SET,DO_ADDR_LEAK_SET,dummy,temp);
 				}
-			 }
-		 }
-		 if(pstuRCtrl->spdleak_alarm_threshold[i]!=0.000 && pstuRCtrl->spdleak_alarm_threshold[i]!=pSpd->stuSpd_Param->rSPD_data[i].leak_alarm_threshold) //漏电流报警阈值改变
-		 {
-			 sprintf(value,"%0.3f",pstuRCtrl->spdleak_alarm_threshold[i]);
-			 printf("RemoteControl SPD%d漏电流报警阈值=%s\n",i+1,value);//漏电流报警阈值
-			 //漏电流报警阈值
-			 if (pConf->SPD_Type == TYPE_LEIXUN)
-			 {
+			}
+		}
+		if(pstuRCtrl->spdleak_alarm_threshold[i]!=0.000 && pstuRCtrl->spdleak_alarm_threshold[i]!=pSpd->stuSpd_Param->rSPD_data[i].leak_alarm_threshold) //漏电流报警阈值改变
+		{
+			sprintf(value,"%0.3f",pstuRCtrl->spdleak_alarm_threshold[i]);
+			printf("RemoteControl SPD%d漏电流报警阈值=%s\n",i+1,value);//漏电流报警阈值
+			//漏电流报警阈值
+			if (pConf->SPD_Type == TYPE_LEIXUN)
+			{
 				//if (i == 0)
 				{
 					dummy.f = pstuRCtrl->spdleak_alarm_threshold[i];
 					pSpd->Ex_SPD_Set_Process(i,SPD_AI_SET,AI_LEAK_THRESHOLD_ADDR,dummy,0);
 				}
-			 }
-		 }
-	 }
+			}
+		}
+	}
  }
 
  bool SoftwareUpdate(unsigned char *pbuf, int size, string &strjsonback)

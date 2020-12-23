@@ -29,7 +29,7 @@
  * Class
  ******************************************************************************/
 /**
- * 动环系统控制类 (Supervision system)  品牌：迅捷
+ * 动环系统控制类 (Supervision system)  品牌：中兴捷迅
  * @brief 2020-11-09 根据《广中江数据协议》定义数据结构;
  * */
 class SupervisionXJ {
@@ -37,7 +37,7 @@ public:
     /* 监控 */
     typedef struct {
         std::string smoke1;       /* 1#烟雾报警 */
-        std::string smoke2;       /*  2#烟雾报警 */
+        std::string smoke2;       /* 2#烟雾报警 */
         std::string humidity1;    /* 1#湿度 */
         std::string humidity2;    /* 2#湿度 */
         std::string temperature1; /* 1#温度 */
@@ -142,6 +142,9 @@ public:
     }Bms_S;
 
     typedef struct {
+        bool linked;        //连接状态
+        uint32_t timestamp; //状态获取时间戳
+
         Monitor_S monitor;
         Ammeter_S ammeter;
         Switch_S sw;
@@ -204,10 +207,23 @@ public:
      * */
     SupervisionXJ::State_S getState(void);
 
+    /**
+     * @name: openLock
+     *
+     * @description:调用开锁
+     *
+     * @para: lock    : 锁序号（一般为1或2）
+     * 
+     * */
+    void openLock(uint8_t lock);
+
+
+
 private:
     static void *GetStateThread(void *arg);
     static void MqttSubCallback(uint8_t *msg, uint16_t msgLen, void *data);
 
+    void initVal(void);
     std::string getValByKey(const std::string key);
     std::string getValByKey(const std::string prefix,const std::string key);
     std::string getValByKey(const std::string key, uint32_t divide);

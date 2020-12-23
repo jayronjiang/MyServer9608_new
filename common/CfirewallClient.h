@@ -39,7 +39,7 @@ public:
        THUAWEIALARM HUAWEIDevAlarm;
 	   
 	   
-	   int IntFireWareType = 1; //防火墙类型 1：华为,2：迪普，3：深信服
+	   int IntFireWareType = 1; //防火墙类型 1：华为,2：迪普，3：深信服 ,4:山石网科
        int IntIPSwitchType = 1; //交换机类型  1：华为,2：华三
        string StrFireWareCount;	//防火墙数量
        string StrFireWareIP[4];         //防火墙IP

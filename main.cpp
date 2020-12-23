@@ -42,8 +42,8 @@ CANNode *pCOsCan = NULL;		//Can对象
 SpdClient *pCSpdClent = NULL;		//SPD防雷器
 Lock *pCLock[LOCK_NUM] = {NULL,NULL,NULL,NULL};					//生久门锁对象
 HWLock *pHWCLock[LOCK_NUM] = {NULL,NULL,NULL,NULL};				//华为门锁对象
-TemHumi *pCTemHumi;//[TEMHUMI_NUM];// = {NULL,NULL};;					//温湿度对象
-AirCondition *pCAirCondition;//[AIRCON_NUM]= {NULL};;			//空调
+TemHumi *pCTemHumi = NULL;					//温湿度对象
+AirCondition *pCAirCondition = NULL;			//空调
 IODev *pCIOdev = NULL;				//IO
 Moninterface *Moninter;						//工控机监控
 AirCondition::AirInfo_S AirCondInfo;		//直流空调结构体
@@ -51,7 +51,8 @@ TemHumi::Info_S TemHumiInfo;				//温湿度结构体
 Lock::Info_S LockInfo[LOCK_NUM];			//电子锁结构体
 CallBackTimeStamp CBTimeStamp;				//外设采集回调时间戳
 SupervisionZTE *pCZTE = NULL;				//中兴机柜对象
-SupervisionXJ *pCSuJX = NULL;					//捷迅机柜对象
+SupervisionXJ *pCSuXJ[HWSERVER_NUM] = {NULL,NULL};				//捷迅机柜对象
+//sqlite3 *pSQLitedb = NULL;
 
 //#define CARD_NUM		5	// 暂时为5张卡
 //Lock *pCLock[LOCKER_MAX_NUM] = {NULL,NULL,NULL,NULL};
@@ -85,6 +86,15 @@ void WatchDogInit(void)
 }
 
 
+/*int init_database(void)
+{
+    int result;
+    result = sqlite3_open("VehPlateType.db", &pSQLitedb);
+    if (result != SQLITE_OK)
+        printf("数据库连接失败!\n");
+    else
+        printf("数据库连接成功!\n");
+}*/
 
 
 int main(void)
@@ -110,7 +120,7 @@ int main(void)
 	Init_DO(pConf);
 	WalksnmpInit();
 	//CABINETTYPE  1：华为（包括华为单门 双门等） 5：中兴; 6：金晟安; 7：爱特斯; 8:诺龙; 9：容尊堡; 
-				//10:亚邦; 11：艾特网能；12：华软；13：利通
+				//10:亚邦; 11：艾特网能；12：华软；13：利通；14、捷讯
 	//机柜
 	for(i=0;i<HWSERVER_NUM;i++)
 	{
@@ -119,11 +129,48 @@ int main(void)
 		initHUAWEIALARM(pCabinetClient[i]);
 		if(atoi(pConf->StrCabinetType.c_str())>=1 && atoi(pConf->StrCabinetType.c_str())<=4) //华为机柜
 		{
-			pCabinetClient[i]->StrHWServer = pConf->StrHWServer;
-			pCabinetClient[i]->StrHWGetPasswd = pConf->StrHWGetPasswd;
-			pCabinetClient[i]->StrHWSetPasswd = pConf->StrHWSetPasswd;
+			pCabinetClient[i]->mCabinetType = 1; //1:华为, 2: 华软
+			if(i==0)
+			{
+			   pCabinetClient[i]->StrHWServer = pConf->StrHWServer;
+			   pCabinetClient[i]->StrHWGetPasswd = pConf->StrHWGetPasswd;
+			   pCabinetClient[i]->StrHWSetPasswd = pConf->StrHWSetPasswd;
+			}
+			else //第二个机柜
+			{
+			   pCabinetClient[i]->StrHWServer = pConf->StrHWServer2;
+			   pCabinetClient[i]->StrHWGetPasswd = pConf->StrHWGetPasswd2;
+			   pCabinetClient[i]->StrHWSetPasswd = pConf->StrHWSetPasswd2;
+			}
+
 			if(i<atoi(pConf->StrHWServerCount.c_str()))
 				pCabinetClient[i]->Start();
+		}
+		else if(pConf->StrCabinetType=="12")
+		{
+			pCabinetClient[i]->mCabinetType = 2; //1:华为, 2: 华软
+			if(i==0)
+			{
+			   pCabinetClient[i]->StrHWServer = pConf->StrHWServer;
+			   pCabinetClient[i]->StrHWGetPasswd = pConf->StrHWGetPasswd;
+			   pCabinetClient[i]->StrHWSetPasswd = pConf->StrHWSetPasswd;
+			}
+			else //第二个机柜(电源柜，需要多配一个电源/电池的动环IP)
+			{
+			   //盈创力和的动环主机
+			   pCabinetClient[i]->StrHWServer = pConf->StrHWServer2;
+			   pCabinetClient[i]->StrHWGetPasswd = pConf->StrHWGetPasswd2;
+			   pCabinetClient[i]->StrHWSetPasswd = pConf->StrHWSetPasswd2;
+			   
+			   //华软的华为动环(取电源电池)
+			   pCabinetClient[i]->StrPowerServer = pConf->StrPowerServer;
+			   pCabinetClient[i]->StrPowerGetPasswd = pConf->StrPowerGetPasswd;
+			   pCabinetClient[i]->StrPowerSetPasswd = pConf->StrPowerSetPasswd;
+			}
+
+			if(i<atoi(pConf->StrHWServerCount.c_str()))
+				pCabinetClient[i]->Start();
+			
 		}
 	}
 	//华为告警状态
@@ -131,7 +178,7 @@ int main(void)
 	pCTrapClient->SetTrapAlarmBack(TrapCallBack,(unsigned int)pCTrapClient);
 	pCTrapClient->Start();
 
-//	if(pConf->StrCabinetType=="13") //利通机柜
+	if(pConf->StrCabinetType=="13") //利通机柜
 	{
 		//温湿度：传参为485地址 
 		pCTemHumi = new TemHumi(0x7);
@@ -152,11 +199,14 @@ int main(void)
 		 pCZTE = new SupervisionZTE(pConf->StrHWServer,pConf->StrHWGetPasswd,pConf->StrHWSetPasswd);	//"128.8.82.117","440220102411"
 		 pCZTE->setCallback(SuZTECallback,NULL);
 	}
-/*	else if(pConf->StrCabinetType=="14")			//捷迅机柜对象
+	if(pConf->StrCabinetType=="14")			//迅捷机柜对象
 	{
-		 pCSuJX = new SupervisionXJ(pConf->StrHWServer,pConf->StrHWGetPasswd);	
-		 pCSuJX->setCallback(SuJXCallback,NULL);
-	}*/
+		for(i=0;i<atoi(pConf->StrHWServerCount.c_str());i++)
+		{
+			 pCSuXJ[i] = new SupervisionXJ(pConf->StrHWServer,pConf->StrHWGetPasswd);	//捷讯主机128.8.82.207 IP填本机IP ID:440220102411 密码：admin
+			 pCSuXJ[i]->setCallback(SuJXCallback,NULL);
+		}
+	}
 
 	/* 机柜监控摄像头，传参为摄像头IP地址以及 IMA_SAVE_PATH_ROOT 下图片文件夹名 */
 	for(i=0;i<CAM_NUM;i++)
@@ -188,7 +238,7 @@ int main(void)
    	{
 		pCfirewallClient[i] = new CfirewallClient();
 		initHUAWEIEntity(pCfirewallClient[i]);
-		pCfirewallClient[i]->IntFireWareType = pConf->IntFireWareType;//防火墙类型 1：华为,2：迪普，3：深信服
+		pCfirewallClient[i]->IntFireWareType = pConf->IntFireWareType;//防火墙类型 1：华为,2：迪普，3：深信服；4、山石网科
 		pCfirewallClient[i]->StrFireWareCount = pConf->StrFireWareCount; //防火墙数量
 		pCfirewallClient[i]->StrFireWareIP[0] = pConf->StrFireWareIP[i];
 		pCfirewallClient[i]->StrFireWareGetPasswd[0] = pConf->StrFireWareGetPasswd[i];
@@ -213,7 +263,7 @@ int main(void)
 	}
 
    	//RSU
-   	for(i=0;i<RSUCTL_NUM;i++)
+   	for(i=0;i<atoi(pConf->StrRSUCount.c_str());i++)
    	{
    		if(pConf->StrRSUType=="1")	//门架通用型RSU
    		{

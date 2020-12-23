@@ -36,6 +36,7 @@
 #include "CsshDev.h"
 #include "supervision_zte.h"
 #include "supervision_xj.h"
+//#include "sqlite3.h"
 
 using namespace std; 
 

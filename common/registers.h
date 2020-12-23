@@ -318,6 +318,11 @@ typedef struct vmctl_config_struct
     string StrHWServer2;         //金晟安服务器IP地址
     string StrHWGetPasswd2;      //金晟安 SNMP GET 密码
     string StrHWSetPasswd2;      //金晟安 SNMP SET 密码
+		   
+	string StrPowerServer;      //电源和电池的动环IP,只有华软的电源柜才需要设置,其它的柜不要设置
+    string StrPowerGetPasswd ;
+    string StrPowerSetPasswd ;
+	   
     string StrServerURL1;      //服务器1推送地址
     string StrServerURL2;      //服务器2推送地址
     string StrServerURL3;      //服务器3推送地址

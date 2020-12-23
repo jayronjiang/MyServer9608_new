@@ -5,11 +5,27 @@
 #include <pthread.h>
 #include "snmp.h"
 #include "WalkClient.h"
+#include "supervision_hr.h"
+
 
 using namespace std; 
 
+//华软的盈创力和的动环
+typedef enum
+{
+	hrtemperatureHighThreshold=30000,  //温度报警上限
+	hrtemperatureLowThreshold=30001,   //温度报警下限
+	hrEnvTemperature=30002,             //环境温度值
+	hrhumidityHighThreshold=30003,      //湿度报警上限
+	hrhumidityLowThreshold=30004,       //湿度报警下限
+	hrEnvHumidity=30005,                //环境湿度值
+    hrSmokeSensorStatus=30006,			//烟雾传感器状态
+	hrWaterSensorStatus=30007,			//水浸传感器状态
+	hrDoor1SensorStatus=30008,			//前门磁传感器状态
+	hrDoor2SensorStatus=30009			//后门磁传感器状态
+	
+}EM_HRGantry;
 
-#pragma pack(push, 1)
 class CabinetClient
 {
 public:
@@ -17,19 +33,21 @@ public:
        ~CabinetClient(void);
         
        int SetIntervalTime(int mSetIntervalTime);
-       int SendCabinetOid(EM_HUAWEIGantry mEM_HUAWEIGantry,int nIndex);
+       int SendCabinetOid(int mEM_HUAWEIGantry,int nIndex,string mStrHWServer,string mStrHWGetPasswd);
        int Start(void);
 
 private: 
 
        pthread_t tid; 
 	   pthread_mutex_t SetsnmpoidMutex ;
-       void Cabinetrun(void);
+       void hwCabinetrun(void);
+	   void hrCabinetrun(void);
        static void *CabinetSendthread(void *args);
 	   
 
      
 public:
+       int mCabinetType; //机柜类型 1:华为, 2: 华软
        CWalkClient mCWalkClient;
        pthread_mutex_t CabinetdataMutex ;
        pthread_mutex_t IntervalTimeMutex ;
@@ -38,6 +56,14 @@ public:
        string StrHWServer;
        string StrHWGetPasswd ;
        string StrHWSetPasswd ;
+	   
+	   //华软的空调和门锁
+	   SupervisionHR *pSupervisionHR;
+	   
+	   //电源和电池的动环IP,只有华软的电源柜才需要设置,其它的柜不要设置
+	   string StrPowerServer;
+       string StrPowerGetPasswd ;
+       string StrPowerSetPasswd ;
 
        THUAWEIGantry HUAWEIDevValue;
        THUAWEIALARM HUAWEIDevAlarm;
@@ -106,7 +132,6 @@ private:
 	   
 };
 
-#pragma pack(pop)
 
 
 

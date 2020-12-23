@@ -73,7 +73,7 @@ int GetConfig(void)
 	//CABINETTYPE:作为区分机柜类型，用于编译不同的代码
 	//CABINETTYPE  1：华为（包括华为单门 双门等） 5：中兴; 6：金晟安; 7：爱特斯; 8:诺龙; 9：容尊堡; 
 				//10:亚邦; 11：艾特网能；12：华软
-	pConf->StrVersionNo ="V2.01.15" ;//当前版本号
+	pConf->StrVersionNo ="V2.01.19" ;//当前版本号
 	pConf->StrSoftDate="2020-11-30" ;	//当前版本日期
 
 
@@ -110,6 +110,9 @@ int GetConfig(void)
 	pConf->StrHWServer2 = "";		//金晟安服务器地址2
 	pConf->StrHWGetPasswd2 = ""; //金晟安 SNMP GET 密码2
 	pConf->StrHWSetPasswd2 = ""; //金晟安SNMP SET 密码2
+	pConf->StrPowerServer = "";	 //电源和电池的动环IP,只有华软的电源柜才需要设置,其它的柜不要设置	
+	pConf->StrPowerGetPasswd = ""; 
+	pConf->StrPowerSetPasswd = ""; 
 	pConf->StrServerURL1 = "";		//服务端URL1
 	pConf->StrServerURL2 = "";		//服务端URL2
 	pConf->StrServerURL3 = "";		//服务端URL3
@@ -324,25 +327,36 @@ int GetConfig(void)
     Strkey = "CabinetType=";
     pConf->StrCabinetType = getstring(StrConfig,Strkey) ;//机柜类型
 	//CABINETTYPE  1：华为（包括华为单门 双门等） 5：中兴; 6：金晟安(双动环); 7：爱特斯; 8:诺龙; 9：容尊堡; 
-				//10:亚邦; 11：艾特网能(双动环)；12：华软
-	if(pConf->StrCabinetType=="6" || pConf->StrCabinetType=="11")
+				//10:亚邦; 11：艾特网能(双动环)；12：华软； 13:利通；14：捷讯
+	if(pConf->StrCabinetType=="6" || pConf->StrCabinetType=="11" )
 		pConf->StrHWServerCount = "2";
-	else 
+	else if(pConf->StrCabinetType=="12")
+		pConf->StrHWServerCount = "3";
+	else
 	{
 		Strkey = "HWServerCount=";
 		pConf->StrHWServerCount = getstring(StrConfig,Strkey) ;
 		if(pConf->StrHWServerCount =="")
 			pConf->StrHWServerCount = "1";
 	}	
-	if(pConf->StrCabinetType=="3" || pConf->StrCabinetType=="4")
-		pConf->StrHWCabinetCount="2";
-	else
+	if(pConf->StrCabinetType=="3" || pConf->StrCabinetType=="4" || pConf->StrCabinetType=="13")
 		pConf->StrHWCabinetCount="1";
+	else
+		pConf->StrHWCabinetCount="2";
     Strkey = "HWServer=";
 	if(pConf->StrCabinetType=="13")	//利通
     	pConf->StrHWServer = pConf->StrIP;
 	else
     	pConf->StrHWServer = getstring(StrConfig,Strkey) ;
+	
+	Strkey = "PowerServer=";
+    pConf->StrPowerServer = getstring(StrConfig,Strkey) ;
+	
+	Strkey = "PowerGetPasswd=";
+    pConf->StrPowerGetPasswd = getstring(StrConfig,Strkey) ;
+
+    Strkey = "PowerSetPasswd=";
+    pConf->StrPowerSetPasswd = getstring(StrConfig,Strkey) ;
 
     Strkey = "HWGetPasswd=";
     pConf->StrHWGetPasswd = getstring(StrConfig,Strkey) ;//SNMP GET 密码
