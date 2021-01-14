@@ -22,6 +22,8 @@ LIBS          =  $(SUBLIBS)  ./alib/CsshClient.a \
 							 ./alib/libnetsnmptrapd.a \
 							 ./alib/ipcam.a \
 							 ./alib/librsu.a \
+							 ./alib/libsupervisionzte.a \
+							 ./alib/libsupervisionxj.a \
 							 ./alib/libxml.a \
 							 ./alib/libhttp.a \
 							 ./alib/CJsonObject.a \
@@ -43,8 +45,6 @@ LIBS          =  $(SUBLIBS)  ./alib/CsshClient.a \
 							 ./alib/libmoninterface.a \
 							 ./alib/libtcp.a \
 							 ./alib/libcsshdev.a \
-							 ./alib/libsupervision.a \
-							 ./alib/libsupervisionxj.a \
 							 ./alib/libmqtt.a \
 							 ./libiconv/lib/*.a \
 							 -L./goahead/bin -lgo -ldl  -lrt -lpthread 
@@ -77,7 +77,6 @@ $(TARGET):  $(OBJECTS)
 
 
 build/main.o: main.cpp 
-
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) $(LIBS) -o build/main.o main.cpp
 
 build/tsPanel.o: tsPanel.cpp \

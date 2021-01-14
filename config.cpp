@@ -73,7 +73,7 @@ int GetConfig(void)
 	//CABINETTYPE:作为区分机柜类型，用于编译不同的代码
 	//CABINETTYPE  1：华为（包括华为单门 双门等） 5：中兴; 6：金晟安; 7：爱特斯; 8:诺龙; 9：容尊堡; 
 				//10:亚邦; 11：艾特网能；12：华软
-	pConf->StrVersionNo ="V2.01.19" ;//当前版本号
+	pConf->StrVersionNo ="V2.01.28" ;//当前版本号
 	pConf->StrSoftDate="2020-11-30" ;	//当前版本日期
 
 

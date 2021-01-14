@@ -159,6 +159,8 @@ private:
     uint16_t port, localPort;
     int soc;
 
+    uint8_t unRestimeCnt;
+
     Callback callback;
     void *userdata;
 
@@ -172,6 +174,7 @@ private:
     RsuInfo_S info;
 
     void sendC0(void);
+    void init(void);
 
 public:
     /**

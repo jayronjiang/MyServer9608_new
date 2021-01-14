@@ -22,6 +22,7 @@
  ******************************************************************************/
 #define ELOCK_NUM (2)
 #define AIR_CONDITION_NUM (2)
+#define DC_AIR_CONDITION_NUM (2)
 #define UPS_NUM (2)
 #define BMS_NUM (6)
 
@@ -46,7 +47,10 @@ public:
         std::string door2;        /* 2#门禁 */
         std::string water1;       /* 1#水浸 */
         std::string water2;       /* 2#水浸 */
-        std::string do7;          /* 继电器(可控制) */
+        std::string do7;          /* 继电器 */
+        std::string dcv;          /* 电池电压监测 */
+        std::string acv1;         /* 市电电压监测 */
+        std::string acv2;         /* 油机电压监测 */
     } Monitor_S;
 
     /* 电能表 */
@@ -60,7 +64,7 @@ public:
         std::string pallpower; /* 总有功电量 */
     } Ammeter_S;
 
-    /* 空调 */
+    /* 交流空调 */
     typedef struct {
         bool isLink;
         std::string tempture;   /* 内温度 */
@@ -75,6 +79,43 @@ public:
         std::string temp_warn;  /* 系统告警 */
         std::string sysal_warn; /* 温度告警 */
     }Airc_S;
+
+    /* 直流空调 */
+    typedef struct {
+        bool isLink;
+        std::string tempture;  /* 内温度 */
+        std::string compr;     /* 压缩机转速 */
+        std::string comp_vol;  /* 压缩机电压 */
+        std::string comp_cur;  /* 压缩机电流 */
+        std::string tempAL;    /* 温度告警字 */
+        std::string sysal;     /* 系统告警字 */
+        std::string swork;     /* 工作状态 */
+        std::string srun;      /* 运行状态 */
+        std::string temp_warn; /* 系统告警 */
+    } DAirc_S;
+
+    /* 开关电源 */
+    typedef struct {
+        bool isLink;
+        std::string inv_ac_vol;              /* 交流电压 */
+        std::string inv_dc_vol;              /* 直流电压 */
+        std::string inv_dc_load_cur;         /* 负载电流 */
+        std::string inv_ac_vhigh_warn;       /* 交流电压过高 */
+        std::string inv_ac_vlow_warn;        /* 交流电压过低 */
+        std::string inv_ac_chigh_warn;       /* 交流电流过高 */
+        std::string inv_dc_batt1_cur;        /* 电池1电流 */
+        std::string inv_dc_batt2_cur;        /* 电池2电流 */
+        std::string inv_dc_mod_num;          /* 整流模块数量 */
+        std::string inv_dc_load_cur_warn;    /* 负载过流 */
+        std::string inv_dc_batt_charge_warn; /* 电池充电状态 */
+        std::string inv_dc_ov_warn;          /* 输出电压状态 */
+        std::string inv_dc_lvd1_warn;        /* 1路低压LVD脱离状态 */
+        std::string inv_dc_lvd2_warn;        /* 2路低压LVD脱离状态 */
+        std::string inv_dc_fuse_warn;        /* 负载熔丝状态 */
+        std::string inv_dc_bvs_warn;         /* 电池电压状态 */
+        std::string inv_dc_bcs_warn;         /* 电池电流状态 */
+        std::string inv_dc_batt_charge_mode; /* 均浮充状态 */
+    } PowSupply_S;
 
     /* 智能重合闸 */
     typedef struct {
@@ -142,16 +183,29 @@ public:
     }Bms_S;
 
     typedef struct {
+        std::string th_ch1_cnt; /* 雷击次数 */
+        std::string th_ch1_sta; /* 雷击状态 */
+        std::string th_ch2_cnt; /* 计数2 */
+        std::string th_ch2_sta; /* 状态2 */
+        std::string th_ch3_cnt; /* 脱扣次数 */
+        std::string th_ch3_sta; /* 脱扣状态 */
+    } ThunPro_S;
+
+    typedef struct {
         bool linked;        //连接状态
         uint32_t timestamp; //状态获取时间戳
 
         Monitor_S monitor;
         Ammeter_S ammeter;
         Switch_S sw;
-        std::string elock[2];
-        Airc_S airc[2];
-        Ups_S ups[2];
-        Bms_S bms[6];
+        PowSupply_S pow;
+        ThunPro_S thun;
+       
+        std::string elock[ELOCK_NUM];
+        Airc_S airc[AIR_CONDITION_NUM];
+        DAirc_S dairc[DC_AIR_CONDITION_NUM];
+        Ups_S ups[UPS_NUM];
+        Bms_S bms[BMS_NUM];
     }State_S;
 
     typedef void (*Callback)(State_S state,void *userdata);

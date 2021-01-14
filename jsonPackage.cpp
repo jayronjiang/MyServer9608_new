@@ -4448,7 +4448,7 @@ bool jsonStrRsuWriterXY(int messagetype, string &mstrjson)
 			if(pRsu!=NULL)
 			{
 				ArtcState=pRsu->getRsuInfo();
-				if(ArtcState.controler.linked && GetTickCount()-ArtcState.controler.timestamp<1*60) //1分钟没更新，默认没连接
+				if(ArtcState.controler.linked && GetTickCount()-ArtcState.controler.timestamp<2*60) //1分钟没更新，默认没连接
 				{
 					sprintf(str,"\"isonline\":\"%d\",\n",ArtcState.controler.linked); strJson = strJson + str;//连接状态
 					if(pCan!=NULL)
@@ -4523,7 +4523,7 @@ bool jsonStrRsuWriterXY(int messagetype, string &mstrjson)
 		if(pRsu!=NULL)
 		{
 			ArtcState=pRsu->getRsuInfo();
-			if(ArtcState.controler.linked && ArtcState.controler.totalAnt>0 && GetTickCount()-ArtcState.controler.timestamp<1*60)
+			if(ArtcState.controler.linked && ArtcState.controler.totalAnt>0 && GetTickCount()-ArtcState.controler.timestamp<2*60)
 			{
 				sprintf(str,"\"antennacount\":%d,\n",ArtcState.controler.totalAnt);strJson = strJson + str; //天线数量
 				strJson = strJson + "\"antennalist\": [\n"; 	//天线头列表
@@ -5287,7 +5287,7 @@ bool jsonStrHWCabinetWriter(int messagetype,char *pstPam, string &mstrjson)
 		strJson = strJson + "\"hwmonequipsoftwareversion\": \"" + pConf->StrVersionNo + "\",\n";	//软件版本
 		strJson = strJson + "\"hwmonequipmanufacturer\": \"华软\",\n";	//设备生产商
 		CabinetClient *pCab2 = pCabinetClient[1];
-		if(pCab!=NULL && pCab2!=NULL && pCab->HUAWEIDevValue.hwLinked && GetTickCount()-pCab->HUAWEIDevValue.hwTimeStamp<15*60)//超过15分钟没更新，认为没有连接
+		if(pCab!=NULL && pCab2!=NULL && pCab->HUAWEIDevValue.hwLinked && GetTickCount()-pCab->HUAWEIDevValue.hwTimeStamp<30*60)//超过15分钟没更新，认为没有连接
 		{
 			//华软机柜字段
 			sprintf(str,"\"isonline\":\"%d\",\n",pCab->HUAWEIDevValue.hwLinked); strJson = strJson + str;//连接状态（设备柜）
@@ -5450,17 +5450,17 @@ bool jsonStrHWCabinetWriter(int messagetype,char *pstPam, string &mstrjson)
 		strJson = strJson + "\"hwmonequipmanufacturer\": \"中兴\",\n";	//设备生产商
 
 		SupervisionZTE::State_S state;
-printf("aaa\r\n");
+//printf("aaa\r\n");
 		if(pCZTE!=NULL)
 			state = pCZTE->getState();
 		
-printf("bbb\r\n");
-		if(state.linked && GetTickCount()-state.timestamp<15*60)//超过5分钟没更新，认为没有连接
+//printf("bbb\r\n");
+		if(state.linked && GetTickCount()-state.timestamp<30*60)//超过5分钟没更新，认为没有连接
 		{
-printf("ccc\r\n");
+//printf("ccc\r\n");
 			//中兴机柜字段
 			sprintf(str,"\"isonline\":\"%d\",\n",state.linked); strJson = strJson + str;//连接状态
-			bool BatIsOnline=state.libat[0].isLink & state.libat[1].isLink & state.libat[2].isLink & state.libat[3].isLink;
+			bool BatIsOnline=state.libat[0].isLink || state.libat[1].isLink || state.libat[2].isLink || state.libat[3].isLink;
 			sprintf(str,"\"acbgroupbatonline\":\"%d\",\n",BatIsOnline); strJson = strJson + str;//锂电池组是否在线
 			sprintf(str,"\"dcaironline\":\"%d\",\n",state.airco[0].isLink); strJson = strJson + str;//直流空调是否在线（设备柜）
 			sprintf(str,"\"dcaironline2\":\"%d\",\n",state.airco[1].isLink); strJson = strJson + str;//直流空调是否在线（电池柜）
@@ -5499,7 +5499,7 @@ printf("ccc\r\n");
 			strJson = strJson + "\"hwdooralarmtraps\": " + state.magnetWarn[0].warning + ",\n"; //门禁告警(设备柜) 241
 			strJson = strJson + "\"hwdooralarmtraps2\": " + state.magnetWarn[1].warning + ",\n";	//门禁告警（电池柜） 241
 			strJson = strJson + "\"hwwateralarmtraps\": " + state.immerWarn[0].warning + ",\n";	//水浸告警 242
-			strJson = strJson + "\"hwwateralarmtraps2\": " + state.immerWarn[1].warning + ",\n"; //水浸告警 242
+			strJson = strJson + "\"hwwateralarmtraps2\": " + state.immerWarn[0].warning + ",\n"; //水浸告警 242
 			strJson = strJson + "\"hwsmokealarmtraps\": " + state.smokeWarn[0].warning + ",\n";	//烟雾告警 243
 			strJson = strJson + "\"hwsmokealarmtraps2\": " + state.smokeWarn[1].warning + ",\n"; //烟雾告警 243
 			strJson = strJson + "\"hwsetenvtempupperlimit\": " + state.temhumi[0].tempUpperLimit + ",\n";	//环境温度告警上限
@@ -5515,9 +5515,15 @@ printf("ccc\r\n");
 			sprintf(str,"\"hwacinputfailalarm\": %s,\n", state.ups.mainsVolAbnor.c_str());strJson += str; 	 //交流电源输入停电告警
 			if(atoi(state.powSupply.acInPhaseUa.c_str())<24)
 				{sprintf(str,"\"hwacinputl1failalarm\": 1,\n");strJson += str;} 	 //交流电源输入L1 相缺相告警
+				
 			else
 				{sprintf(str,"\"hwacinputl1failalarm\": 0,\n");strJson += str;} 	 //交流电源输入L1 相缺相告警
-			if(atoi(state.powSupply.acInPhaseUb.c_str())<24)
+				
+				{sprintf(str,"\"hwacinputl2failalarm\": 0,\n");strJson += str;} 	 //交流电源输入L2 相缺相告警
+				{sprintf(str,"\"hwacinputl3failalarm\": 0,\n");strJson += str;} 	 //交流电源输入L3 相缺相告警
+				
+				
+			/*if(atoi(state.powSupply.acInPhaseUb.c_str())<24)
 				{sprintf(str,"\"hwacinputl2failalarm\": 1,\n");strJson += str;} 	 //交流电源输入L2 相缺相告警
 			else
 				{sprintf(str,"\"hwacinputl2failalarm\": 0,\n");strJson += str;} 	 //交流电源输入L2 相缺相告警
@@ -5525,10 +5531,11 @@ printf("ccc\r\n");
 				{sprintf(str,"\"hwacinputl3failalarm\": 1,\n");strJson += str;} 	 //交流电源输入L3 相缺相告警
 			else
 				{sprintf(str,"\"hwacinputl3failalarm\": 0,\n");strJson += str;} 	 //交流电源输入L3 相缺相告警
+				*/
 			strJson = strJson + "\"hwsmokesensorstatus\": " + state.smokeWarn[0].warning + ",\n"; 	 //烟雾传感器状态
 			strJson = strJson + "\"hwsmokesensorstatus2\": " + state.smokeWarn[1].warning + ",\n";	 //烟雾传感器状态
 			strJson = strJson + "\"hwwatersensorstatus\": " + state.immerWarn[0].warning + ",\n"; 	 //水浸传感器状态
-			strJson = strJson + "\"hwwatersensorstatus2\": " + state.immerWarn[1].warning + ",\n";	 //水浸传感器状态
+			strJson = strJson + "\"hwwatersensorstatus2\": " + state.immerWarn[0].warning + ",\n";	 //水浸传感器状态 华陆和梅州东只有一个水浸信号
 			strJson = strJson + "\"hwdoorsensorstatus\": " + state.magnetWarn[0].warning + ",\n";		 //（电池柜）门磁传感器状态
 			strJson = strJson + "\"hwdoorsensorstatus2\": " + state.magnetWarn[1].warning + ",\n"; 	 //（电池柜）门磁传感器状态
 			
@@ -5542,6 +5549,8 @@ printf("ccc\r\n");
 			strJson = strJson + "\"out_fanstate2\": " + state.airco[1].exterFanSta + ",\n";		 //外风机状态2 0代表关闭 1代表开启
 			//中兴机柜增加开关电源报警
 			sprintf(str,"\"switchpowercom_alarm\": %d,\n", !state.powSupply.isLink);strJson += str; 	 //开关电源断线告警 0代表正常 1代表告警
+			//strJson = strJson + "\"rectifiermodulecom_alarm\": " + state.powSupply.warning + ",\n"; 	 //整流模块通讯故障 0代表正常 1代表告警
+			state.powSupply.warning = "0";
 			strJson = strJson + "\"rectifiermodulecom_alarm\": " + state.powSupply.warning + ",\n"; 	 //整流模块通讯故障 0代表正常 1代表告警
 			//空调
 			strJson = strJson + "\"air_high_temper_alarm\": " + state.airco[0].hiTempWarn + ",\n";		 //(设备柜)高温告警 0代表正常 1代表告警
@@ -5721,7 +5730,8 @@ printf("ccc\r\n");
 		
 		SupervisionXJ::State_S state[HWSERVER_NUM];
 //		bool linked[HWSERVER_NUM];
-		for(i=0;i<atoi(pConf->StrHWServerCount.c_str());i++)
+        int mNum = atoi(pConf->StrHWServerCount.c_str()) ;
+		for(i=0;i<mNum;i++)
 		{
 			if(pCSuXJ[i]!=NULL)
 			{
@@ -5729,57 +5739,69 @@ printf("ccc\r\n");
 //				linked[i]=state.ammeter.isLink | state.ups[0].isLink | state.ups[1].isLink;
 			}
 		}
-		//设备柜
-		sprintf(str,"\"isonline\":\"%d\",\n",state[0].linked); strJson = strJson + str;//连接状态
-		//电池柜
-		sprintf(str,"\"isonline2\":\"%d\",\n",state[1].linked); strJson = strJson + str;//连接状态
+		
+		
+	
 		
 //		if(state[0].linked)//超过5分钟没更新，认为没有连接
+        //惠深沿海两个动环
+        if(mNum == 2)
 		{
-			//设备柜
-			bool BatIsOnline=state[1].bms[0].isLink & state[1].bms[1].isLink & state[1].bms[2].isLink & state[1].bms[3].isLink;
-			sprintf(str,"\"acbgroupbatonline\":\"%d\",\n",BatIsOnline); strJson = strJson + str;//锂电池组是否在线
-			sprintf(str,"\"dcaironline\":\"%d\",\n",state[0].airc[0].isLink); strJson = strJson + str;//直流空调是否在线（设备柜）
-			sprintf(str,"\"dcaironline2\":\"%d\",\n",state[1].airc[0].isLink); strJson = strJson + str;//直流空调是否在线（电池柜）
-//			sprintf(str,"\"temhumonline\":\"%d\",\n",state.temhumi[0].isLink); strJson = strJson + str;//温湿度传感器是否在线（设备柜）
-//			sprintf(str,"\"temhumonline2\":\"%d\",\n",state.temhumi[1].isLink); strJson = strJson + str;//温湿度传感器是否在线（电池柜）
-			
-			strJson = strJson + "\"hwaporablvoltage\": " + state[1].ammeter.pvolt + ",\n"; //A/AB电压 220
-			strJson = strJson + "\"hwaphasecurrent\": " + state[1].ammeter.pcurr + ",\n";	//A相电流 223
-			strJson = strJson + "\"hwenvtemperature\": " + state[0].monitor.temperature1 + ",\n";	//环境温度值 228
-			strJson = strJson + "\"hwenvtemperature2\": " + state[1].monitor.temperature1 + ",\n";	//环境温度值 228
-			strJson = strJson + "\"hwenvhumidity\": " + state[0].monitor.humidity1 + ",\n"; //环境湿度值 229
-			strJson = strJson + "\"hwenvhumidity2\": " + state[1].monitor.humidity1 + ",\n";	//环境湿度值 229
-			strJson = strJson + "\"hwdcairenterchanneltemp\": " + state[0].airc[0].tempture + ",\n"; //空调回风口温度 236
-			strJson = strJson + "\"hwdcairenterchanneltemp2\": " + state[1].airc[0].tempture + ",\n";	//空调回风口温度 236
-			//环境传感器(新增加)
-			strJson = strJson + "\"hwdooralarmtraps\": " + state[0].monitor.door1 + ",\n"; //门禁告警(设备柜) 241
-			strJson = strJson + "\"hwdooralarmtraps2\": " + state[1].monitor.door1 + ",\n";	//门禁告警（电池柜） 241
-			strJson = strJson + "\"hwwateralarmtraps\": " + state[0].monitor.water1 + ",\n"; //水浸告警 242
-			strJson = strJson + "\"hwwateralarmtraps2\": " + state[1].monitor.water1 + ",\n"; //水浸告警 242
-			strJson = strJson + "\"hwsmokealarmtraps\": " + state[0].monitor.smoke1 + ",\n"; //烟雾告警 243
-			strJson = strJson + "\"hwsmokealarmtraps2\": " + state[1].monitor.smoke1 + ",\n"; //烟雾告警 243
-			//供配电
-			//电源告警
-			int acfail=atoi(state[1].ups[0].acfail.c_str());
-			sprintf(str,"\"hwacinputfailalarm\": %d,\n", acfail);strJson += str;	 //交流电源输入停电告警
-			strJson = strJson + "\"hwsmokesensorstatus\": " + state[0].monitor.smoke1 + ",\n";	 //烟雾传感器状态
-			strJson = strJson + "\"hwsmokesensorstatus2\": " + state[1].monitor.smoke1 + ",\n";	 //烟雾传感器状态
-			strJson = strJson + "\"hwwatersensorstatus\": " + state[0].monitor.water1 + ",\n";	 //水浸传感器状态
-			strJson = strJson + "\"hwwatersensorstatus2\": " + state[1].monitor.water1 + ",\n";	 //水浸传感器状态
-			strJson = strJson + "\"hwdoorsensorstatus\": " + state[0].monitor.door1 + ",\n";		 //（电池柜）门磁传感器状态
-			strJson = strJson + "\"hwdoorsensorstatus2\": " + state[1].monitor.door1 + ",\n";	 //（电池柜）门磁传感器状态
-			
-			//空调 2个机柜各1台
-//			if(state[0].airc[0].isLink)
-			{
-				string swork=(state[0].airc[0].swork=="0"?"2":"1");
-				strJson = strJson + "\"hwdcairrunstatus\": " + swork + ",\n";		 //空调运行状态状态 1：待机；2：运行中；3：故障；255：未知
-				swork=(state[0].airc[0].srun=="0"?"1":"2");
-				strJson = strJson + "\"hwdcaircompressorrunstatus\": " + swork + ",\n";		 //空调压缩机状态 1：待机；2：运行中；3：故障；255：未知
-				strJson = strJson + "\"air_temper_alarm\": " + state[0].airc[0].sysal_warn + ",\n";		 //(设备柜)高温告警 0代表正常 1代表告警
-				strJson = strJson + "\"air_sysal_alarm\": " + state[0].airc[0].temp_warn + ",\n";	 //(设备柜)空调系统告警 0代表正常 1代表告警
-				strJson = strJson + "\"air_sysal_desc\": " + state[0].airc[0].sysal + ",\n";	 //(设备柜)空调系统告警字
+            //设备柜
+            sprintf(str, "\"isonline\":\"%d\",\n", state[0].linked);
+            strJson = strJson + str; //连接状态
+            //电池柜
+            sprintf(str, "\"isonline2\":\"%d\",\n", state[1].linked);
+            strJson = strJson + str; //连接状态
+
+            //设备柜
+            bool BatIsOnline = state[1].bms[0].isLink & state[1].bms[1].isLink & state[1].bms[2].isLink & state[1].bms[3].isLink;
+            sprintf(str, "\"acbgroupbatonline\":\"%d\",\n", BatIsOnline);
+            strJson = strJson + str; //锂电池组是否在线
+            sprintf(str, "\"dcaironline\":\"%d\",\n", state[0].airc[0].isLink);
+            strJson = strJson + str; //直流空调是否在线（设备柜）
+            sprintf(str, "\"dcaironline2\":\"%d\",\n", state[1].airc[0].isLink);
+            strJson = strJson + str; //直流空调是否在线（电池柜）
+                                     //			sprintf(str,"\"temhumonline\":\"%d\",\n",state.temhumi[0].isLink); strJson = strJson + str;//温湿度传感器是否在线（设备柜）
+                                     //			sprintf(str,"\"temhumonline2\":\"%d\",\n",state.temhumi[1].isLink); strJson = strJson + str;//温湿度传感器是否在线（电池柜）
+
+            strJson = strJson + "\"hwaporablvoltage\": " + state[1].ammeter.pvolt + ",\n";            // A/AB电压 220
+            strJson = strJson + "\"hwaphasecurrent\": " + state[1].ammeter.pcurr + ",\n";             // A相电流 223
+            strJson = strJson + "\"hwenvtemperature\": " + state[0].monitor.temperature1 + ",\n";     //环境温度值 228
+            strJson = strJson + "\"hwenvtemperature2\": " + state[1].monitor.temperature1 + ",\n";    //环境温度值 228
+            strJson = strJson + "\"hwenvhumidity\": " + state[0].monitor.humidity1 + ",\n";           //环境湿度值 229
+            strJson = strJson + "\"hwenvhumidity2\": " + state[1].monitor.humidity1 + ",\n";          //环境湿度值 229
+            strJson = strJson + "\"hwdcairenterchanneltemp\": " + state[0].airc[0].tempture + ",\n";  //空调回风口温度 236
+            strJson = strJson + "\"hwdcairenterchanneltemp2\": " + state[1].airc[0].tempture + ",\n"; //空调回风口温度 236
+            //环境传感器(新增加)
+            strJson = strJson + "\"hwdooralarmtraps\": " + state[0].monitor.door1 + ",\n";    //门禁告警(设备柜) 241
+            strJson = strJson + "\"hwdooralarmtraps2\": " + state[1].monitor.door1 + ",\n";   //门禁告警（电池柜） 241
+            strJson = strJson + "\"hwwateralarmtraps\": " + state[0].monitor.water1 + ",\n";  //水浸告警 242
+            strJson = strJson + "\"hwwateralarmtraps2\": " + state[1].monitor.water1 + ",\n"; //水浸告警 242
+            strJson = strJson + "\"hwsmokealarmtraps\": " + state[0].monitor.smoke1 + ",\n";  //烟雾告警 243
+            strJson = strJson + "\"hwsmokealarmtraps2\": " + state[1].monitor.smoke1 + ",\n"; //烟雾告警 243
+            //供配电
+            //电源告警
+            int acfail = atoi(state[1].ups[0].acfail.c_str());
+            sprintf(str, "\"hwacinputfailalarm\": %d,\n", acfail);
+            strJson += str;                                                                     //交流电源输入停电告警
+            strJson = strJson + "\"hwsmokesensorstatus\": " + state[0].monitor.smoke1 + ",\n";  //烟雾传感器状态
+            strJson = strJson + "\"hwsmokesensorstatus2\": " + state[1].monitor.smoke1 + ",\n"; //烟雾传感器状态
+            strJson = strJson + "\"hwwatersensorstatus\": " + state[0].monitor.water1 + ",\n";  //水浸传感器状态
+            strJson = strJson + "\"hwwatersensorstatus2\": " + state[1].monitor.water1 + ",\n"; //水浸传感器状态
+            strJson = strJson + "\"hwdoorsensorstatus\": " + state[0].monitor.door1 + ",\n";    //（电池柜）门磁传感器状态
+            strJson = strJson + "\"hwdoorsensorstatus2\": " + state[1].monitor.door1 + ",\n";   //（电池柜）门磁传感器状态
+
+            //空调 2个机柜各1台
+            //			if(state[0].airc[0].isLink)
+            {
+                string swork = (state[0].airc[0].swork == "0" ? "2" : "1");
+                strJson = strJson + "\"hwdcairrunstatus\": " + swork + ",\n"; //空调运行状态状态 1：待机；2：运行中；3：故障；255：未知
+                swork = (state[0].airc[0].srun == "0" ? "1" : "2");
+                strJson = strJson + "\"hwdcaircompressorrunstatus\": " + swork + ",\n";             //空调压缩机状态 1：待机；2：运行中；3：故障；255：未知
+                strJson = strJson + "\"air_temper_alarm\": " + state[0].airc[0].sysal_warn + ",\n"; //(设备柜)高温告警 0代表正常 1代表告警
+                strJson = strJson + "\"air_sysal_alarm\": " + state[0].airc[0].temp_warn + ",\n";   //(设备柜)空调系统告警 0代表正常 1代表告警
+                strJson = strJson + "\"air_sysal_desc\": " + state[0].airc[0].sysal + ",\n";        //(设备柜)空调系统告警字
 			}
 //			if(state[1].airc[0].isLink)
 			{
@@ -5823,6 +5845,104 @@ printf("ccc\r\n");
 			//门锁状态
 			strJson = strJson + "\"hwequcabfrontdoorstatus\": " + state[0].elock[0] + ",\n";		 //设备柜前门锁状态
 			strJson = strJson + "\"hwbatcabfrontdoorstatus\": " + state[1].elock[0] + ",\n";		 //电池柜前门锁状态
+		}
+		else //广中江三期一个动环
+		{
+			//设备柜
+            sprintf(str, "\"isonline\":\"%d\",\n", state[0].linked);
+            strJson = strJson + str; //连接状态
+            //电池柜
+            sprintf(str, "\"isonline2\":\"%d\",\n", state[0].linked);
+            strJson = strJson + str; //连接状态
+						
+			//设备柜
+			bool BatIsOnline = state[0].bms[0].isLink || state[0].bms[1].isLink || state[0].bms[2].isLink || state[0].bms[3].isLink;
+			sprintf(str,"\"acbgroupbatonline\":\"%d\",\n",BatIsOnline); strJson = strJson + str;//锂电池组是否在线
+			sprintf(str,"\"dcaironline\":\"%d\",\n",state[0].dairc[0].isLink); strJson = strJson + str;//直流空调是否在线（设备柜）
+			sprintf(str,"\"dcaironline2\":\"%d\",\n",state[0].dairc[1].isLink); strJson = strJson + str;//直流空调是否在线（电池柜）
+//			sprintf(str,"\"temhumonline\":\"%d\",\n",state.temhumi[0].isLink); strJson = strJson + str;//温湿度传感器是否在线（设备柜）
+//			sprintf(str,"\"temhumonline2\":\"%d\",\n",state.temhumi[1].isLink); strJson = strJson + str;//温湿度传感器是否在线（电池柜）
+			
+			strJson = strJson + "\"hwaporablvoltage\": " + state[0].ammeter.pvolt + ",\n"; //A/AB电压 220
+			strJson = strJson + "\"hwaphasecurrent\": " + state[0].ammeter.pcurr + ",\n";	//A相电流 223
+			strJson = strJson + "\"hwenvtemperature\": " + state[0].monitor.temperature1 + ",\n";	//环境温度值 228
+			strJson = strJson + "\"hwenvtemperature2\": " + state[0].monitor.temperature2 + ",\n";	//环境温度值 228
+			strJson = strJson + "\"hwenvhumidity\": " + state[0].monitor.humidity1 + ",\n"; //环境湿度值 229
+			strJson = strJson + "\"hwenvhumidity2\": " + state[0].monitor.humidity2 + ",\n";	//环境湿度值 229
+			strJson = strJson + "\"hwdcairenterchanneltemp\": " + state[0].dairc[0].tempture + ",\n"; //空调回风口温度 236
+			strJson = strJson + "\"hwdcairenterchanneltemp2\": " + state[0].dairc[1].tempture + ",\n";	//空调回风口温度 236
+			//环境传感器(新增加)
+			strJson = strJson + "\"hwdooralarmtraps\": " + state[0].monitor.door1 + ",\n"; //门禁告警(设备柜) 241
+			strJson = strJson + "\"hwdooralarmtraps2\": " + state[0].monitor.door2 + ",\n";	//门禁告警（电池柜） 241
+			strJson = strJson + "\"hwwateralarmtraps\": " + state[0].monitor.water1 + ",\n"; //水浸告警 242
+			strJson = strJson + "\"hwwateralarmtraps2\": " + state[0].monitor.water2 + ",\n"; //水浸告警 242
+			strJson = strJson + "\"hwsmokealarmtraps\": " + state[0].monitor.smoke1 + ",\n"; //烟雾告警 243
+			strJson = strJson + "\"hwsmokealarmtraps2\": " + state[0].monitor.smoke2 + ",\n"; //烟雾告警 243
+			//供配电
+			//电源告警
+			int acfail=atoi(state[0].ups[0].acfail.c_str());
+			sprintf(str,"\"hwacinputfailalarm\": %d,\n", acfail);strJson += str;	 //交流电源输入停电告警
+			strJson = strJson + "\"hwsmokesensorstatus\": " + state[0].monitor.smoke1 + ",\n";	 //烟雾传感器状态
+			strJson = strJson + "\"hwsmokesensorstatus2\": " + state[0].monitor.smoke2 + ",\n";	 //烟雾传感器状态
+			strJson = strJson + "\"hwwatersensorstatus\": " + state[0].monitor.water1 + ",\n";	 //水浸传感器状态
+			strJson = strJson + "\"hwwatersensorstatus2\": " + state[0].monitor.water2 + ",\n";	 //水浸传感器状态
+			strJson = strJson + "\"hwdoorsensorstatus\": " + state[0].monitor.door1 + ",\n";		 //（电池柜）门磁传感器状态
+			strJson = strJson + "\"hwdoorsensorstatus2\": " + state[0].monitor.door2 + ",\n";	 //（电池柜）门磁传感器状态
+			
+			//空调 2个机柜各1台
+//			if(state[0].dairc[0].isLink)
+			{
+				string swork=(state[0].dairc[0].swork=="0"?"2":"1");
+				strJson = strJson + "\"hwdcairrunstatus\": " + swork + ",\n";		 //空调运行状态状态 1：待机；2：运行中；3：故障；255：未知
+				swork=(state[0].dairc[0].srun=="0"?"1":"2");
+				strJson = strJson + "\"hwdcaircompressorrunstatus\": " + swork + ",\n";		 //空调压缩机状态 1：待机；2：运行中；3：故障；255：未知
+				strJson = strJson + "\"air_temper_alarm\": " + state[0].dairc[0].temp_warn + ",\n";		 //(设备柜)高温告警 0代表正常 1代表告警
+				strJson = strJson + "\"air_sysal_alarm\": " + "0" + ",\n";	 //(设备柜)空调系统告警 0代表正常 1代表告警
+				strJson = strJson + "\"air_sysal_desc\": " + state[0].dairc[0].sysal + ",\n";	 //(设备柜)空调系统告警字
+			}
+//			if(state[0].airc[0].isLink)
+			{
+				string swork=(state[0].dairc[1].swork=="0"?"2":"1");
+				strJson = strJson + "\"hwdcairrunstatus2\": " + swork + ",\n";		 //空调运行状态状态 1：待机；2：运行中；3：故障；255：未知
+				swork=(state[0].dairc[1].srun=="0"?"1":"2");
+				strJson = strJson + "\"hwdcaircompressorrunstatus2\": " + swork + ",\n";		 //空调压缩机状态 1：待机；2：运行中；3：故障；255：未知
+				strJson = strJson + "\"air_temper_alarm2\": " + state[0].dairc[1].temp_warn + ",\n";	 //(电池柜)高温告警 0代表正常 1代表告警
+				strJson = strJson + "\"air_sysal_alarm2\": " + "0" + ",\n";  //(电池柜)空调系统告警 0代表正常 1代表告警
+				strJson = strJson + "\"air_sysal_desc2\": " + state[0].dairc[1].sysal + ",\n";  //(电池柜)空调系统告警字
+			}
+			//UPS 只有电源柜有
+//			if(state[0].ups[0].isLink)
+			{
+				strJson = strJson + "\"upscityvol\": " + state[0].ups[0].invol + ",\n";		 //Ups市电电压
+				strJson = strJson + "\"upsovol\": " + state[0].ups[0].outvol + ",\n";		 //Ups输出电压
+				strJson = strJson + "\"upsloadout\": " + state[0].ups[0].loadrate + ",\n";		 //Ups负载百分比
+				strJson = strJson + "\"upsfreqin\": " + state[0].ups[0].freq + ",\n";		 //Ups输入频率
+				strJson = strJson + "\"ups_alarm\": " + state[0].ups[0].falt_warn + ",\n";		 //ups故障状态
+			}
+			//锂电池4块
+//			if(BatIsOnline)
+			{
+				for(i = 0; i < 4;i++){
+					if(!state[0].bms[i].isLink)
+						continue;
+
+					sprintf(str,"\"hwacbgroupbatvolt\": %s,\n", state[0].bms[i].vol.c_str());strJson += str; //锂电电池电压 214  
+					sprintf(str,"\"hwacbgrouptotalcapacity\": %s,\n", state[0].bms[i].soc.c_str());strJson += str; //锂电电池总容量 216  
+					sprintf(str,"\"hwacbgrouptotalremaincapacity\": %s,\n", state[0].bms[i].rlcap.c_str());strJson += str;	//锂电电池剩余容量 217	 
+					sprintf(str,"\"hwacbgroupbatsoh\": %s,\n", state[0].bms[i].soh.c_str());strJson += str; //电池SOH  
+					sprintf(str,"\"alarm\": %s,\n", state[0].bms[i].low_vol.c_str());strJson += str; //电池电压低报警  
+					strJson = strJson + "\"hwacbgrouptemperature\": " + state[0].bms[i].temp + ",\n";	//电池温度
+					strJson = strJson + "\"hwacbbatvolt\": " + state[0].bms[i].vol + ",\n";	//单个电池电压
+
+					break;
+				}
+				
+			}
+			//门锁状态
+			strJson = strJson + "\"hwequcabfrontdoorstatus\": " + state[0].elock[0] + ",\n";		 //设备柜前门锁状态
+			strJson = strJson + "\"hwbatcabfrontdoorstatus\": " + state[0].elock[1] + ",\n";		 //电池柜前门锁状态
+			
+			
 		}
 	}
 	
@@ -5882,14 +6002,24 @@ void SetjsonIPSwitchStatusStr(int messagetype,string &mstrjson)
 			else if(pConf->StrIPSwitchType == "3")	//三旺
 				{sprintf(str,"\"factoryname\":\"三旺\",\n"); strJson = strJson + str;}//生产商
 				
-			if(pCIPS->HUAWEIDevValue.hwswitchEntityLinked && GetTickCount()-pCIPS->HUAWEIDevValue.hwswitchEntityTimeStamp>10*60) //10分钟没有更新数据，恢复默认
-			{	
-				initHUAWEIswitchEntity(pCIPS);
+			//if(pCIPS->HUAWEIDevValue.hwswitchEntityLinked && GetTickCount()-pCIPS->HUAWEIDevValue.hwswitchEntityTimeStamp>30*60) 
+			//30分钟没有更新数据，恢复默认
+			if(GetTickCount()-pCIPS->HUAWEIDevValue.hwswitchEntityTimeStamp>30*60) 
+			{
+				//initHUAWEIswitchEntity(pCIPS);
+				//交换机
 				pCIPS->HUAWEIDevValue.hwswitchEntityLinked=false;
+	            pCIPS->HUAWEIDevValue.strhwswitchEntityCpuUsage="2147483647";			//CPU 
+	            pCIPS->HUAWEIDevValue.strhwswitchEntityMemUsage="2147483647";			//内存使用率
+	            pCIPS->HUAWEIDevValue.strhwswitchEntityTemperature="2147483647";		//温度
+	            pCIPS->HUAWEIDevValue.strhwswitchEntityFactory=""; 			   //生产商 
+	            pCIPS->HUAWEIDevValue.strhwswitchEntityDevModel="";				//设备型号 
 				sprintf(str,"\"isonline\":\"%d\"\n",pCIPS->HUAWEIDevValue.hwswitchEntityLinked); strJson = strJson + str;//连接状态
 			}
 			else
 			{
+				//printf("1: %u,%u----------------------------------\r\n",GetTickCount(),pCIPS->HUAWEIDevValue.hwswitchEntityTimeStamp);
+				pCIPS->HUAWEIDevValue.hwswitchEntityLinked=true;
 				sprintf(str,"\"devicemodel\":\"%s\",\n",pCIPS->HUAWEIDevValue.strhwswitchEntityDevModel.c_str()); strJson = strJson + str;//设备型号
 				sprintf(str,"\"isonline\":\"%d\",\n",pCIPS->HUAWEIDevValue.hwswitchEntityLinked); strJson = strJson + str;//连接状态
 				sprintf(str,"\"cpuusage\":\"%s\",\n",pCIPS->HUAWEIDevValue.strhwswitchEntityCpuUsage.c_str()); strJson = strJson + str;//CPU使用率
@@ -5968,14 +6098,22 @@ void SetjsonFireWallStatusStr(int messagetype,string &mstrjson)
 				{sprintf(str,"\"factoryname\":\"迪普\",\n"); strJson = strJson + str;}//生产商
 			else if(pConf->StrFireWareType == "3")
 				{sprintf(str,"\"factoryname\":\"深信服\",\n"); strJson = strJson + str;}//生产商
-			if(pCfw->HUAWEIDevValue.hwEntityLinked && GetTickCount()-pCfw->HUAWEIDevValue.hwEntityTimeStamp>10*60) //10分钟没有更新数据，恢复默认
+			//if(pCfw->HUAWEIDevValue.hwEntityLinked && GetTickCount()-pCfw->HUAWEIDevValue.hwEntityTimeStamp>30*60) //30分钟没有更新数据，恢复默认
+			if(GetTickCount()-pCfw->HUAWEIDevValue.hwEntityTimeStamp>30*60) //30分钟没有更新数据，恢复默认
 			{
-				initHUAWEIEntity(pCfw);
+				//initHUAWEIEntity(pCfw);
 				pCfw->HUAWEIDevValue.hwEntityLinked=false;
+	            pCfw->HUAWEIDevValue.strhwEntityCpuUsage="2147483647";				//CPU 
+	            pCfw->HUAWEIDevValue.strhwEntityMemUsage ="2147483647";			   //内存使用率
+	            pCfw->HUAWEIDevValue.strhwEntityTemperature="2147483647"; 		   //温度
+	            pCfw->HUAWEIDevValue.strhwEntityFactory="";				 //生产商 
+	            pCfw->HUAWEIDevValue.strhwEntityDevModel="";				  //设备型号 
+	
 				sprintf(str,"\"isonline\":\"%d\"\n",pCfw->HUAWEIDevValue.hwEntityLinked); strJson = strJson + str;//连接状态
 			}
 			else
 			{
+				pCfw->HUAWEIDevValue.hwEntityLinked=true;
 				sprintf(str,"\"devicemodel\":\"%s\",\n",pCfw->HUAWEIDevValue.strhwEntityDevModel.c_str()); strJson = strJson + str;//设备型号
 				sprintf(str,"\"isonline\":\"%d\",\n",pCfw->HUAWEIDevValue.hwEntityLinked); strJson = strJson + str;//连接状态
 				sprintf(str,"\"cpuusage\":\"%s\",\n",pCfw->HUAWEIDevValue.strhwEntityCpuUsage.c_str()); strJson = strJson + str;//CPU使用率
@@ -6052,17 +6190,17 @@ void SetjsonAtlasStatusStr(int messagetype,string &mstrjson)
 			case 1:		//atlas500
 			case 2: 	//研华
 				pCAtlas=pCsshClient[i];
-				if(pCAtlas!=NULL && pCAtlas->stuAtlasState.Linked && GetTickCount()-pCAtlas->stuAtlasState.TimeStamp>10*60) //10分钟不更新，恢复默认
+				if(pCAtlas!=NULL && pCAtlas->stuAtlasState.Linked && GetTickCount()-pCAtlas->stuAtlasState.TimeStamp>35*60) //10分钟不更新，恢复默认
 					init_atlas_struct(pCAtlas);
 				break;
 			case 3: 	//its800
 				pCsshDev=pCits800[i];
-				if(pCsshDev!=NULL && pCsshDev->stuAtlasState.Linked && GetTickCount()-pCsshDev->stuAtlasState.TimeStamp>10*60) //10分钟不更新，恢复默认
+				if(pCsshDev!=NULL && pCsshDev->stuAtlasState.Linked && GetTickCount()-pCsshDev->stuAtlasState.TimeStamp>35*60) //10分钟不更新，恢复默认
 					init_sshdev_struct(pCsshDev);
 				break;
 			case 4: 	//cpci
 				pCsshDev=pCcpci[i];
-				if(pCsshDev!=NULL && pCsshDev->stuAtlasState.Linked && GetTickCount()-pCsshDev->stuAtlasState.TimeStamp>10*60) //10分钟不更新，恢复默认
+				if(pCsshDev!=NULL && pCsshDev->stuAtlasState.Linked && GetTickCount()-pCsshDev->stuAtlasState.TimeStamp>35*60) //10分钟不更新，恢复默认
 					init_sshdev_struct(pCsshDev);
 				break;
    		}

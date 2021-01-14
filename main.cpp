@@ -198,13 +198,17 @@ int main(void)
 	{
 		 pCZTE = new SupervisionZTE(pConf->StrHWServer,pConf->StrHWGetPasswd,pConf->StrHWSetPasswd);	//"128.8.82.117","440220102411"
 		 pCZTE->setCallback(SuZTECallback,NULL);
+		 
+		 if(pConf->StrCabinetType=="5")
+		     pCZTE->start();  //开启线程
 	}
 	if(pConf->StrCabinetType=="14")			//迅捷机柜对象
 	{
 		for(i=0;i<atoi(pConf->StrHWServerCount.c_str());i++)
 		{
-			 pCSuXJ[i] = new SupervisionXJ(pConf->StrHWServer,pConf->StrHWGetPasswd);	//捷讯主机128.8.82.207 IP填本机IP ID:440220102411 密码：admin
-			 pCSuXJ[i]->setCallback(SuJXCallback,NULL);
+            pCSuXJ[i] = new SupervisionXJ((i == 0) ? pConf->StrHWServer : pConf->StrHWServer2,
+                                        (i == 0) ? pConf->StrHWGetPasswd : pConf->StrHWGetPasswd2); //捷讯主机128.8.82.207 IP填本机IP ID:440220102411 密码：admin
+            pCSuXJ[i]->setCallback(SuJXCallback, NULL);
 		}
 	}
 
@@ -239,7 +243,7 @@ int main(void)
 		pCfirewallClient[i] = new CfirewallClient();
 		initHUAWEIEntity(pCfirewallClient[i]);
 		pCfirewallClient[i]->IntFireWareType = pConf->IntFireWareType;//防火墙类型 1：华为,2：迪普，3：深信服；4、山石网科
-		pCfirewallClient[i]->StrFireWareCount = pConf->StrFireWareCount; //防火墙数量
+		pCfirewallClient[i]->StrFireWareCount = 1;//pConf->StrFireWareCount; //防火墙数量
 		pCfirewallClient[i]->StrFireWareIP[0] = pConf->StrFireWareIP[i];
 		pCfirewallClient[i]->StrFireWareGetPasswd[0] = pConf->StrFireWareGetPasswd[i];
 		pCfirewallClient[i]->StrFireWareSetPasswd[0] = pConf->StrFireWareSetPasswd[i];
@@ -254,7 +258,7 @@ int main(void)
 		pCswitchClient[i] = new CswitchClient();
 		initHUAWEIswitchEntity(pCswitchClient[i]);
 		pCswitchClient[i]->IntIPSwitchType = pConf->IntIPSwitchType;//交换机类型  1：华为,2：华三；3：三旺 128.8.82.232 public  
-		pCswitchClient[i]->StrIPSwitchCount = pConf->StrIPSwitchCount; //交换机数量
+		pCswitchClient[i]->StrIPSwitchCount = 1;//pConf->StrIPSwitchCount; //交换机数量
 		pCswitchClient[i]->StrIPSwitchIP[0] = pConf->StrIPSwitchIP[i];
 		pCswitchClient[i]->StrIPSwitchGetPasswd[0] = pConf->StrIPSwitchSetPasswd[i];
 		pCswitchClient[i]->StrIPSwitchSetPasswd[0] = pConf->StrIPSwitchGetPasswd[i];

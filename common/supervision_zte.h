@@ -41,7 +41,7 @@ const std::string StrDevType[] = {
 #define ZTE_DOOR_CLOSE		0x0006
 
 
-#pragma pack(push, 1)
+// #pragma pack(push, 1)
 class SupervisionZTE {
 public:
 
@@ -65,6 +65,7 @@ public:
     /* 数字温湿度 */
     typedef struct {
         bool isLink;
+		int LinkTime;         //多少次离线后才判定离线
         std::string tempture; // 温度
         std::string humity;   // 湿度
         std::string warning;
@@ -78,6 +79,7 @@ public:
     /* 普通空调 */
     typedef struct {
         bool isLink;
+		int LinkTime;         //多少次离线后才判定离线
         std::string state;           // 设备工作状态
         std::string interFanSta;     // 内风机状态
         std::string exterFanSta;     // 外风机状态
@@ -108,6 +110,7 @@ public:
     /* 锂电池 */
     typedef struct {
         bool isLink;
+		int LinkTime;         //多少次离线后才判定离线
         std::string voltage;// 电池组电压
 		std::string Curr;// 电池组电流
         std::string capacity;// 剩余容量
@@ -122,6 +125,7 @@ public:
     /* 铁锂电池 */
     typedef struct {
         bool isLink;
+		int LinkTime;         //多少次离线后才判定离线
         std::string voltage;// 电池组电压
         std::string capacity;// 剩余容量
         std::string fullCap;// 满充容量
@@ -135,6 +139,7 @@ public:
     /* UPS */
     typedef struct {
         bool isLink;
+		int LinkTime;         //多少次离线后才判定离线
         std::string mainsVol;      // Ups市电电压
         std::string outVol;        // Ups输出电压
         std::string tempture;      // Ups温度
@@ -153,6 +158,7 @@ public:
     /* 开关电源 */
     typedef struct{
         bool isLink;
+		int LinkTime;         //多少次离线后才判定离线
         std::string rectifierOutVol;//整流模块输出电压
         std::string rectifierOutCurr;//整流模块输出电流
         std::string rectifierOutTemp;//整流模块温度
@@ -169,6 +175,7 @@ public:
     /* 水浸*/
     typedef struct{
     	bool isLink;
+		int LinkTime;         //多少次离线后才判定离线
         std::string warning;
         std::string warnTime;
     }Immer_S;
@@ -176,6 +183,7 @@ public:
     /* 门磁 */
     typedef struct{
     	bool isLink;
+		int LinkTime;         //多少次离线后才判定离线
         std::string warning;
         std::string warnTime;
     }Magnet_S;
@@ -183,6 +191,7 @@ public:
     /* 烟感*/
     typedef struct{
     	bool isLink;
+		int LinkTime;         //多少次离线后才判定离线
         std::string warning;
         std::string warnTime;
     }Smoke_S;
@@ -190,6 +199,7 @@ public:
     /* 摄像头警告 */
     typedef struct{
     	bool isLink;
+		int LinkTime;         //多少次离线后才判定离线
         std::string warning;
         std::string warnTime;
     }CamAlarm_S;
@@ -197,6 +207,7 @@ public:
     /* cabinet_lock */
     typedef struct {
         bool isLink;
+		int LinkTime;         //多少次离线后才判定离线
 		bool status;	// 锁是否被开启0:close 1:open
         uint8_t addr;
         uint32_t cardId;
@@ -256,7 +267,7 @@ private:
         ObjInfo_S *objinfo;
     } ReqPara_S;
 
-    pthread_t tid;
+    pthread_t *tid;
     State_S state;
     std::string ip,user,key;
     uint16_t interval;
@@ -328,6 +339,22 @@ public:
      * */
 	void openLock(uint16_t cmd, uint16_t pos);
 
+    /**
+     * @name: start
+     *
+     * @description:启动功能线程
+     *
+     * */
+	void start(void);
+
+    /**
+     * @name: stop
+     *
+     * @description:停止功能线程
+     *
+     * */
+	void stop(void);
+
 private:
     void reqObjs(void);
     void reqWarning(void);
@@ -343,7 +370,7 @@ private:
     static void HttpCallback(Klib::Http *http,Klib::Http::Value_S value, void *userdata);
 #endif
 };
-#pragma pack(pop)
+// #pragma pack(pop)
 
 
 

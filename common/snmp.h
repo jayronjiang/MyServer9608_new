@@ -98,75 +98,6 @@ typedef enum
     hwTemHumEquipAddress=8001,			//温湿度地址
 
 
-    //防火墙
-    hwEntityCpuUCheck = 10000,             //查询
-    hwEntityCpuUsage = 10001,              //CPU
-    hwEntityMemUsage = 10002,                 //内存使用率
-    hwEntityTemperature = 10003,               //温度
-    hwEntityDescr = 10004,                  //接口查询
-    hwEntityOperStatus = 10005,             //接口状态查询
-    hwEntityInOctets = 10006,               //总字节数
-    hwEntityInErrors = 10007,               //出错数
-    hwEntityOutOctets = 10008,               //总字节数
-    hwEntityOutErrors = 10009,               //出错数
-    hwEntityDevModel = 10010,                //型号
-
-
-    //交换机
-    hwswitchEntityCpuCheck = 11000,             //查询
-    hwswitchEntityCpuUsage = 11001,              //CPU
-    hwswitchEntityMemUsage = 11002,              //内存使用率
-    hwswitchEntityTemperature = 11003,            //温度
-    hwswitchEntityDescr = 11004,                  //接口查询
-    hwswitchEntityOperStatus = 11005,             //接口状态查询
-    hwswitchEntityInOctets = 11006,               //总字节数
-    hwswitchEntityInErrors = 11007,               //出错数
-    hwswitchEntityOutOctets = 11008,               //总字节数
-    hwswitchEntityOutErrors = 11009,               //出错数
-    hwswitchEntityDevModel = 11010,               //型号
-
-
-    //迪普防火墙
-    dpEntityCpuUCheck = 12000,             //查询
-    dpEntityCpuUsage = 12001,              //CPU
-    dpEntityMemUsage = 12002,                 //内存使用率
-    dpEntityTemperature = 12003,               //温度
-    dpEntityDescr = 12004,                  //接口查询
-    dpEntityOperStatus = 12005,             //接口状态查询
-    dpEntityInOctets = 12006,               //总字节数
-    dpEntityInErrors = 12007,               //出错数
-    dpEntityOutOctets = 12008,               //总字节数
-    dpEntityOutErrors = 12009,               //出错数
-    dpEntityDevModel = 12010,                //型号
-	
-    //华三交换机
-    hsswitchEntityCpuCheck = 13000,             //查询
-    hsswitchEntityCpuUsage = 13001,              //CPU
-    hsswitchEntityMemUsage = 13002,              //内存使用率
-    hsswitchEntityTemperature = 13003,            //温度
-    hsswitchEntityDescr = 13004,                  //接口查询
-    hsswitchEntityOperStatus = 13005,             //接口状态查询
-    hsswitchEntityInOctets = 13006,               //总字节数
-    hsswitchEntityInErrors = 13007,               //出错数
-    hsswitchEntityOutOctets = 13008,               //总字节数
-    hsswitchEntityOutErrors = 13009,               //出错数
-    hsswitchEntityDevModel = 13010,             //型号
-
-
-    //深信服防火墙
-    sfEntityCpuUCheck = 14000,             //查询
-    sfEntityCpuUsage = 14001,              //CPU
-    sfEntityMemUsage = 14002,                 //内存使用率
-    sfEntityTemperature = 14003,               //温度
-    sfEntityDescr = 14004,                  //接口查询
-    sfEntityOperStatus = 14005,             //接口状态查询
-    sfEntityInOctets = 14006,               //总字节数
-    sfEntityInErrors = 14007,               //出错数
-    sfEntityOutOctets = 14008,               //总字节数
-    sfEntityOutErrors = 14009,               //出错数
-    sfEntityDevModel = 14010                //型号
-
-
 }EM_HUAWEIGantry;
 
 typedef struct
@@ -247,39 +178,6 @@ typedef struct
     string strhwCtrlSmokeReset;             //控制烟感复位 1,2，255
     string strhwCtrlMonEquipReset;          //控制单板复位 1,2,255
 
-    //防火墙
-	unsigned long hwEntityTimeStamp; 		//防火墙获取时间戳
-	bool hwEntityLinked;					//连接状态
-    string strhwEntityCpuUsage;                //CPU 
-    string strhwEntityMemUsage ;              //内存使用率
-    string strhwEntityTemperature;            //温度
-	unsigned long hwEntityTimeStamp1; 		//防火墙获取时间戳
-	bool hwEntityLinked1;					//连接状态
-    string strhwEntityCpuUsage1;                //CPU
-    string strhwEntityMemUsage1 ;              //内存使用率
-    string strhwEntityTemperature1;            //温度
-    //交换机
-	unsigned long hwswitchEntityTimeStamp; 		//交换机获取时间戳
-	bool hwswitchEntityLinked;					//连接状态
-    string strhwswitchEntityCpuUsage;          //CPU 
-    string strhwswitchEntityMemUsage;          //内存使用率
-    string strhwswitchEntityTemperature;       //温度
-	unsigned long hwswitchEntityTimeStamp1; 		//交换机获取时间戳
-	bool hwswitchEntityLinked1;					//连接状态
-    string strhwswitchEntityCpuUsage1;          //CPU
-    string strhwswitchEntityMemUsage1;          //内存使用率
-    string strhwswitchEntityTemperature1;       //温度
-
-    string strhwEntityFactory;                	//生产商
-    string strhwEntityDevModel;                //设备型号
-    string strhwEntityFactory1;                	//生产商
-    string strhwEntityDevModel1;                //设备型号
-
-    string strhwswitchEntityFactory;            //生产商
-    string strhwswitchEntityDevModel;           //设备型号
-    string strhwswitchEntityFactory1;            //生产商
-    string strhwswitchEntityDevModel1;           //设备型号
-
 
 }THUAWEIGantry;
 
@@ -346,19 +244,6 @@ typedef struct
 }THUAWEIALARM;
 
 
-
-typedef struct
-{
-  int Descr;
-  string type;
-  string state;
-  string inoctets;
-  string inerrors;
-  string outoctets;
-  string outerrors;
-
-
-}TFIRESWITCH;
 
 
 

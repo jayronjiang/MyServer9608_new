@@ -44,6 +44,7 @@ void myprintf(char* str);
 void initHUAWEIGantry(CabinetClient *pCab)
 {
    pCab->HUAWEIDevValue.hwLinked=false;
+   pCab->HUAWEIDevValue.hwTimeStamp=timestamp_get();
    pCab->HUAWEIDevValue.AcbGroupBatOnline=false;		   //锂电池组是否在线
    pCab->HUAWEIDevValue.DcAirOnline=false;			   //直流空调是否在线（设备柜）
    pCab->HUAWEIDevValue.DcAirOnline2=false;			   //直流空调是否在线（电池柜）
@@ -487,7 +488,7 @@ void initHUAWEIALARM(CabinetClient *pCab)
 void initHUAWEIEntity(CfirewallClient *pfw)
 {
 	pfw->HUAWEIDevValue.hwEntityTimeStamp=timestamp_get();
-	pfw->HUAWEIDevValue.hwEntityLinked=false;
+	pfw->HUAWEIDevValue.hwEntityLinked=true;//false;
 	//防火墙
 	pfw->HUAWEIDevValue.strhwEntityCpuUsage="2147483647";				//CPU 
 	pfw->HUAWEIDevValue.strhwEntityMemUsage ="2147483647";			   //内存使用率
@@ -500,7 +501,7 @@ void initHUAWEIEntity(CfirewallClient *pfw)
 void initHUAWEIswitchEntity(CswitchClient *psw)
 {
 	psw->HUAWEIDevValue.hwswitchEntityTimeStamp=timestamp_get();
-	psw->HUAWEIDevValue.hwswitchEntityLinked=false;
+	psw->HUAWEIDevValue.hwswitchEntityLinked=true;//false;
 	//交换机
 	psw->HUAWEIDevValue.strhwswitchEntityCpuUsage="2147483647";			//CPU 
 	psw->HUAWEIDevValue.strhwswitchEntityMemUsage="2147483647";			//内存使用率
